@@ -1,98 +1,184 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# OceanFin Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+---
+## 1. What is this project?
+OceanFin Backend is a web service (an API) built with Node.js using the NestJS framework. Right now it has features for Users. Later it will have finance (DeFi) features.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Other apps (Mobile / Web) can call addresses like:
+```
+GET http://localhost:3000/users
+```
+to read or create user data.
 
-## Description
+---
+## 2. Folder structure (plain view)
+```
+src/
+  main.ts          -> Starts the app
+  app.module.ts    -> Wires parts together
+  shared/          -> Shared things (Supabase connection)
+  users/           -> Everything about Users
+    interfaces/    -> API layer (Controller) + data shapes (DTOs)
+    application/   -> Logic layer (Service, Mapper)
+    domain/        -> Core model (User) + repository contract
+    infrastructure/-> Real database code (Supabase)
+```
+Remember:
+- Change an API? Edit `users/interfaces/user.controller.ts`
+- Change logic? Edit `users/application/user.service.ts`
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
+## 3. Run the project
+Need: Node.js version 18 or newer. In a terminal run:
 
-## Project setup
-
+Step 1: Install packages
 ```bash
-$ npm install
+npm install
+```
+Step 2: Create a file named `.env.development`
+```
+NODE_ENV=development
+SUPABASE_URL=your-supabase-url
+SUPABASE_KEY=your-supabase-key
+PORT=3000
+```
+If you do not have Supabase: go to https://supabase.com, create a project, copy Project URL and a key (service_role for full or anon for testing).
+
+Step 3: Start in watch mode (reloads on save)
+```bash
+npm run start:dev
+```
+Open the docs in your browser:
+```
+http://localhost:3000/api/docs
+```
+This page lets you test the API directly.
+
+---
+## 4. Current User APIs
+| Action | Method | Path | Send Body? | Returns |
+|--------|--------|------|-----------|---------|
+| Create user | POST | /users | `{ walletAddress, chainId, username? }` | New user info |
+| Get one user | GET | /users/:id | No | User info |
+| List users | GET | /users | No | List of users |
+| Change username | PUT | /users/:id | `{ username }` | Updated user |
+
+Example create user (POST /users):
+```json
+{
+  "walletAddress": "0x1234567890...",
+  "chainId": 1,
+  "username": "Alice"
+}
 ```
 
-## Compile and run the project
+---
+## 5. How to add a new API (example: DELETE /users/:id)
+1. Open: `src/users/interfaces/user.controller.ts`
+2. Add a function with `@Delete(':id')`
+3. Call a service method (add one in `user.service.ts` if missing)
+4. If service needs DB actions: add method in `user.repository.ts` and implement in `user.repository.impl.ts`
+5. Need new response shape? Add or change a DTO in `users/interfaces/dtos`
 
-```bash
-# development
-$ npm run start
+Tip: Copy an existing method and adjust.
 
-# watch mode
-$ npm run start:dev
+---
+## 6. Main building blocks (simple words)
+| Thing | What it does | File example |
+|-------|--------------|--------------|
+| Controller | Receives HTTP request and returns result | `user.controller.ts` |
+| DTO | Defines shape of data in/out + validates it | `create-user.dto.ts` |
+| Service | Business logic | `user.service.ts` |
+| Entity | Core object in the system | `user.entity.ts` |
+| Repository | Interface (contract) for data store | `user.repository.ts` |
+| Repository Impl | Real DB code | `user.repository.impl.ts` |
+| Supabase Service | Creates Supabase client | `supabase.service.ts` |
+| Mapper | Converts between Entity and DTO | `user.mapper.ts` |
 
-# production mode
-$ npm run start:prod
+---
+## 7. Add a new field to User (example: email)
+1. Add `email` in `user.entity.ts`
+2. Add field in needed DTOs: `create-user.dto.ts` (if input) + `user-response.dto.ts`
+3. Update mapper `user.mapper.ts` (if needed)
+4. Update repository implementation `user.repository.impl.ts`
+5. Update database table in Supabase:
+```sql
+alter table users add column email text;
+```
+6. Test in Swagger again.
+
+---
+## 8. About user IDs
+Now the ID is made with time + random text. For real use, change to a UUID.
+Edit `user.service.ts`:
+```ts
+import { randomUUID } from 'crypto';
+private generateId(): string { return randomUUID(); }
 ```
 
-## Run tests
-
+---
+## 9. Run tests
+Run all tests:
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run test
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+Watch mode:
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run test:watch
 ```
+(Currently few tests. You can add for `user.service.ts`.)
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
+## 10. Common errors
+| Error | Reason | Fix |
+|-------|--------|-----|
+| SUPABASE_URL or SUPABASE_KEY is not defined | Missing env vars | Check `.env.development` |
+| 404 Not Found | Wrong path or server not running | Check terminal output |
+| 500 Internal Server Error | Logic or DB error | Read terminal stack trace |
+| Swagger not loading | Wrong URL | Use `http://localhost:3000/api/docs` |
 
-## Resources
+---
+## 11. Simple roadmap
+- Save `username` and timestamps in DB (if not yet)
+- Add auth (wallet signature or JWT)
+- Add logging + health check endpoint
+- Switch to UUID
+- Add tests for UserService
 
-Check out a few resources that may come in handy when working with NestJS:
+---
+## 12. Quick glossary
+| Word | Simple meaning |
+|------|----------------|
+| API | A door to get or send data |
+| Endpoint | One API address (like /users) |
+| DTO | Data shape with rules |
+| Entity | Real model object (User) |
+| Repository | Middle layer to talk to database |
+| Module | Group of related code in NestJS |
+| Swagger | Web page to try and see APIs |
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
+## 13. First steps for a new person
+1. Run the project
+2. Create a user in Swagger
+3. Change ID method to UUID
+4. Add email field
+5. Write a simple test for create user
 
-## Support
+---
+## 14. Where to ask
+- Team chat (Slack / Zalo / Discord)
+- Open an issue in the repo (if the team allows)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
+## 15. Technical details (for developers)
+> Skip if you are non-technical.
 
-## Stay in touch
+- Stack: NestJS 11, Supabase, class-validator, class-transformer, Swagger, Jest
+- Mapping: `UserMapper` + `class-transformer`
+- Config pattern: loads `.env.<NODE_ENV>` via `@nestjs/config`
+- Swagger: `/api/docs`
+- Clean layering: domain / application / infrastructure / interfaces / shared
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
+Update this README when you add new modules
