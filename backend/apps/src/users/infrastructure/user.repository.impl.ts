@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { UserRepository } from '../domain/user.repository';
 import { User } from '../domain/user.entity';
-import { supabaseClient } from '../../shared/infrastructure/database/supabase.client';
+import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
 
 @Injectable()
-export class ImplementUserRepository implements UserRepository {
+export class UserRepositoryImplement implements UserRepository {
+
+  constructor(private readonly supabase: SupabaseService) {}
+
   async findById(id: string): Promise<User | null> {
-    const { data, error } = await supabaseClient
+    const { data, error } = await this.supabase.getClient()
       .from('users')
       .select('*')
       .eq('id', id)
@@ -24,7 +27,7 @@ export class ImplementUserRepository implements UserRepository {
   }
 
   async save(user: User): Promise<void> {
-    const { error } = await supabaseClient
+    const { error } = await this.supabase.getClient()
       .from('users')
       .upsert({
         id: user.id,
@@ -38,7 +41,7 @@ export class ImplementUserRepository implements UserRepository {
   }
 
   async findAll(): Promise<User[]> {
-    const { data, error } = await supabaseClient
+    const { data, error } = await this.supabase.getClient()
       .from('users')
       .select('*');
 
