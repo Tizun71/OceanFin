@@ -4,7 +4,7 @@ import { PolkadotLogo } from "./polkadot-logo"
 import { Button } from "@/components/ui/button"
 import { Globe } from "lucide-react"
 import { useState } from "react"
-import { WalletConnectModal } from "./wallet-connect-modal"
+import { WalletConnectModal } from "./shared/wallet-connect-modal"
 
 export function HeroSection() {
   const [walletModalOpen, setWalletModalOpen] = useState(false)

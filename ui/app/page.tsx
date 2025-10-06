@@ -1,6 +1,6 @@
-import { StrategyList } from "@/components/strategy-list"
 import { HeroSection } from "@/components/hero-section"
-import { Sidebar } from "@/components/sidebar"
+import { Sidebar } from "@/components/shared/sidebar"
+import { StrategyList } from "./strategy/[id]/components/strategy-list"
 
 export default function Home() {
   return (

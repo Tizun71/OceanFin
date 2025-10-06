@@ -4,8 +4,8 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Info, ChevronDown } from "lucide-react"
-import { WalletConnectModal } from "./wallet-connect-modal"
-import { ExecutionModal } from "./execution-modal"
+import { WalletConnectModal } from "@/components/shared/wallet-connect-modal"
+import { ExecutionModal } from "@/components/shared/execution-modal"
 
 interface StrategyInputProps {
   strategy: {

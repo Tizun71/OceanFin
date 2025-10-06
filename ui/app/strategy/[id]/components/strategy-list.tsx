@@ -1,7 +1,7 @@
 "use client"
 
-import { StrategyCard } from "./strategy-card"
-import { SearchBar } from "./search-bar"
+import { StrategyCard } from "@/app/strategy/[id]/components/strategy-card"
+import { SearchBar } from "../../../../components/shared/search-bar"
 import { useState } from "react"
 
 const strategies = [
