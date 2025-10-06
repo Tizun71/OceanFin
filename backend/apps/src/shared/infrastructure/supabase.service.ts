@@ -13,7 +13,9 @@ export class SupabaseService implements OnModuleInit {
     const key = this.configService.get<string>('SUPABASE_KEY');
 
     if (!url || !key) {
-      throw new Error('SUPABASE_URL or SUPABASE_KEY is not defined in environment');
+      throw new Error(
+        'SUPABASE_URL or SUPABASE_KEY is not defined in environment',
+      );
     }
 
     this.client = createClient(url, key);
