@@ -1,8 +1,8 @@
-import { StrategyHeader } from "@/components/strategy-header"
-import { StrategyTabs } from "@/components/strategy-tabs"
-import { StrategyInput } from "@/components/strategy-input"
-import { Sidebar } from "@/components/sidebar"
+import { StrategyHeader } from "@/app/strategy/[id]/components/strategy-header"
+import { Sidebar } from "@/components/shared/sidebar"
 import { HeroSection } from "@/components/hero-section"
+import { StrategyInput } from "./components/strategy-input"
+import { StrategyTabs } from "./components/strategy-tabs"
 
 const strategyData = {
   "1": {
