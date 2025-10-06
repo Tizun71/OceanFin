@@ -3,8 +3,8 @@ export class User {
     public readonly id: string,
     public walletAddress: string,
     public chainId: number,
-    public username?: string
-  ) { }
+    public username?: string,
+  ) {}
 
   changeUsername(newName: string) {
     if (!newName) {

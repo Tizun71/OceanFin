@@ -5,10 +5,10 @@ import { CreateUserDto } from '../interfaces/dtos/create-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepo: UserRepository) { }
+  constructor(private readonly userRepo: UserRepository) {}
 
   async createUser(dto: CreateUserDto): Promise<User> {
-    const id = this.generateId(); 
+    const id = this.generateId();
     const user = new User(id, dto.walletAddress, dto.chainId, dto.username);
     await this.userRepo.save(user);
     return user;

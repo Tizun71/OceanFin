@@ -18,7 +18,7 @@ export class UserMapper {
   }
 
   static toResponseList(users: User[]): UserResponseDto[] {
-    return users.map(user => this.toResponse(user));
+    return users.map((user) => this.toResponse(user));
   }
 
   static toEntity(id: string, dto: CreateUserDto): User {

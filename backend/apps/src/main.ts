@@ -9,7 +9,7 @@ async function bootstrap() {
     .setTitle('OceanFin API')
     .setDescription('API documentation for OceanFin project')
     .setVersion('1.0')
-    .addBearerAuth() 
+    .addBearerAuth()
 
     // Server configurations
     .addServer('http://localhost:3000', 'Local host')
