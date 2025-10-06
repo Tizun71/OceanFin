@@ -1,5 +1,4 @@
 import { StrategyHeader } from "@/app/strategy/[id]/components/strategy-header"
-import { Sidebar } from "@/components/shared/sidebar"
 import { HeroSection } from "@/components/hero-section"
 import { StrategyInput } from "./components/strategy-input"
 import { StrategyTabs } from "./components/strategy-tabs"
@@ -103,7 +102,6 @@ export default function StrategyPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
       <main className="flex-1 web3-grid">
         <HeroSection />
         <div className="container mx-auto px-6 py-8">
