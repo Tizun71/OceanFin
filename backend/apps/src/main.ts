@@ -10,6 +10,13 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') || 3000;
   const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
 
+  // Enable CORS
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
   // Swagger Configuration
   const swaggerConfig = new DocumentBuilder()
     .setTitle('OceanFin API')
