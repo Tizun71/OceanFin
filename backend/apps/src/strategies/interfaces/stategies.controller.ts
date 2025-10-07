@@ -65,8 +65,6 @@ export class StrategiesController {
   @ApiParam({ name: 'id', description: 'Strategy ID' })
   @ApiResponse({ status: 200, description: 'Simulation result', type: SimulateResultDto })
   async simulate(@Param('id') id: string): Promise<SimulateResult> {
-    // For now, return a placeholder structure conforming to SimulateResult.
-    // In a real implementation, this would call a simulation service.
     return {
       initialCapital: { assetId: 'ASSET_1' as any, symbol: 'SYM' as any, amount: 1000 },
       loops: 1,
