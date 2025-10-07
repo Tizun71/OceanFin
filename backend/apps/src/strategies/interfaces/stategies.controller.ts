@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StrategyService } from '../application/strategy.service';
 import { StrategyMapper } from '../application/mappers/strategy.mapper';
 import { StrategyResponseDto } from './dtos/strategy-response.dto';
@@ -63,16 +63,17 @@ export class StrategiesController {
   @Get(':id/simulate')
   @ApiOperation({ summary: 'Simulate a strategy and return structured result' })
   @ApiParam({ name: 'id', description: 'Strategy ID' })
+  @ApiQuery({ name: 'assetIdIn', description: 'Asset ID to simulate with', example: '5' })
+  @ApiQuery({ name: 'amountIn', description: 'Amount to simulate', example: 1 })
+  @ApiQuery({ name: 'iterations', description: 'Number of iterations', example: 3, required: false })
   @ApiResponse({ status: 200, description: 'Simulation result', type: SimulateResultDto })
-  async simulate(@Param('id') id: string): Promise<SimulateResult> {
-    return {
-      initialCapital: { assetId: 'ASSET_1' as any, symbol: 'SYM' as any, amount: 1000 },
-      loops: 1,
-      fee: 0,
-      totalSupply: 0,
-      totalBorrow: 0,
-      steps: [],
-    };
+  async simulate(
+    @Param('id') id: string,
+    @Query('assetIn') assetIn: string,
+    @Query('amountIn') amountIn: number,
+    @Query('iterations') iterations: number = 3
+  ): Promise<SimulateResult> {
+    return this.strategyService.simulateStrategy(id, assetIn, amountIn, iterations);
   }
 }
 

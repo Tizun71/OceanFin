@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { StrategiesRepository } from '../domain/strategies.repository';
 import { Strategy } from '../domain/strategies.entity';
+import { title } from 'process';
+import { STRATEGY_LIST } from './strategy-list';
+import { simulateGDOTStrategy } from '../infrastructure/strategy-simulate/gDOT-looping-simulate';
 
 @Injectable()
 export class StrategyService {
@@ -60,6 +63,14 @@ export class StrategyService {
 
   async deleteById(id: string): Promise<void> {
     await this.strategiesRepo.deleteById(id);
+  }
+
+  async simulateStrategy(strategyId: string, assetIn: string, amountIn: number, iterations: number = 3) {
+    const strategy = await this.findById(strategyId);  
+    if (strategy.strategistName === STRATEGY_LIST.gDOT_LOOPING) {
+      return await simulateGDOTStrategy(assetIn, amountIn, iterations);
+    }
+    throw new Error('Strategy not found');
   }
 
   private generateId(): string {
