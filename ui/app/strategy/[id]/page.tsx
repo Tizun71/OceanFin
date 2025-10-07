@@ -1,104 +1,50 @@
-import { StrategyHeader } from "@/app/strategy/[id]/components/strategy-header"
+"use client"
+
+import { useEffect, useState } from "react"
 import { HeroSection } from "@/components/hero-section"
+import { StrategyHeader } from "./components/strategy-header"
 import { StrategyInput } from "./components/strategy-input"
 import { StrategyTabs } from "./components/strategy-tabs"
+import { SimulateResult } from "@/app/types/simulate"
 
-const strategyData = {
-  "1": {
-    id: "1",
-    title: "Polkadot Liquid Staking - Bifrost",
-    status: "Active" as const,
-    apy: 42.5,
-    strategist: "POLKADOT LABS",
-    handle: "@Polkadot_Labs",
-    date: "15/03/2025",
-    description:
-      "Implementing a liquid staking strategy by providing DOT liquidity to Bifrost protocol, combining stable yield with exposure to vDOT derivatives and maintaining liquidity through cross-chain operations.",
-    agents: ["Bifrost", "Acala"],
-    inputAsset: "DOT",
-    networkCost: "0.000268 DOT",
-    slippage: "1%",
-    steps: [
-      {
-        chain: "Polkadot",
-        actions: [
-          {
-            type: "Stake",
-            protocol: "Bifrost",
-            asset: "DOT",
-            output: "vDOT",
-          },
-        ],
-      },
-      {
-        chain: "Bifrost",
-        actions: [
-          {
-            type: "Deposit",
-            protocol: "Bifrost",
-            asset: "vDOT",
-          },
-        ],
-      },
-      {
-        chain: "Acala",
-        actions: [
-          {
-            type: "Bridge",
-            protocol: "XCM",
-            asset: "vDOT",
-          },
-          {
-            type: "Swap",
-            protocol: "Acala DEX",
-            asset: "vDOT",
-            output: "aUSD",
-          },
-        ],
-      },
-    ],
-  },
-  "2": {
-    id: "2",
-    title: "Moonbeam DeFi Yield Optimizer",
-    status: "Active" as const,
-    apy: 28.75,
-    strategist: "POLKADOT LABS",
-    handle: "@Polkadot_Labs",
-    date: "12/03/2025",
-    description:
-      "Optimizing yield on Moonbeam by leveraging StellaSwap liquidity pools and Moonwell lending markets to maximize returns on GLMR and stablecoin positions.",
-    agents: ["StellaSwap", "Moonwell"],
-    inputAsset: "GLMR",
-    networkCost: "0.001 GLMR",
-    slippage: "0.5%",
-    steps: [
-      {
-        chain: "Moonbeam",
-        actions: [
-          {
-            type: "Swap",
-            protocol: "StellaSwap",
-            asset: "GLMR",
-            output: "USDC",
-          },
-          {
-            type: "Deposit",
-            protocol: "Moonwell",
-            asset: "USDC",
-          },
-        ],
-      },
-    ],
-  },
-}
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export default function StrategyPage({ params }: { params: { id: string } }) {
-  const strategy = strategyData[params.id as keyof typeof strategyData]
+  const [data, setData] = useState<SimulateResult | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!strategy) {
-    return <div>Strategy not found</div>
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const res = await fetch(`${BASE_URL}/simulate/${params.id}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+        const result: SimulateResult = await res.json()
+        console.log("✅ BE response:", result)
+
+        if (!result) {
+          setError("No strategy data found")
+        } else {
+          setData(result)
+        }
+      } catch (err: any) {
+        console.error("❌ Fetch error:", err)
+        setError(err.message || "Failed to fetch strategy")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [params.id])
+
+  if (loading) return <div className="text-center py-10">Loading strategy flow...</div>
+  if (error) return <div className="text-red-500 text-center py-10">Error: {error}</div>
+  if (!data) return <div className="text-gray-400 text-center py-10">No strategy found</div>
 
   return (
     <div className="flex min-h-screen">
@@ -107,11 +53,11 @@ export default function StrategyPage({ params }: { params: { id: string } }) {
         <div className="container mx-auto px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1">
-              <StrategyInput strategy={strategy} />
+              <StrategyInput strategy={data} />
             </div>
             <div className="lg:col-span-2">
-              <StrategyHeader strategy={strategy} />
-              <StrategyTabs strategy={strategy} />
+              <StrategyHeader strategy={data} />
+              <StrategyTabs strategy={data} />
             </div>
           </div>
         </div>
