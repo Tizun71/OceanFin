@@ -4,7 +4,7 @@ import { getMaxBorrow } from '../helpers/hydration/get-max-borrow';
 import { SLIPPAGE_TOLERANCE } from './constant';
 import { SimulateResult, Step } from './type';
 
-async function simulateStrategy(
+async function simulateGDOTStrategy(
   assetInId: string,
   tokenAmount: number,
   iterations: number,
@@ -85,4 +85,4 @@ async function simulateStrategy(
   return result;
 }
 
-export { simulateStrategy };
+export { simulateGDOTStrategy };
