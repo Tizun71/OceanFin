@@ -11,12 +11,15 @@ interface StrategyInputProps {
   strategy: {
     id: string;
     inputAsset?: string | null;
+    inputAssetId?: string | number; 
     networkCost?: string | null;
     slippage?: string | null;
     title: string;
     steps?: any[];
+    iterations?: number; 
+    assetIdIn?: string | number;
   };
-  onSimulateSuccess?: (data: any) => void; 
+  onSimulateSuccess?: (data: any) => void;
 }
 
 export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProps) {
@@ -34,9 +37,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
   const handleConnect = () => {
     setWalletModalOpen(true);
-    setTimeout(() => {
-      setIsConnected(true);
-    }, 1000);
+    setTimeout(() => setIsConnected(true), 1000);
   };
 
   const handleExecute = () => {
@@ -47,18 +48,21 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     setExecutionModalOpen(true);
   };
 
-  // Simulate API
   const handleSimulate = async () => {
-    if (!amount || Number.parseFloat(amount) <= 0) return;
+    if (!amount || Number(amount) <= 0) return;
 
     setLoadingSimulate(true);
     setSimulateResult(null);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/strategies/${strategy.id}/simulate?amount=${amount}`,
-        { method: "GET" }
-      );
+     
+      const assetIn = strategy.inputAssetId || 2;
+      const iterations = strategy.iterations || 3;
+      const assetIdIn = strategy.assetIdIn || 5;
+
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/strategies/${strategy.id}/simulate?amountIn=${amount}&assetIn=${assetIn}&iterations=${iterations}&assetIdIn=${assetIdIn}`;
+
+      const res = await fetch(url, { method: "GET" });
 
       if (!res.ok) {
         const text = await res.text();
@@ -67,9 +71,9 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
       const data = await res.json();
       setSimulateResult(data);
-      onSimulateSuccess?.(data); 
+      onSimulateSuccess?.(data);
     } catch (error: any) {
-      console.error(" Simulation error:", error);
+      console.error("Simulation error:", error);
       setSimulateResult({ error: error.message || "Simulation failed" });
     } finally {
       setLoadingSimulate(false);
@@ -79,20 +83,17 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   return (
     <>
       <div className="glass rounded-lg p-6 sticky top-24">
-        {/* === HEADER === */}
         <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent">
           Input
         </h3>
 
-        {/* === AMOUNT INPUT === */}
+        {/* Amount Input */}
         <div className="p-4 rounded-lg bg-background/50 border border-border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">Amount</span>
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-primary">
-                  {inputAsset[0]}
-                </span>
+                <span className="text-xs font-bold text-primary">{inputAsset[0]}</span>
               </div>
               <span className="font-semibold">{inputAsset}</span>
             </div>
@@ -107,16 +108,15 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           />
         </div>
 
-        {/* === INFO TEXT === */}
+        {/* Info Text */}
         <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 mt-4">
           <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
           <p className="text-xs text-muted-foreground">
-            Funds will be swapped into {inputAsset} via a DEX. Price impact may
-            occur during swaps.
+            Funds will be swapped into {inputAsset} via a DEX. Price impact may occur during swaps.
           </p>
         </div>
 
-        {/* === DETAILS SECTION === */}
+        {/* Details */}
         <div className="mt-4 space-y-2">
           <button
             type="button"
@@ -126,9 +126,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 hover:bg-background transition-colors">
               <span className="text-sm">Details</span>
               <ChevronDown
-                className={`w-4 h-4 text-muted-foreground transition-transform ${
-                  detailsOpen ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 text-muted-foreground transition-transform ${detailsOpen ? "rotate-180" : ""}`}
               />
             </div>
           </button>
@@ -137,55 +135,51 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             <div className="space-y-2 text-sm p-3 rounded-lg bg-background/50">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Est. Network Cost</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-primary/20" />
-                  <span className="text-[#00D1FF] font-semibold">
-                    {networkCost}
-                  </span>
-                </div>
+                <span className="text-[#00D1FF] font-semibold">{networkCost}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Slippage Tolerance</span>
-                <span className="text-[#00D1FF] font-semibold">
-                  {slippage}
-                </span>
+                <span className="text-[#00D1FF] font-semibold">{slippage}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* === SIMULATION RESULT === */}
+        {/* Simulation Result */}
         {simulateResult && (
           <div className="mt-4 p-3 bg-background/50 rounded-lg text-sm border border-border text-primary animate-in fade-in slide-in-from-top-2 duration-200">
             {simulateResult.error ? (
-              <span className="text-red-500">
-                {simulateResult.error}
-              </span>
+              <span className="text-red-500">{simulateResult.error}</span>
             ) : (
               <>
                 <p>
-                  <span className="text-muted-foreground">Estimated Output:</span>{" "}
+                  <span className="text-muted-foreground">Input Amount:</span>{" "}
                   <span className="text-[#00D1FF] font-semibold">
-                    {simulateResult.estimatedOutput || "-"}
+                    {simulateResult.initialCapital?.amount} {simulateResult.initialCapital?.symbol}
                   </span>
                 </p>
-                {simulateResult.steps && (
-                  <p className="text-xs text-muted-foreground mt-1 italic">
-                    {simulateResult.steps.length} steps in this strategy.
-                  </p>
-                )}
+
+                <p className="text-muted-foreground mt-2">Strategy Steps:</p>
+                <ul className="ml-4 list-disc text-xs text-muted-foreground">
+                  {simulateResult.steps?.map((step: any) => (
+                    <li key={step.step}>
+                      Step {step.step} - {step.type}{" "}
+                      {step.tokenOut ? `: ${step.tokenOut.amount} ${step.tokenOut.symbol}` : ""}
+                    </li>
+                  ))}
+                </ul>
               </>
             )}
           </div>
         )}
 
-        {/* === ACTION BUTTONS === */}
+        {/* Action Buttons */}
         <div className="mt-4 space-y-3">
           {isConnected ? (
             <>
               <Button
                 className="w-full bg-secondary hover:bg-secondary/90"
-                disabled={!amount || Number.parseFloat(amount) <= 0 || loadingSimulate}
+                disabled={!amount || Number(amount) <= 0 || loadingSimulate}
                 onClick={handleSimulate}
               >
                 {loadingSimulate ? "Simulating..." : "Simulate"}
@@ -193,7 +187,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
               <Button
                 className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
-                disabled={!amount || Number.parseFloat(amount) <= 0}
+                disabled={!amount || Number(amount) <= 0}
                 onClick={handleExecute}
               >
                 Execute Strategy
@@ -215,16 +209,9 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         </div>
       </div>
 
-      {/* === MODALS === */}
-      <WalletConnectModal
-        open={walletModalOpen}
-        onOpenChange={setWalletModalOpen}
-      />
-      <ExecutionModal
-        open={executionModalOpen}
-        onOpenChange={setExecutionModalOpen}
-        strategy={strategy}
-      />
+      {/* Modals */}
+      <WalletConnectModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
+      <ExecutionModal open={executionModalOpen} onOpenChange={setExecutionModalOpen} strategy={strategy} />
     </>
   );
 }
