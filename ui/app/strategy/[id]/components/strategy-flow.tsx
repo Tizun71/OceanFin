@@ -1,101 +1,152 @@
-import { ArrowDown } from "lucide-react"
+"use client";
+
+import { ArrowDown, Workflow } from "lucide-react";
+
+interface TokenInfo {
+  assetId?: string | number;
+  symbol?: string;
+  amount?: string | number | null;
+}
 
 interface FlowStep {
-  chain: string
-  actions: {
-    type: string
-    protocol: string
-    asset: string
-    output?: string
-  }[]
+  step: number;
+  type: string;
+  agent: string;
+  tokenIn?: TokenInfo | null;
+  tokenOut?: TokenInfo | null;
 }
 
 interface StrategyFlowProps {
-  steps: FlowStep[]
+  steps?: FlowStep[];
+  initialCapital?: TokenInfo;
+  loops?: number;
+  fee?: number;
+  totalSupply?: number;
+  totalBorrow?: number;
 }
 
-export function StrategyFlow({ steps }: StrategyFlowProps) {
-  const totalActions = steps.reduce((acc, step) => acc + step.actions.length, 0)
+export function StrategyFlow({
+  steps = [],
+  initialCapital,
+  loops,
+  fee,
+  totalSupply,
+  totalBorrow,
+}: StrategyFlowProps) {
+  const validSteps = Array.isArray(steps) ? steps : [];
+
+  if (!validSteps.length) {
+    return (
+      <div className="glass rounded-lg p-6 text-center text-muted-foreground">
+        No flow data available. Please run a simulation first.
+      </div>
+    );
+  }
 
   return (
     <div className="glass rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent">
-        Strategy Flow
-      </h3>
+      {/* === HEADER === */}
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent flex items-center gap-2">
+          <Workflow className="w-5 h-5 text-[#00D1FF]" />
+          Strategy Flow
+        </h3>
+        <span className="text-sm text-muted-foreground">
+          Total Steps:{" "}
+          <span className="text-[#00D1FF] font-semibold">
+            {validSteps.length}
+          </span>
+        </span>
+      </div>
 
-      <div className="flex items-start gap-6">
-        <div className="flex-1 space-y-6">
-          {steps.map((step, stepIndex) => (
-            <div key={stepIndex}>
-              <div className="glass rounded-lg p-4 border border-primary/20">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <span className="text-xs font-bold text-primary">{step.chain[0]}</span>
-                    </div>
-                    <span className="font-semibold text-[#00D1FF]">{step.chain}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{step.actions.length} Actions</span>
+      {/* === INFO SUMMARY === */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mb-6 text-sm text-muted-foreground">
+        <div className="glass p-3 rounded-lg border border-primary/20">
+          <div className="font-semibold text-[#00D1FF]">Initial Capital</div>
+          <div>
+            {initialCapital?.symbol || "N/A"} ({initialCapital?.assetId})
+          </div>
+        </div>
+        <div className="glass p-3 rounded-lg border border-primary/20">
+          <div className="font-semibold text-[#00D1FF]">Loops</div>
+          <div>{loops ?? "N/A"}</div>
+        </div>
+        <div className="glass p-3 rounded-lg border border-primary/20">
+          <div className="font-semibold text-[#00D1FF]">Fee</div>
+          <div>{fee ?? 0}</div>
+        </div>
+        <div className="glass p-3 rounded-lg border border-primary/20">
+          <div className="font-semibold text-[#00D1FF]">Total Supply</div>
+          <div>{totalSupply ?? 0}</div>
+        </div>
+        <div className="glass p-3 rounded-lg border border-primary/20">
+          <div className="font-semibold text-[#00D1FF]">Total Borrow</div>
+          <div>{totalBorrow ?? 0}</div>
+        </div>
+      </div>
+
+      {/* === MAIN FLOW === */}
+      <div className="flex flex-col items-center space-y-8">
+        {validSteps.map((step, idx) => (
+          <div
+            key={idx}
+            className="w-full lg:w-3/4 glass rounded-lg border border-primary/20 p-4"
+          >
+            {/* STEP HEADER */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">
+                    {step.step}
+                  </span>
                 </div>
-
-                <div className="space-y-3">
-                  {step.actions.map((action, actionIndex) => (
-                    <div key={actionIndex}>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-background/50">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-[#00D1FF]">{action.type}</span>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <div className="w-4 h-4 rounded-full bg-secondary/20" />
-                            <span>{action.protocol}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-center my-2">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10">
-                          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary">{action.asset[0]}</span>
-                          </div>
-                          <span className="text-sm font-semibold">{action.asset}</span>
-                        </div>
-                      </div>
-
-                      {action.output && actionIndex < step.actions.length - 1 && (
-                        <div className="flex items-center justify-center">
-                          <ArrowDown className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <span className="font-semibold text-[#00D1FF]">
+                  {step.type}
+                </span>
               </div>
+              <span className="text-xs text-muted-foreground">
+                Agent: {step.agent || "N/A"}
+              </span>
+            </div>
 
-              {stepIndex < steps.length - 1 && (
-                <div className="flex items-center justify-center my-4">
-                  <ArrowDown className="w-5 h-5 text-primary" />
+            {/* TOKEN FLOW */}
+            <div className="flex flex-col items-center space-y-2">
+              {/* Token In */}
+              {step.tokenIn && (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10">
+                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-primary">
+                      {step.tokenIn.symbol?.[0]?.toUpperCase() || "?"}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold">
+                    {step.tokenIn.symbol}
+                  </span>
+                </div>
+              )}
+
+              {/* Arrow */}
+              {step.tokenIn && step.tokenOut && (
+                <ArrowDown className="w-4 h-4 text-muted-foreground" />
+              )}
+
+              {/* Token Out */}
+              {step.tokenOut && (
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10">
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-green-500">
+                      {step.tokenOut.symbol?.[0]?.toUpperCase() || "?"}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold">
+                    {step.tokenOut.symbol}
+                  </span>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-
-        <div className="w-48 glass rounded-lg p-4">
-          <h4 className="text-sm font-semibold mb-3 text-[#00D1FF]">{totalActions} Steps</h4>
-          <div className="space-y-2 text-sm">
-            {steps.map((step, index) => (
-              <div key={index}>
-                {step.actions.map((action, actionIndex) => (
-                  <div key={actionIndex} className="flex items-center gap-2 text-muted-foreground">
-                    <span className="text-primary">+</span>
-                    <span>{action.type}</span>
-                    <span className="ml-auto text-xs">x 1</span>
-                  </div>
-                ))}
-              </div>
-            ))}
           </div>
-        </div>
+        ))}
       </div>
     </div>
-  )
+  );
 }

@@ -80,21 +80,6 @@ export function StrategyList() {
                 {statusFilter === "All" ? "All Strategies" : "Featured Strategies"}
                 <span className="text-muted-foreground ml-2">({filteredStrategies.length})</span>
               </h4>
-              <div className="flex gap-2 text-sm text-muted-foreground">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={viewMode === "grid" ? "text-foreground font-semibold" : "hover:text-foreground"}
-                >
-                  Grid View
-                </button>
-                <span>|</span>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={viewMode === "list" ? "text-foreground font-semibold" : "hover:text-foreground"}
-                >
-                  List View
-                </button>
-              </div>
             </div>
 
             {viewMode === "grid" ? (

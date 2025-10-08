@@ -49,7 +49,7 @@ export function StrategyHeader({ strategy }: StrategyHeaderProps) {
       <div className="flex items-center gap-6">
         <div className="flex items-baseline gap-2">
           <span className="text-sm text-muted-foreground">APY</span>
-          <span className="text-3xl font-bold text-[#10b981] glow-green">{strategy.apy.toFixed(2)}%</span>
+          <span className="text-3xl font-bold text-[#10b981]">{strategy.apy.toFixed(2)}%</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
           <div className="w-4 h-4 rounded-full bg-primary/20" />

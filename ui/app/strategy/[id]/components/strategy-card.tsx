@@ -1,33 +1,36 @@
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import Link from "next/link"
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface Strategy {
-  id: string
-  title: string
-  tags: string[]
-  apy: number
-  strategist: string
-  handle: string
-  date: string
-  assets: string[]
-  agents: string[]
-  chains: string[]
-  status: "Active" | "Inactive"
+  id: string;
+  title: string;
+  tags: string[];
+  apy: number;
+  strategist: string;
+  handle: string;
+  date: string;
+  assets: string[];
+  agents: string[];
+  chains: string[];
+  status: "Active" | "Inactive";
 }
 
 interface StrategyCardProps {
-  strategy: Strategy
+  strategy: Strategy;
 }
 
 export function StrategyCard({ strategy }: StrategyCardProps) {
   return (
     <Link href={`/strategy/${strategy.id}`}>
-      <Card className="glass hover:border-primary/60 transition-all duration-300 p-6 group cursor-pointer relative overflow-hidden polkadot-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <Card className="group relative overflow-hidden p-6 cursor-pointer rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:border-primary/60 glass border border-transparent">
+        {/* Hover Glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
 
-        <div className="relative z-10">
-          <div className="flex gap-2 mb-4">
+        <div className="relative z-10 flex flex-col h-full justify-between">
+          {/* Tags */}
+          <div className="flex gap-2 mb-4 flex-wrap">
             {strategy.tags.map((tag) => (
               <Badge
                 key={tag}
@@ -39,10 +42,12 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
             ))}
           </div>
 
+          {/* Title */}
           <h3 className="text-lg font-semibold mb-4 text-[#0f1419] group-hover:text-primary transition-all">
             {strategy.title}
           </h3>
 
+          {/* Strategist & APY */}
           <div className="flex items-baseline justify-between mb-6">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Strategist</p>
@@ -59,11 +64,13 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
 
             <div className="text-right">
               <p className="text-xs text-muted-foreground mb-1">APY</p>
-              <p className="text-2xl font-bold text-[#10b981] glow-green">{strategy.apy.toFixed(2)}%</p>
+              <p className="text-2xl font-bold text-[#10b981]">{strategy.apy.toFixed(2)}%</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-primary/20">
+          {/* Assets / Agents / Chains */}
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-primary/20 mb-12">
+            {/* Asset */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">Asset</p>
               <div className="flex gap-1">
@@ -84,6 +91,7 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               </div>
             </div>
 
+            {/* Agent */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">Agent</p>
               <div className="flex gap-1">
@@ -99,6 +107,7 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               </div>
             </div>
 
+            {/* Chain */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">Chain</p>
               <div className="flex gap-1">
@@ -114,8 +123,19 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               </div>
             </div>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="absolute bottom-3 right-3 z-20"
+            onClick={(e) => {
+              e.stopPropagation(); 
+              alert(`Simulate strategy: ${strategy.title}`);
+            }}
+          >
+            Simulate
+          </Button>
         </div>
       </Card>
     </Link>
-  )
+  );
 }
