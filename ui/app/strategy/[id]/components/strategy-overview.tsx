@@ -1,3 +1,4 @@
+import { Bot } from "lucide-react";
 import { StrategyFlow } from "./strategy-flow";
 
 interface StrategyOverviewProps {
@@ -47,8 +48,8 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
                   key={`${agent}-${idx}`}
                   className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-sm"
                 >
-                  <div className="w-4 h-4 rounded-full bg-primary/20" />
-                  <span>{agent}</span>
+                  <Bot className="w-4 h-4 text-[#00D1FF]" />
+                  <span className="text-sm text-foreground">{agent}</span>
                 </div>
               ))}
             </div>

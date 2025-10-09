@@ -95,7 +95,6 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">{inputAsset[0]}</span>
               </div>
-              <span className="font-semibold">{inputAsset}</span>
             </div>
           </div>
 
