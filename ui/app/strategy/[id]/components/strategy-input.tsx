@@ -1,23 +1,38 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Info, ChevronDown } from "lucide-react";
-import { WalletConnectModal } from "@/components/shared/wallet-connect-modal";
-import { ExecutionModal } from "@/components/shared/execution-modal";
 import { simulateStrategy } from "@/services/strategy-service";
+import type { StrategySimulate } from "@/types/strategy.type";
+
+const WalletConnectModal = dynamic(
+  () =>
+    import("@/components/shared/wallet-connect-modal").then(
+      (m) => m.WalletConnectModal 
+    ),
+  { ssr: false }
+);
+const ExecutionModal = dynamic(
+  () =>
+    import("@/components/shared/execution-modal").then(
+      (m) => m.ExecutionModal 
+    ),
+  { ssr: false }
+);
 
 interface StrategyInputProps {
   strategy: {
     id: string;
     inputAsset?: string | null;
-    inputAssetId?: string | number; 
+    inputAssetId?: string | number;
     networkCost?: string | null;
     slippage?: string | null;
     title: string;
     steps?: any[];
-    iterations?: number; 
+    iterations?: number;
     assetIdIn?: string | number;
   };
   onSimulateSuccess?: (data: any) => void;
@@ -30,7 +45,8 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [loadingSimulate, setLoadingSimulate] = useState(false);
-  const [simulateResult, setSimulateResult] = useState<any>(null);
+  const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null);
+  const [simulateError, setSimulateError] = useState<string | null>(null);
 
   const inputAsset = strategy.inputAsset || "-";
   const networkCost = strategy.networkCost || "-";
@@ -46,6 +62,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       setWalletModalOpen(true);
       return;
     }
+    if (!simulateResult) return;
     setExecutionModalOpen(true);
   };
 
@@ -54,6 +71,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
     setLoadingSimulate(true);
     setSimulateResult(null);
+    setSimulateError(null);
 
     try {
       const data = await simulateStrategy(strategy, Number(amount));
@@ -61,7 +79,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       onSimulateSuccess?.(data);
     } catch (error: any) {
       console.error("Simulation error:", error);
-      setSimulateResult({ error: error.message || "Simulation failed" });
+      setSimulateError(error?.message || "Simulation failed");
     } finally {
       setLoadingSimulate(false);
     }
@@ -132,22 +150,22 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         </div>
 
         {/* Simulation Result */}
-        {simulateResult && (
+        {(simulateResult || simulateError) && (
           <div className="mt-4 p-3 bg-background/50 rounded-lg text-sm border border-border text-primary animate-in fade-in slide-in-from-top-2 duration-200">
-            {simulateResult.error ? (
-              <span className="text-red-500">{simulateResult.error}</span>
+            {simulateError ? (
+              <span className="text-red-500">{simulateError}</span>
             ) : (
               <>
                 <p>
                   <span className="text-muted-foreground">Input Amount:</span>{" "}
                   <span className="text-[#00D1FF] font-semibold">
-                    {simulateResult.initialCapital?.amount} {simulateResult.initialCapital?.symbol}
+                    {simulateResult?.initialCapital?.amount} {simulateResult?.initialCapital?.symbol}
                   </span>
                 </p>
 
                 <p className="text-muted-foreground mt-2">Strategy Steps:</p>
                 <ul className="ml-4 list-disc text-xs text-muted-foreground">
-                  {simulateResult.steps?.map((step: any) => (
+                  {simulateResult?.steps?.map((step: any) => (
                     <li key={step.step}>
                       Step {step.step} - {step.type}{" "}
                       {step.tokenOut ? `: ${step.tokenOut.amount} ${step.tokenOut.symbol}` : ""}
@@ -173,7 +191,12 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
               <Button
                 className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
-                disabled={!amount || Number(amount) <= 0}
+                disabled={
+                  !amount ||
+                  Number(amount) <= 0 ||
+                  loadingSimulate ||
+                  !simulateResult
+                }
                 onClick={handleExecute}
               >
                 Execute Strategy
@@ -197,7 +220,14 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
       {/* Modals */}
       <WalletConnectModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
-      <ExecutionModal open={executionModalOpen} onOpenChange={setExecutionModalOpen} strategy={strategy} />
+
+      {simulateResult && (
+        <ExecutionModal
+          open={executionModalOpen}
+          onOpenChange={setExecutionModalOpen}
+          strategy={simulateResult}
+        />
+      )}
     </>
   );
 }

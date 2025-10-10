@@ -1,50 +1,47 @@
+import { api, API_ENDPOINTS } from './api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!API_URL) {
-  throw new Error("Missing environment variable: NEXT_PUBLIC_API_URL");
-}
-
-//  Simulate strategy
+// Simulate strategy
 export const simulateStrategy = async (strategy: any, amount: number) => {
-  if (!strategy?.id) throw new Error("Invalid strategy");
+  if (!strategy?.id) throw new Error('Invalid strategy');
 
   const assetIn = strategy.inputAssetId ?? 2;
   const iterations = strategy.iterations ?? 3;
   const assetIdIn = strategy.assetIdIn ?? 5;
 
-  const url = `${API_URL}/strategies/${strategy.id}/simulate?amountIn=${amount}&assetIn=${assetIn}&iterations=${iterations}&assetIdIn=${assetIdIn}`;
-
-  const res = await fetch(url, { method: "GET" });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Simulation failed: ${errorText}`);
+  try {
+    const res = await api.get(API_ENDPOINTS.STRATEGIES.SIMULATE(strategy.id), {
+      params: {
+        amountIn: amount,
+        assetIn,
+        iterations,
+        assetIdIn,
+      },
+    });
+    return res.data;
+  } catch (e: any) {
+    const msg = e?.response?.data || e?.message || 'Simulation failed';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
-
-  return res.json();
 };
 
-//  Fetch all strategies
+// Fetch all strategies
 export const fetchStrategies = async () => {
-  const res = await fetch(`${API_URL}/strategies`, { cache: "no-store" });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Failed to fetch strategies: ${errorText}`);
+  try {
+    const res = await api.get(API_ENDPOINTS.STRATEGIES.LIST());
+    return res.data;
+  } catch (e: any) {
+    const msg = e?.response?.data || e?.message || 'Failed to fetch strategies';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
-
-  return res.json();
 };
 
-//  Fetch single strategy by ID
+// Fetch single strategy by ID
 export const getStrategy = async (id: string) => {
-  const res = await fetch(`${API_URL}/strategies/${id}`, { cache: "no-store" });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Failed to fetch strategy: ${errorText}`);
+  try {
+    const res = await api.get(API_ENDPOINTS.STRATEGIES.GET(id));
+    return res.data;
+  } catch (e: any) {
+    const msg = e?.response?.data || e?.message || 'Failed to fetch strategy';
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
-
-  return res.json();
 };
