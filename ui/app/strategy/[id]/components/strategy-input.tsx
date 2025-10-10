@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Info, ChevronDown } from "lucide-react";
 import { WalletConnectModal } from "@/components/shared/wallet-connect-modal";
 import { ExecutionModal } from "@/components/shared/execution-modal";
+import { simulateStrategy } from "@/services/strategy-service";
 
 interface StrategyInputProps {
   strategy: {
@@ -55,21 +56,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     setSimulateResult(null);
 
     try {
-     
-      const assetIn = strategy.inputAssetId || 2;
-      const iterations = strategy.iterations || 3;
-      const assetIdIn = strategy.assetIdIn || 5;
-
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/strategies/${strategy.id}/simulate?amountIn=${amount}&assetIn=${assetIn}&iterations=${iterations}&assetIdIn=${assetIdIn}`;
-
-      const res = await fetch(url, { method: "GET" });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Simulation failed: ${text}`);
-      }
-
-      const data = await res.json();
+      const data = await simulateStrategy(strategy, Number(amount));
       setSimulateResult(data);
       onSimulateSuccess?.(data);
     } catch (error: any) {

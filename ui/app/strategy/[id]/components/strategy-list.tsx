@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { StrategyCard } from "@/app/strategy/[id]/components/strategy-card"
 import { SearchBar } from "../../../../components/shared/search-bar"
+import { fetchStrategies } from "@/services/strategy-service"
 
 export function StrategyList() {
   const [strategies, setStrategies] = useState<any[]>([])
@@ -14,14 +15,10 @@ export function StrategyList() {
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("Active")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL
-
   useEffect(() => {
-    const fetchStrategies = async () => {
+    const loadStrategies = async () => {
       try {
-        const res = await fetch(`${API_URL}/strategies`, { cache: "no-store" })
-        if (!res.ok) throw new Error("Failed to fetch strategies")
-        const data = await res.json()
+        const data = await fetchStrategies()
         setStrategies(data)
       } catch (err: any) {
         setError(err.message)
@@ -30,8 +27,8 @@ export function StrategyList() {
       }
     }
 
-    fetchStrategies()
-  }, [API_URL])
+    loadStrategies()
+  }, [])
 
   const filteredStrategies = strategies.filter((strategy) => {
   const matchesSearch =

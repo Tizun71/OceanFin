@@ -1,20 +1,9 @@
 import { HeroSection } from "@/components/hero-section";
 import { StrategyClientWrapper } from "./components/strategy-client-wrapper";
-
-async function getStrategy(id: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/strategies/${id}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    return null;
-  }
-
-  return res.json();
-}
+import { getStrategy } from "@/services/strategy-service";
 
 export default async function StrategyPage({ params }: { params: { id: string } }) {
-  const strategy = await getStrategy(params.id);
+  const strategy = await getStrategy(params.id).catch(() => null);
 
   if (!strategy) return <div>Strategy not found</div>;
 
