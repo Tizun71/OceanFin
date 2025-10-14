@@ -5,8 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Suspense } from "react"
 import { Sidebar } from "@/components/shared/sidebar"
-import { Providers } from "@/providers/luno-provider"
-import { WalletButton } from "@/components/shared/wallet-button"
+import LunoProvider from "@/providers/luno-provider"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -27,26 +26,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans ${spaceGrotesk.variable}`}>
-          <Providers>
+      <body className={`h-full font-sans ${spaceGrotesk.variable} bg-background relative`}>
+         <LunoProvider>
             <Suspense fallback={<div>Loading...</div>}>
-              <div className="flex min-h-screen">
+              <div className="flex min-h-screen relative z-0">
                 {/* Sidebar */}
                 <aside className="fixed left-0 top-0 h-screen w-20 border-r bg-card z-40">
                   <Sidebar />
                 </aside>
                 {/* Main */}
-                <main className="flex-1 ml-20 overflow-y-auto min-h-screen">
-                  <div className="relative z-50 flex justify-end">
-                    <WalletButton />
-                  </div>
+                <main className="flex-1 ml-20 overflow-y-auto min-h-screen z-10">
                   {children}
                 </main>
               </div>
             </Suspense>
-          </Providers>
-          <Analytics />
-        
+          </LunoProvider>
+          <Analytics />    
       </body>
     </html>
   )

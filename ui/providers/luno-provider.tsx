@@ -1,21 +1,32 @@
-"use client";
+'use client'
+import '@luno-kit/ui/styles.css';
+import React, { ReactNode } from 'react'
+import { createConfig } from '@luno-kit/react'
+import { LunoKitProvider } from '@luno-kit/ui'
+import {
+  polkadot,
+  kusama,
+  westend,
+} from '@luno-kit/react/chains'
+import {
+  polkadotjsConnector,
+  subwalletConnector,
+  talismanConnector,
+} from '@luno-kit/react/connectors'
 
-import { ReactNode } from "react";
-import { LunoKitProvider } from "@luno-kit/ui";
-import { lunoConfig } from "@/config/luno-config";
+const config = createConfig({
+  chains: [polkadot, kusama, westend],
+  connectors: [
+    polkadotjsConnector(),
+    subwalletConnector(),
+    talismanConnector(),
+  ],
+})
 
-const themeOverrides = {
-  colors: {
-    accentColor: "#4ade80",
-    connectButtonBackground: "#1f2937",
-    connectButtonText: "#fff",
-  },
-};
+interface LunoProviderProps {
+  children: ReactNode
+}
 
-export function Providers({ children }: { children: ReactNode }) {
-  return (
-    <LunoKitProvider config={lunoConfig} theme={themeOverrides}>
-      {children}
-    </LunoKitProvider>
-  );
+export default function LunoProvider({ children }: LunoProviderProps) {
+  return <LunoKitProvider config={config}>{children}</LunoKitProvider>
 }
