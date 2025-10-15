@@ -7,6 +7,7 @@ import {
   polkadot,
   kusama,
   westend,
+  paseo,
 } from '@luno-kit/react/chains'
 import {
   polkadotjsConnector,
@@ -15,7 +16,7 @@ import {
 } from '@luno-kit/react/connectors'
 
 const config = createConfig({
-  chains: [polkadot, kusama, westend],
+  chains: [polkadot, kusama, westend, paseo],
   connectors: [
     polkadotjsConnector(),
     subwalletConnector(),
