@@ -3,7 +3,7 @@ import { SupabaseModule } from './shared/supabase.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { StrategiesModule } from './strategies/stategies.module';
-import { ReloadApyJob } from './shared/reload-apy';
+import { CronManagerService } from './cron-job/application/cron-manager.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -14,6 +14,6 @@ import { ReloadApyJob } from './shared/reload-apy';
     UsersModule,
     StrategiesModule,
   ],
-  providers: [ReloadApyJob],
+  providers: [CronManagerService],
 })
 export class AppModule {}
