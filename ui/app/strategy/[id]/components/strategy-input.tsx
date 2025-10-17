@@ -7,18 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Info, ChevronDown } from "lucide-react";
 import { simulateStrategy } from "@/services/strategy-service";
 import type { StrategySimulate } from "@/types/strategy.type";
+import { useLuno } from "@/app/contexts/luno-context";
+import { ConnectButton } from "@luno-kit/ui";
 
-const WalletConnectModal = dynamic(
-  () =>
-    import("@/components/shared/wallet-connect-modal").then(
-      (m) => m.WalletConnectModal 
-    ),
-  { ssr: false }
-);
 const ExecutionModal = dynamic(
   () =>
     import("@/components/shared/execution-modal").then(
-      (m) => m.ExecutionModal 
+      (m) => m.ExecutionModal
     ),
   { ssr: false }
 );
@@ -40,34 +35,20 @@ interface StrategyInputProps {
 
 export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProps) {
   const [amount, setAmount] = useState("");
-  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [executionModalOpen, setExecutionModalOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const [loadingSimulate, setLoadingSimulate] = useState(false);
   const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null);
   const [simulateError, setSimulateError] = useState<string | null>(null);
+
+  const { isConnected } = useLuno();
 
   const inputAsset = strategy.inputAsset || "-";
   const networkCost = strategy.networkCost || "-";
   const slippage = strategy.slippage || "-";
 
-  const handleConnect = () => {
-    setWalletModalOpen(true);
-    setTimeout(() => setIsConnected(true), 1000);
-  };
-
-  const handleExecute = () => {
-    if (!isConnected) {
-      setWalletModalOpen(true);
-      return;
-    }
-    if (!simulateResult) return;
-    setExecutionModalOpen(true);
-  };
-
   const handleSimulate = async () => {
-    if (!amount || Number(amount) <= 0) return;
+    if (!amount || Number(amount) <= 0 || !isConnected) return;
 
     setLoadingSimulate(true);
     setSimulateResult(null);
@@ -83,6 +64,11 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     } finally {
       setLoadingSimulate(false);
     }
+  };
+
+  const handleExecute = () => {
+    if (!isConnected || !simulateResult) return;
+    setExecutionModalOpen(true);
   };
 
   return (
@@ -108,7 +94,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0 text-[#00D1FF]"
+            className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0 text-[#00D1FF] placeholder-[#00D1FF]"
           />
         </div>
 
@@ -191,42 +177,29 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
               <Button
                 className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
-                disabled={
-                  !amount ||
-                  Number(amount) <= 0 ||
-                  loadingSimulate ||
-                  !simulateResult
-                }
+                disabled={!amount || Number(amount) <= 0 || loadingSimulate || !simulateResult}
                 onClick={handleExecute}
               >
                 Execute Strategy
               </Button>
             </>
           ) : (
-            <>
-              <Button className="w-full bg-muted text-muted-foreground cursor-not-allowed" disabled>
-                Simulate
-              </Button>
-              <Button
-                className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
-                onClick={handleConnect}
-              >
-                Connect Wallet
-              </Button>
-            </>
+            <ConnectButton
+              label="Connect Wallet"
+              accountStatus="full"
+              chainStatus="full"
+              showBalance={true}
+              className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
+            />
           )}
         </div>
       </div>
-
-      {/* Modals */}
-      <WalletConnectModal open={walletModalOpen} onOpenChange={setWalletModalOpen} />
-
-      {simulateResult && (
-        <ExecutionModal
-          open={executionModalOpen}
-          onOpenChange={setExecutionModalOpen}
-          strategy={simulateResult}
-        />
+      {simulateResult && ( 
+        <ExecutionModal 
+         open={executionModalOpen}
+         onOpenChange={setExecutionModalOpen} 
+         strategy={simulateResult} 
+         />
       )}
     </>
   );

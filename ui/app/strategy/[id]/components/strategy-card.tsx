@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { agentIcons, assetIcons, chainIcons } from "@/lib/iconMap";
+import Image from "next/image";
 
 interface Strategy {
   id: string;
@@ -9,6 +10,8 @@ interface Strategy {
   tags: string[];
   apy: number;
   strategist: string;
+  strategistName: string;
+  strategistHandle: string;
   handle: string;
   date: string;
   assets: string[];
@@ -21,10 +24,13 @@ interface StrategyCardProps {
   strategy: Strategy;
 }
 
+const safeGet = (obj: Record<string, string>, key: string) =>
+  obj[key] || obj[key.toUpperCase()] || obj[key.toLowerCase()] || "/icons/default.png";
 export function StrategyCard({ strategy }: StrategyCardProps) {
+  
   return (
     <Link href={`/strategy/${strategy.id}`}>
-      <Card className="group relative overflow-hidden p-6 cursor-pointer rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:border-primary/60 glass border border-transparent">
+      <Card className="group relative overflow-hidden p-4  cursor-pointer rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:border-primary/60 glass border border-transparent">
         {/* Hover Glow */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
 
@@ -56,8 +62,10 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
                   <span className="text-xs text-white font-bold">P</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#0f1419]">{strategy.strategist}</p>
-                  <p className="text-xs text-muted-foreground">{strategy.handle}</p>
+                  <p className="text-sm font-semibold text-[#0f1419]">{strategy.strategistName}</p>                
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{strategy.strategistHandle}</p>
                 </div>
               </div>
             </div>
@@ -67,9 +75,8 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               <p className="text-2xl font-bold text-[#10b981]">{strategy.apy.toFixed(2)}%</p>
             </div>
           </div>
-
           {/* Assets / Agents / Chains */}
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-primary/20 mb-12">
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-primary/20 mb-4">
             {/* Asset */}
             <div>
               <p className="text-xs text-muted-foreground mb-2">Asset</p>
@@ -77,15 +84,23 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
                 {strategy.assets.slice(0, 2).map((asset) => (
                   <div
                     key={asset}
-                    className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 flex items-center justify-center"
+                    className="w-6 h-6 rounded-full border border-primary/30 overflow-hidden flex items-center justify-center bg-white"
                     title={asset}
                   >
-                    <span className="text-[10px] font-bold text-primary">{asset.slice(0, 1)}</span>
+                    <Image
+                      src={safeGet(assetIcons, asset)}
+                      alt={asset}
+                      width={24}
+                      height={24}
+                      className="object-cover"
+                    />
                   </div>
                 ))}
                 {strategy.assets.length > 2 && (
                   <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
-                    <span className="text-[10px] font-bold">+{strategy.assets.length - 2}</span>
+                    <span className="text-[10px] font-bold">
+                      +{strategy.assets.length - 2}
+                    </span>
                   </div>
                 )}
               </div>
@@ -98,10 +113,16 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
                 {strategy.agents.slice(0, 2).map((agent) => (
                   <div
                     key={agent}
-                    className="w-6 h-6 rounded-full bg-gradient-to-br from-accent/20 to-primary/20 border border-secondary/30 flex items-center justify-center"
+                    className="w-6 h-6 rounded-full border border-secondary/30 overflow-hidden flex items-center justify-center bg-white"
                     title={agent}
                   >
-                    <span className="text-[10px] font-bold text-secondary">{agent.slice(0, 1)}</span>
+                    <Image
+                      src={safeGet(agentIcons, agent)}
+                      alt={agent}
+                      width={24}
+                      height={24}
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
@@ -114,26 +135,21 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
                 {strategy.chains.slice(0, 2).map((chain) => (
                   <div
                     key={chain}
-                    className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-accent/30 flex items-center justify-center"
+                    className="w-6 h-6 rounded-full border border-accent/30 overflow-hidden flex items-center justify-center bg-white"
                     title={chain}
                   >
-                    <span className="text-[10px] font-bold text-accent">{chain.slice(0, 1)}</span>
+                    <Image
+                      src={safeGet(chainIcons, chain)}
+                      alt={chain}
+                      width={24}
+                      height={24}
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="absolute bottom-3 right-3 z-20"
-            onClick={(e) => {
-              e.stopPropagation(); 
-              alert(`Simulate strategy: ${strategy.title}`);
-            }}
-          >
-            Simulate
-          </Button>
         </div>
       </Card>
     </Link>

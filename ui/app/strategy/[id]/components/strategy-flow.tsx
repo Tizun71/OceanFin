@@ -58,76 +58,78 @@ export function StrategyFlow({
       </div>
 
       {/* MAIN LAYOUT */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 w-fit mx-auto flex flex-col items-center">
-          {/* LEFT: STEPS */}
-          <div className="flex-1 flex flex-col items-center space-y-4">
-            {validSteps.map((step, idx) => {
-              const hasIn = !!step.tokenIn;
-              const hasOut = !!step.tokenOut;
+      <div className="flex flex-row gap-6">
+        <div className="w-full lg:w-2/3">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 w-fit mx-auto flex flex-col ">
+            {/* LEFT: STEPS */}
+            <div className="flex-1 flex flex-col space-y-4">
+              {validSteps.map((step, idx) => {
+                const hasIn = !!step.tokenIn;
+                const hasOut = !!step.tokenOut;
 
-              return (
-                <div key={idx} className="flex flex-col items-center w-full">
-                  {/* STEP CARD */}
-                  <div className="glass w-[320px] rounded-lg border border-primary/20 p-4 hover:border-[#00D1FF]/40 transition-all duration-200 flex flex-col gap-3">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-xs font-bold text-primary">{step.step}</span>
+                return (
+                  <div key={idx} className="flex flex-col items-center w-full">
+                    {/* STEP CARD */}
+                    <div className="glass w-[400px] rounded-lg border border-primary/20 p-4 hover:border-[#00D1FF]/40 transition-all duration-200 flex flex-col gap-3">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary">{step.step}</span>
+                          </div>
+                          <span className="font-semibold text-[#00D1FF]">{step.type}</span>
                         </div>
-                        <span className="font-semibold text-[#00D1FF]">{step.type}</span>
-                      </div>
 
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground leading-none">
-                        <Bot className="w-3.5 h-3.5 text-[#00D1FF] align-middle" />
-                        <span className="text-foreground font-medium leading-none">{step.agent || "N/A"}</span>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground leading-none">
+                          <Bot className="w-3.5 h-3.5 text-[#00D1FF] align-middle" />
+                          <span className="text-foreground font-medium leading-none">{step.agent || "N/A"}</span>
+                        </div>
                       </div>
+                      {/* Token In */}
+                      {hasIn && (
+                        <>
+                          <hr className="border-primary/10" />
+                          <div className="flex justify-between w-full text-sm text-muted-foreground">
+                            <span>{step.tokenIn?.amount ?? "N/A"}</span>
+                            <span className="font-semibold text-foreground">{step.tokenIn?.symbol || "N/A"}</span>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Arrow between In & Out */}
+                      {hasIn && hasOut && (
+                        <div className="relative flex flex-col items-center w-full my-1">
+                          <hr className="border-primary/10 w-full" />
+                          <div className="absolute -top-2 bg-background px-1">
+                            <ArrowDown className="w-4 h-4 text-muted-foreground animate-bounce-slow" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Token Out */}
+                      {hasOut && (
+                        <>
+                          {!hasIn && <hr className="border-primary/10" />}
+                          <div className="flex justify-between w-full text-sm text-muted-foreground">
+                            <span>{step.tokenOut?.amount ?? "N/A"}</span>
+                            <span className="font-semibold text-green-500">
+                              {step.tokenOut?.symbol || "N/A"}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    {/* Token In */}
-                    {hasIn && (
-                      <>
-                        <hr className="border-primary/10" />
-                        <div className="flex justify-between w-full text-sm text-muted-foreground">
-                          <span>{step.tokenIn?.amount ?? "N/A"}</span>
-                          <span className="font-semibold text-foreground">{step.tokenIn?.symbol || "N/A"}</span>
-                        </div>
-                      </>
-                    )}
 
-                    {/* Arrow between In & Out */}
-                    {hasIn && hasOut && (
-                      <div className="relative flex flex-col items-center w-full my-1">
-                        <hr className="border-primary/10 w-full" />
-                        <div className="absolute -top-2 bg-background px-1">
-                          <ArrowDown className="w-4 h-4 text-muted-foreground animate-bounce-slow" />
-                        </div>
+                    {/* Arrow BETWEEN STEPS */}
+                    {idx < validSteps.length - 1 && (
+                      <div className="my-3">
+                        <ArrowDown className="w-5 h-5 text-muted-foreground animate-bounce-slow" />
                       </div>
-                    )}
-
-                    {/* Token Out */}
-                    {hasOut && (
-                      <>
-                        {!hasIn && <hr className="border-primary/10" />}
-                        <div className="flex justify-between w-full text-sm text-muted-foreground">
-                          <span>{step.tokenOut?.amount ?? "N/A"}</span>
-                          <span className="font-semibold text-green-500">
-                            {step.tokenOut?.symbol || "N/A"}
-                          </span>
-                        </div>
-                      </>
                     )}
                   </div>
-
-                  {/* Arrow BETWEEN STEPS */}
-                  {idx < validSteps.length - 1 && (
-                    <div className="my-3">
-                      <ArrowDown className="w-5 h-5 text-muted-foreground animate-bounce-slow" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
         {/* RIGHT: INFO SUMMARY */}

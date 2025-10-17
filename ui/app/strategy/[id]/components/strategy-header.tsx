@@ -8,6 +8,8 @@ interface StrategyHeaderProps {
     status: "Active" | "Inactive"
     apy: number
     strategist: string
+    strategistName: string;
+    strategistHandle: string;
     handle: string
     date: string
   }
@@ -34,8 +36,8 @@ export function StrategyHeader({ strategy }: StrategyHeaderProps) {
                 <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-xs text-primary font-bold">P</span>
                 </div>
-                <span className="font-semibold text-[#0f1419]">{strategy.strategist}</span>
-                <span>{strategy.handle}</span>
+                <span className="font-semibold text-[#0f1419]">{strategy.strategistName}</span>
+                <span>{strategy.strategistHandle}</span>
               </div>
             </div>
             <span>{strategy.date}</span>
