@@ -3,7 +3,7 @@ import { SupabaseModule } from './shared/supabase.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { StrategiesModule } from './strategies/stategies.module';
-
+import { ReloadApyJob } from './shared/reload-apy';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -14,5 +14,6 @@ import { StrategiesModule } from './strategies/stategies.module';
     UsersModule,
     StrategiesModule,
   ],
+  providers: [ReloadApyJob],
 })
 export class AppModule {}

@@ -32,5 +32,7 @@ export async function calculateAPY() {
     (liquidityRate + feeLP + vDOTstakeAPY) * supplyExposure -
     borrowRate * borrowExposure;
 
+
+
   return { apy, liquidityRate, borrowRate, feeLP, supplyExposure, borrowExposure };
 }
