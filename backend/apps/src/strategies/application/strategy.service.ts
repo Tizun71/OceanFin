@@ -4,6 +4,7 @@ import { Strategy } from '../domain/strategies.entity';
 import { title } from 'process';
 import { STRATEGY_LIST } from './strategy-list';
 import { simulateGDOTStrategy } from '../infrastructure/strategy-simulate/gDOT-looping-simulate';
+import { calculateAPY } from '../infrastructure/rewards/get-apy';
 
 @Injectable()
 export class StrategyService {
@@ -75,6 +76,27 @@ export class StrategyService {
 
   private generateId(): string {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  }
+  async reloadAllAPY(): Promise<void> {
+    const strategies = await this.strategiesRepo.findAll();
+
+    if (!strategies || strategies.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      strategies.map(async (strategy) => {
+    try {
+      const result = await calculateAPY();
+      strategy.update({ apy: result.apy });
+      await this.strategiesRepo.save(strategy);
+      console.log(`Updated APY for ${strategy.strategistName} (ID: ${strategy.id}) = ${result.apy}`);
+    } catch (err: any) {
+      console.error(`Error updating APY for strategy ID ${strategy.id}:`, err.message);
+    }
+  })
+);
+
   }
 }
 
