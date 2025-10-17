@@ -6,6 +6,7 @@ import "./globals.css"
 import { Suspense } from "react"
 import { Sidebar } from "@/components/shared/sidebar"
 import LunoProvider from "@/providers/luno-provider"
+import { LunoProviderWrapper } from "./contexts/luno-context"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -28,6 +29,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`h-full font-sans ${spaceGrotesk.variable} bg-background relative`}>
          <LunoProvider>
+          <LunoProviderWrapper>
             <Suspense fallback={<div>Loading...</div>}>
               <div className="flex min-h-screen relative z-0">
                 {/* Sidebar */}
@@ -40,7 +42,8 @@ export default function RootLayout({
                 </main>
               </div>
             </Suspense>
-          </LunoProvider>
+          </LunoProviderWrapper>
+         </LunoProvider>
           <Analytics />    
       </body>
     </html>
