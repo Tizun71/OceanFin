@@ -13,6 +13,8 @@ import { StrategySimulate, Step as StrategyStep } from "@/types/strategy.type";
 import { STEP_TYPE, TEST_USER_PUBLIC_ADDRESS } from "@/utils/constant";
 import { buildStepTx } from "@/services/strategy-step-service";
 import { getHydrationSDK, disconnectHydrationSDK } from "@/api/hydration/external/sdkClient";
+import { useSendTransaction } from "@/hooks/use-send-transaction";
+import { usePapiSigner } from "@luno-kit/react";
 
 type ExecutionStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -141,6 +143,10 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
   const [isExecuting, setIsExecuting] = useState(false);
   const abortRef = useRef(false);
 
+  const {executeTransaction} = useSendTransaction();
+
+  const { data, isLoading } = usePapiSigner();
+
   useEffect(() => {
     if (!open) return;
     setExecutionSteps(buildExecutionSteps(strategy));
@@ -169,7 +175,7 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
     const originals = executionSteps.map((s) => s.original);
 
     try {
-      await getHydrationSDK();
+      const {api, sdk} = await getHydrationSDK();
       sdkOpened = true;
 
       for (let i = 0; i < originals.length; i++) {
@@ -185,7 +191,9 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
         try {
           if (original) {
             const tx = await buildStepTx(original, TEST_USER_PUBLIC_ADDRESS);
-            console.log("Built tx for step:", original.type, tx);
+            console.log("Built transaction for step:", original, tx);
+            tx.signAndSend(data?.signBytes, {});
+            console.log("Transaction result:", result);
           }
 
           if (abortRef.current) break;
