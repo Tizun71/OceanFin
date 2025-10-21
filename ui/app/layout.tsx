@@ -6,6 +6,8 @@ import "./globals.css"
 import { Suspense } from "react"
 import { Sidebar } from "@/components/shared/sidebar"
 import LunoProvider from "@/providers/luno-provider"
+import Footer from "@/components/layout/footer"
+
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -35,9 +37,12 @@ export default function RootLayout({
                   <Sidebar />
                 </aside>
                 {/* Main */}
-                <main className="flex-1 ml-20 overflow-y-auto min-h-screen z-10">
-                  {children}
-                </main>
+                  <div className="flex flex-col min-h-screen flex-1 ml-20">
+                    <main className="flex-1 overflow-y-auto z-10">
+                      {children}
+                    </main>
+                    <Footer />
+                  </div>
               </div>
             </Suspense>
           </LunoProvider>

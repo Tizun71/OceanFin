@@ -4,6 +4,10 @@ import { useState, useEffect } from "react"
 import { StrategyCard } from "@/app/strategy/[id]/components/strategy-card"
 import { SearchBar } from "../../../../components/shared/search-bar"
 import { fetchStrategies } from "@/services/strategy-service"
+import { ParticleTextEffect } from "@/components/particle-text-effect"
+
+
+
 
 export function StrategyList() {
   const [strategies, setStrategies] = useState<any[]>([])
@@ -46,10 +50,12 @@ export function StrategyList() {
   })
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">Explore DeFi Strategies Powered by</h2>
-        <h3 className="text-3xl font-bold text-primary">Polkadot AI Agent Swarm</h3>
+  
+    <div className="container mx-auto px-2 py-2">
+      <ParticleTextEffect />
+      <div className="mb-8">      
+        <h2 className="text-4xl font-bold mb-2">Explore DeFi Strategies Powered by</h2>
+        <h3 className="text-4xl font-bold text-primary">Polkadot AI Agent Swarm</h3>
       </div>
 
       <SearchBar

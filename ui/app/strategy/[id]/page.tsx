@@ -13,7 +13,7 @@ export default async function StrategyPage({ params }: { params: { id: string } 
         <HeroSection />
         <div className="container mx-auto px-6 py-8">
           <StrategyClientWrapper strategy={strategy} />
-        </div>
+        </div>       
       </main>
     </div>
   );
