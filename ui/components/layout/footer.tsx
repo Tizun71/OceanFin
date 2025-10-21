@@ -35,9 +35,9 @@ export default function Footer() {
         <div>
           <h3 className="text-white font-semibold text-lg mb-3">Contact Us</h3>
           <ul className="space-y-2 text-sm">
-            <li className="hover:text-[#3ca2fa] transition-colors">hello@nurui.com</li>
-            <li className="hover:text-[#3ca2fa] transition-colors">+91 86373 73116</li>
-            <li className="hover:text-[#3ca2fa] transition-colors">Sylhet, Bangladesh</li>
+            <li className="hover:text-[#3ca2fa] transition-colors">hello@admin.com</li>
+            <li className="hover:text-[#3ca2fa] transition-colors">0367525400</li>
+            <li className="hover:text-[#3ca2fa] transition-colors">DN, Viet Nam</li>
           </ul>
         </div>
 
@@ -45,13 +45,13 @@ export default function Footer() {
         <div>
           <h3 className="text-white font-semibold text-lg mb-3">About OceanFin</h3>
           <p className="text-sm text-gray-400 leading-relaxed">
-            Nur UI is a modern React and Next.js based UI component library.
+            OceanFin is a modern React and Next.js based UI component library.
           </p>
         </div>
       </div>
 
       {/* Logo / Hiệu ứng chữ OceanFin */}
-      <div className="relative z-10 flex flex-col items-center justify-center mt-16">
+      <div className="relative z-10 flex flex-col items-center justify-center mt-8">
         <div className="w-full max-w-[600px] h-[150px]">
             <TextHoverEffect text="OceanFin" duration={0.4} />
         </div>

@@ -123,3 +123,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes footerGradient {
+  0% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+  100% {
+    background-position: 50% 0%;
+  }
+}
+
+.animate-footerGradient {
+  background-size: 200% 200%;
+  animation: footerGradient 20s ease-in-out infinite;
+}

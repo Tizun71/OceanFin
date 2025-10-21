@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useMotionValue } from "motion/react";
 import { cn } from "@/lib/utils";
 
 export const TextHoverEffect = ({
@@ -10,25 +10,27 @@ export const TextHoverEffect = ({
 }: {
   text: string;
   duration?: number;
-  automatic?: boolean;
   className?: string;
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [cursor, setCursor] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState(false);
-  const [maskPosition, setMaskPosition] = useState({ cx: "50%", cy: "50%" });
+  const cx = useMotionValue("50%");
+  const cy = useMotionValue("50%");
 
   useEffect(() => {
-    if (svgRef.current && cursor.x !== null && cursor.y !== null) {
-      const svgRect = svgRef.current.getBoundingClientRect();
-      const cxPercentage = ((cursor.x - svgRect.left) / svgRect.width) * 100;
-      const cyPercentage = ((cursor.y - svgRect.top) / svgRect.height) * 100;
-      setMaskPosition({
-        cx: `${cxPercentage}%`,
-        cy: `${cyPercentage}%`,
-      });
-    }
-  }, [cursor]);
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!svgRef.current) return;
+      const rect = svgRef.current.getBoundingClientRect();
+      const cxPercent = ((e.clientX - rect.left) / rect.width) * 100;
+      const cyPercent = ((e.clientY - rect.top) / rect.height) * 100;
+      cx.set(`${cxPercent}%`);
+      cy.set(`${cyPercent}%`);
+    };
+
+    const svg = svgRef.current;
+    svg?.addEventListener("mousemove", handleMouseMove);
+    return () => svg?.removeEventListener("mousemove", handleMouseMove);
+  }, [cx, cy]);
 
   return (
     <svg
@@ -39,11 +41,10 @@ export const TextHoverEffect = ({
       xmlns="http://www.w3.org/2000/svg"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onMouseMove={(e) => setCursor({ x: e.clientX, y: e.clientY })}
       className={cn("select-none uppercase cursor-pointer", className)}
     >
       <defs>
-        <linearGradient id="textGradient" gradientUnits="userSpaceOnUse" cx="50%" cy="50%" r="25%">
+        <linearGradient id="textGradient" gradientUnits="userSpaceOnUse">
           {hovered && (
             <>
               <stop offset="0%" stopColor="#eab308" />
@@ -59,19 +60,19 @@ export const TextHoverEffect = ({
           id="revealMask"
           gradientUnits="userSpaceOnUse"
           r="20%"
-          initial={{ cx: "50%", cy: "50%" }}
-          animate={maskPosition}
-          transition={{ duration: duration ?? 0, ease: "easeOut" }}
+          cx={cx}
+          cy={cy}
+          transition={{ duration: duration ?? 0.2, ease: "easeOut" }}
         >
           <stop offset="0%" stopColor="white" />
           <stop offset="100%" stopColor="black" />
         </motion.radialGradient>
+
         <mask id="textMask">
           <rect x="0" y="0" width="100%" height="100%" fill="url(#revealMask)" />
         </mask>
       </defs>
 
-      {/* Viền ngoài mờ */}
       <text
         x="50%"
         y="50%"
@@ -84,7 +85,6 @@ export const TextHoverEffect = ({
         {text}
       </text>
 
-      {/* Chữ hiệu ứng viền xanh */}
       <motion.text
         x="50%"
         y="50%"
@@ -93,13 +93,18 @@ export const TextHoverEffect = ({
         strokeWidth="0.3"
         className="fill-transparent stroke-[#3ca2fa] font-[helvetica] text-7xl font-bold dark:stroke-[#3ca2fa99]"
         initial={{ strokeDashoffset: 1000, strokeDasharray: 1000 }}
-        animate={{ strokeDashoffset: 0, strokeDasharray: 1000 }}
-        transition={{ duration: 4, ease: "easeInOut" }}
+        animate={{
+          strokeDashoffset: 0,
+          strokeDasharray: 1000,
+        }}
+        transition={{
+          duration: 4,
+          ease: "easeInOut",
+        }}
       >
         {text}
       </motion.text>
 
-      {/* Chữ chính gradient */}
       <text
         x="50%"
         y="50%"
@@ -116,14 +121,16 @@ export const TextHoverEffect = ({
   );
 };
 
-// ⚡ Thêm export cho FooterBackgroundGradient ở đây
+/**
+ * FooterBackgroundGradient — nền nhẹ, thuần CSS (không Violation)
+ */
 export const FooterBackgroundGradient = () => {
   return (
     <div
-      className="absolute inset-0 z-0"
+      className="absolute inset-0 z-0 animate-footerGradient"
       style={{
         background:
-          "radial-gradient(125% 125% at 50% 10%, #0F0F1166 50%, #3ca2fa33 100%)",
+          "radial-gradient(120% 150% at 50% 10%, rgba(15,15,17,0.5) 50%, rgba(60,162,250,0.2) 100%)",
       }}
     />
   );
