@@ -73,15 +73,15 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
   return (
     <>
-      <div className="glass rounded-lg p-6 sticky top-24">
+      <div className="glass rounded-lg p-6 sticky">
         <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent">
           Input
         </h3>
 
         {/* Amount Input */}
         <div className="p-4 rounded-lg bg-background/50 border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Amount</span>
+          <div className="flex items-center justify-between ">
+            <span className="text-sm text-muted-foreground mb-2">Amount</span>
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">{inputAsset[0]}</span>
