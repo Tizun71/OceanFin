@@ -6,6 +6,8 @@ import { usePapiSigner, useAccount } from "@luno-kit/react";
 import { getHydrationSDK, disconnectHydrationSDK } from "@/api/hydration/external/sdkClient";
 import { hydration } from "@/config/chains/hydration";
 import { Chain } from "@luno-kit/core/types";
+import { decodeAddress, encodeAddress, isAddress } from "@polkadot/util-crypto";
+import { web3Enable, web3FromAddress } from "@polkadot/extension-dapp";
 
 export type SendResult = {
   transactionHash: string | null;
@@ -139,7 +141,7 @@ export function useLunoPapiClient() {
     try {
       // Use Hydration SDK to fetch balance
       const accountInfo = await state.client.query.system.account(addressToFetch);
-      
+    
       // Extract balance data
       const freeRaw = accountInfo?.data?.free ?? 0;
       const reservedRaw = accountInfo?.data?.reserved ?? 0;
@@ -172,74 +174,80 @@ export function useLunoPapiClient() {
     }
   }, [address, state.client, state.isReady]);
 
-  // Send transaction
-  const sendTransaction = useCallback(async (
-    to: string, 
-    amount: string
+// Send transaction
+const sendTransaction = useCallback(
+  async (
+    fromAddress: string,
+    toAddress: string,
+    amount: string,
   ): Promise<SendResult> => {
-    // Validation
-    if (!state.isReady || !state.client) {
-      throw new Error("Client not ready");
-    }
-    
-    if (!papiSigner) {
-      throw new Error("Wallet not connected");
-    }
-
-    // Convert amount to atomic units
-    const decimals = hydration.nativeCurrency?.decimals ?? 12;
-    const amountNumber = Number(amount);
-    
-    if (Number.isNaN(amountNumber) || amountNumber <= 0) {
-      throw new Error("Invalid amount");
-    }
-    
-    const amountInPlanck = BigInt(Math.floor(amountNumber * 10 ** decimals));
-
     try {
-      // Create transfer transaction
-      const tx = state.client.tx.balances.transferKeepAlive(to, amountInPlanck);
+      if (!state.isReady || !state.client) {
+        throw new Error("Hydration client not ready");
+      }
 
-      return new Promise((resolve, reject) => {
-        tx.signAndSend(papiSigner, ({ status, dispatchError }: any) => {
-          if (dispatchError) {
-            let errorMessage = "Transaction failed";
-            
-            if (dispatchError.isModule) {
-              try {
-                const decoded = state.client.registry.findMetaError(dispatchError.asModule);
-                errorMessage = `${decoded.section}.${decoded.name}`;
-              } catch {
-                errorMessage = dispatchError.toString();
-              }
-            } else {
-              errorMessage = dispatchError.toString();
-            }
-            
-            resolve({
-              transactionHash: null,
-              status: "failed",
-              errorMessage,
-            });
-            return;
-          }
+      const decimals = state.client.registry?.chainDecimals?.[0] ?? 12;
+      const amountNum = Number(amount);
+      if (Number.isNaN(amountNum) || amountNum <= 0) {
+        throw new Error("Invalid amount");
+      }
+      const amountInPlanck = BigInt(Math.floor(amountNum * 10 ** decimals));
+
+      const ss58Prefix = state.client.registry.chainSS58 ?? 0;
+      let formattedFrom = fromAddress.trim();
+      let formattedTo = toAddress.trim();
+
+      if (!isAddress(formattedFrom)) throw new Error(`Invalid fromAddress: ${formattedFrom}`);
+      if (!isAddress(formattedTo)) throw new Error(`Invalid toAddress: ${formattedTo}`);
+
+      formattedFrom = encodeAddress(decodeAddress(formattedFrom), ss58Prefix);
+      formattedTo = encodeAddress(decodeAddress(formattedTo), ss58Prefix);
+
+      const tx = state.client.tx.balances.transferKeepAlive(formattedTo, amountInPlanck);
+      web3Enable("OceanFinApp"); 
+ 
+      const injector = await web3FromAddress(formattedFrom);
+
+      const unsub = await tx.signAndSend(
+        formattedFrom,
+        { signer: injector.signer },
+        ({ status, dispatchError }: any) => {
+          console.log("[sendTransaction] Status:", status.toHuman());
 
           if (status.isInBlock) {
-            resolve({
-              transactionHash: status.asInBlock.toString(),
-              status: "success",
-              errorMessage: null,
-            });
+            console.log(`[sendTransaction] Included in block: ${status.asInBlock}`);
+          } else if (status.isFinalized) {
+            console.log(`[sendTransaction] Finalized at block: ${status.asFinalized}`);
+            unsub();
           }
-        }).catch((error: any) => {
-          reject(error);
-        });
-      });
-    } catch (error) {
-      throw error instanceof Error ? error : new Error(String(error));
-    }
-  }, [state.isReady, state.client, papiSigner]);
 
+          if (dispatchError) {
+            if (dispatchError.isModule) {
+              const decoded = state.client.registry.findMetaError(dispatchError.asModule);
+              const { docs, name, section } = decoded;
+              console.error(`Dispatch error: ${section}.${name}: ${docs.join(" ")}`);
+            } else {
+              console.error(`Dispatch error: ${dispatchError.toString()}`);
+            }
+          }
+        }
+      );
+      return {
+        transactionHash: tx.hash.toHex(),
+        status: "success",
+        errorMessage: null,
+      };
+    } catch (err: any) {
+      console.error("[sendTransaction] Error while sending tx:", err);
+      return {
+        transactionHash: null,
+        status: "failed",
+        errorMessage: err?.message ?? String(err),
+      };
+    }
+  },
+  [state.isReady, state.client]
+);
   // Initialize client on mount
   useEffect(() => {
     initializeClient();
