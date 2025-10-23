@@ -11,14 +11,12 @@ export function HeroSection() {
   const pathname = usePathname();
 
   const navItems = [
-    { icon: Layers, label: "Strategy", href: "/" },
+    { icon: Layers, label: "STRATEGY", href: "/" },
   ];
 
   return (
     <header
       className="fixed top-0 left-0 w-full z-50
-      border-b border-white/10 backdrop-blur-xl
-      bg-[#0b0f14]/90 shadow-[0_0_25px_rgba(56,189,248,0.05)]
       transition-all duration-300"
     >
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
@@ -35,11 +33,9 @@ export function HeroSection() {
                 className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6"
               />
               {/* Light glow behind logo */}
-              <div className="absolute inset-0 blur-md bg-cyan-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 blur-md bg-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            <span className="font-semibold text-lg text-black tracking-wide">
-              Ocean&nbsp;Fin
-            </span>
+          
           </Link>
 
           {/* Navigation */}
@@ -54,8 +50,8 @@ export function HeroSection() {
                   className={`relative flex items-center gap-2 px-4 py-2 text-[15px] font-medium transition-all duration-300 rounded-md
                     ${
                       isActive
-                        ? "text-cyan-300"
-                        : "text-black-400 hover:text-white"
+                        ? "text-accent"
+                        : "text-gray-600 hover:text-accent/80"
                     }`}
                 >
                   {Icon && <Icon className="w-4 h-4" />}
@@ -65,7 +61,7 @@ export function HeroSection() {
                   {isActive && (
                     <motion.div
                       layoutId="active-nav-underline"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-accent to-accent/60 rounded-full"
                     />
                   )}
                 </Link>

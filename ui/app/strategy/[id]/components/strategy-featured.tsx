@@ -1,5 +1,8 @@
 "use client"
 
+import { motion } from "framer-motion"
+import { useState } from "react"
+
 export function FeaturedStrategies() {
   const featured = [
     {
@@ -18,61 +21,115 @@ export function FeaturedStrategies() {
       title: "HyperEVM Point Farming",
       desc: "Farm HyperEVM ecosystem points effortlessly with INFINIT protocol and adaptive AI task routing.",
       image: "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=1920&q=80",
-      label: "Point",
+      label: "HyperEVM",
+    },
+    {
+      title: "Cross-Chain Yield Optimizer",
+      desc: "Maximize returns with AI-driven cross-chain yield optimization and automated rebalancing strategies.",
+      image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1920&q=80",
+      label: "Yield",
     },
   ];
 
   return (
-    <div className="mb-16">
-      {/* Header */}
-      <div className="text-center mb-10">
-        <h1 className="text-3xl md:text-4xl font-semibold text-foreground">
-          Explore DeFi Strategies Powered by
-        </h1>
-        <h2 className="text-3xl md:text-4xl font-semibold text-cyan-500 mt-2">
-          OceanFIN AI Agent Swarm
-        </h2>
-      </div>
-
-      {/* Featured Cards */}
-      <h1 className="text-xl font-semibold mb-4 text-foreground">
-        Featured Strategies
-      </h1>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {featured.map((item, idx) => (
-          <div
-            key={idx}
-            className="flex flex-col rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-md transition bg-card h-[400px]"
-          >
-            {/* Image*/}
-            <div className="relative flex-shrink-0 h-[60%] w-full overflow-hidden">
-              <img
-                src={item.image}
-                alt={item.title}
-                className="absolute inset-0 w-full h-full object-cover object-center"
-              />
+    <div className="h-full p-6 flex items-center justify-center">
+      <div className="relative w-[800px] aspect-square perspective-[2000px] [transform-style:preserve-3d] [transform:rotateX(12deg)_rotateY(-12deg)]">
+        <div className="grid grid-cols-2 gap-6 h-full">
+          {featured.map((item, idx) => (
+            <div key={idx} 
+              className={`relative [transform-style:preserve-3d] aspect-square ${
+                idx === 0 ? '[transform:translateZ(0px)]' : 
+                idx === 1 ? '[transform:translateZ(-20px)_translateX(-20px)]' :
+                idx === 2 ? '[transform:translateZ(-20px)_translateY(-20px)]' :
+                '[transform:translateZ(-40px)_translate(-20px,-20px)]'
+              }`}
+            >
+              <TiltGlowCard item={item} />
             </div>
-
-            {/* Content */}
-            <div className="flex flex-col justify-between flex-grow p-5 bg-white dark:bg-gray-900">
-              <div>
-                <span className="inline-block text-xl font-medium bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300 px-2 py-0.5 rounded-full mb-2">
-                  {item.label}
-                </span>
-
-                <h4 className="font-semibold text-xl text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">
-                  {item.title}
-                </h4>
-
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-                  {item.desc}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
-  );
+  )
+}
+
+function TiltGlowCard({ item }: { item: any }) {
+  const [rotate, setRotate] = useState({ x: 0, y: 0 })
+  const [glowPos, setGlowPos] = useState({ x: 50, y: 50 })
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+
+    const rotateX = ((y - centerY) / centerY) * -6
+    const rotateY = ((x - centerX) / centerX) * 6
+
+    setRotate({ x: rotateX, y: rotateY })
+    setGlowPos({ x: (x / rect.width) * 100, y: (y / rect.height) * 100 })
+  }
+
+  function handleMouseLeave() {
+    setRotate({ x: 0, y: 0 })
+    setGlowPos({ x: 50, y: 50 })
+  }
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      animate={{
+        rotateX: rotate.x,
+        rotateY: rotate.y,
+      }}
+      transition={{ type: "spring", stiffness: 180, damping: 25 }}
+      className="relative rounded-xl overflow-hidden border border-accent/20 transition-all duration-300 will-change-transform backdrop-blur-sm"
+      style={{
+        transformStyle: "preserve-3d",
+        background: `radial-gradient(circle at ${glowPos.x}% ${glowPos.y}%, rgba(56,189,248,0.2), rgba(15,23,42,0.8) 70%), linear-gradient(to bottom right, rgba(255,255,255,0.1), rgba(56,189,248,0.1))`
+      }}
+    >
+      {/* Image background */}
+      <div className="absolute inset-0">
+        <img
+          src={item.image}
+          alt={item.title}
+          className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay transition-opacity duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+      </div>
+
+      {/* Plasma border (animated gradient line) */}
+      <div className="absolute inset-0 rounded-xl pointer-events-none">
+        <div
+          className="absolute inset-0 rounded-xl border-[1px] border-transparent"
+          style={{
+            background: `conic-gradient(from 180deg at ${glowPos.x}% ${glowPos.y}%, rgba(56,189,248,0.3), rgba(56,189,248,0.05), rgba(56,189,248,0.3))`,
+            mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+            maskComposite: "exclude",
+            WebkitMaskComposite: "xor",
+            padding: "1px",
+          }}
+        />
+      </div>
+
+      {/* Content */}
+      <div
+        className="relative z-10 p-6 aspect-square flex flex-col justify-end"
+        style={{
+          transform: "translateZ(30px)",
+        }}
+      >
+        <span className="inline-block text-xs font-semibold uppercase tracking-wide bg-accent/10 text-accent/90 px-2.5 py-1 rounded-full mb-2 w-fit backdrop-blur-sm">
+          {item.label}
+        </span>
+        <h3 className="text-xl font-semibold text-white mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+          {item.title}
+        </h3>
+        <p className="text-sm text-gray-300 line-clamp-2">{item.desc}</p>
+      </div>
+    </motion.div>
+  )
 }

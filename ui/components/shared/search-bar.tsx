@@ -135,7 +135,7 @@ export function SearchBar({
             className={`cursor-pointer transition-colors ${
               selectedTags.includes(tag)
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-muted hover:bg-muted/80"
+                : "bg-white hover:bg-muted/80"
             }`}
             onClick={() => toggleTag(tag)}
           >

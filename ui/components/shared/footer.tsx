@@ -1,102 +1,52 @@
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
-
   return (
-    <footer className="relative mt-20 border-t border-border/50 bg-gradient-to-t from-background via-background/80 to-transparent">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Main footer content */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4 mb-8">
-          {/* Brand section */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold text-accent">OceanFin</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Building modern web experiences with cutting-edge technology and design.
-            </p>
-          </div>
+    <footer className="relative bg-black border-t border-cyan-500/10">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/20 to-transparent" />
 
-          {/* Product links */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Product</h4>
-            <ul className="space-y-2">
-              {["Features", "Pricing", "Security", "Roadmap"].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-accent transition-colors duration-200"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
+      <div className="max-w-7xl mx-auto px-6 h-[30px] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-cyan-400 font-semibold tracking-wide">OceanFin</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-400/10 text-cyan-300/70">
+              v1.0.0
+            </span>
           </div>
-
-          {/* Company links */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Company</h4>
-            <ul className="space-y-2">
-              {["About", "Blog", "Careers", "Contact"].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-accent transition-colors duration-200"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal links */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-foreground">Legal</h4>
-            <ul className="space-y-2">
-              {["Privacy", "Terms", "Cookies", "License"].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground hover:text-accent transition-colors duration-200"
-                  >
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <span className="text-[11px] text-gray-500">
+            © {new Date().getFullYear()} — All rights reserved
+          </span>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-8" />
-
-        {/* Bottom section */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Copyright */}
-          <p className="text-sm text-muted-foreground">© {currentYear} Your Brand. All rights reserved.</p>
-
-          {/* Social links */}
-          <div className="flex items-center gap-4">
-            {[
-              { name: "Twitter", icon: "𝕏" },
-              { name: "GitHub", icon: "◆" },
-              { name: "LinkedIn", icon: "◇" },
-              { name: "Discord", icon: "◈" },
-            ].map((social) => (
-              <a
-                key={social.name}
-                href="#"
-                className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-card/50 border border-border/50 text-accent hover:bg-card hover:border-accent/50 hover:text-highlight transition-all duration-200 glow-teal"
-                aria-label={social.name}
-              >
-                <span className="text-lg">{social.icon}</span>
-              </a>
-            ))}
-          </div>
+        {/* Right side */}
+        <div className="flex items-center gap-5 text-gray-400 text-sm">
+          <a
+            href="https://twitter.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-cyan-400 transition-colors"
+          >
+            Twitter
+          </a>
+          <a
+            href="https://discord.gg"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-cyan-400 transition-colors"
+          >
+            Discord
+          </a>
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-cyan-400 transition-colors"
+          >
+            GitHub
+          </a>
         </div>
       </div>
 
-      {/* Decorative gradient line at top */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+      {/* Bottom subtle cyan glow */}
+      <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/15 to-transparent" />
     </footer>
   )
 }
