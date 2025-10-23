@@ -37,7 +37,7 @@ export function HeroSection() {
               {/* Light glow behind logo */}
               <div className="absolute inset-0 blur-md bg-cyan-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            <span className="font-semibold text-lg text-white tracking-wide">
+            <span className="font-semibold text-lg text-black tracking-wide">
               Ocean&nbsp;Fin
             </span>
           </Link>
@@ -55,7 +55,7 @@ export function HeroSection() {
                     ${
                       isActive
                         ? "text-cyan-300"
-                        : "text-gray-400 hover:text-white"
+                        : "text-black-400 hover:text-white"
                     }`}
                 >
                   {Icon && <Icon className="w-4 h-4" />}

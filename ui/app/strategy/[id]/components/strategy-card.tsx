@@ -40,10 +40,13 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
     <Link href={`/strategy/${strategy.id}`}>
       <Card
         className="group relative overflow-hidden p-5 cursor-pointer rounded-2xl
-        shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1
-        border border-white/10 bg-gradient-to-br from-black via-[#0c1117] to-[#0d1b26]
-        hover:border-primary/50 hover:bg-gradient-to-br hover:from-[#0d1117] hover:to-[#0f2230]"
+        shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1
+        border border-[var(--color-accent-light)]
+        bg-gradient-to-br from-[var(--color-surface)] via-[var(--color-bg)] to-[var(--color-surface)]
+        hover:border-[var(--color-accent)]
+        hover:bg-gradient-to-br hover:from-[var(--color-bg)] hover:via-[var(--color-surface)] hover:to-[var(--color-accent-light)]"
       >
+
         {/* Status Badge */}
         <div
           className={`absolute top-3 right-3 flex items-center gap-1 text-xs px-2 py-1 rounded-full

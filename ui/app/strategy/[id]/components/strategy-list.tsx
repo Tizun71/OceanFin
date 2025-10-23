@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { StrategyCard } from "@/app/strategy/[id]/components/strategy-card"
 import { SearchBar } from "../../../../components/shared/search-bar"
 import { fetchStrategies } from "@/services/strategy-service"
-import { Moon, Sun } from "lucide-react" 
+import { FeaturedStrategies } from "./strategy-featured"
 
 export function StrategyList() {
   const [strategies, setStrategies] = useState<any[]>([])
@@ -15,30 +15,6 @@ export function StrategyList() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("Active")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-
-  // theme toggle state
-  const [isDark, setIsDark] = useState(false)
-
-  useEffect(() => {
-    // Load theme preference localStorage 
-    const storedTheme = localStorage.getItem("theme")
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    if (storedTheme === "dark" || (!storedTheme && prefersDark)) {
-      document.documentElement.classList.add("dark")
-      setIsDark(true)
-    } else {
-      document.documentElement.classList.remove("dark")
-      setIsDark(false)
-    }
-  }, [])
-
-  const toggleTheme = () => {
-    const html = document.documentElement
-    const newTheme = html.classList.contains("dark") ? "light" : "dark"
-    html.classList.toggle("dark", newTheme === "dark")
-    setIsDark(newTheme === "dark")
-    localStorage.setItem("theme", newTheme)
-  }
 
   useEffect(() => {
     const loadStrategies = async () => {
@@ -72,41 +48,12 @@ export function StrategyList() {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      {/*  Header section + theme toggle */}
+      {/*  Header section */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-bold text-primary mb-2">
-            Polkadot AI Agent Swarm
-          </h2>
-          <h3 className="text-2xl font-semibold text-muted-foreground">
-            Discover and Execute DeFi Strategies Below
-          </h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            Click a strategy card to simulate or execute it.
-          </p>
-        </div>
 
-        {/* Toggle Theme Button */}
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border 
-                     bg-background hover:bg-accent/20 transition-all shadow-sm"
-        >
-          {isDark ? (
-            <>
-              <Sun className="w-5 h-5 text-yellow-400" />
-              <span className="text-sm text-foreground">Light Mode</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-5 h-5 text-blue-500" />
-              <span className="text-sm text-foreground">Dark Mode</span>
-            </>
-          )}
-        </button>
+        <FeaturedStrategies />
       </div>
-
-      {/* 🔍 Search & Filter */}
+      {/* Search & Filter */}
       <SearchBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -134,7 +81,7 @@ export function StrategyList() {
           <>
             <div className="flex items-center justify-between mb-6">
               <h4 className="text-xl font-semibold">
-                {statusFilter === "All" ? "All Strategies" : "Featured Strategies"}
+                {statusFilter === "All" ? "Featured Strategies" : "All Strategies"}
                 <span className="text-muted-foreground ml-2">
                   ({filteredStrategies.length})
                 </span>
