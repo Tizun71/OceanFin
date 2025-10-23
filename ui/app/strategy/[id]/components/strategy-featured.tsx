@@ -32,8 +32,8 @@ export function FeaturedStrategies() {
   ];
 
   return (
-    <div className="h-full p-6 flex items-center justify-center">
-      <div className="relative w-[800px] aspect-square perspective-[2000px] [transform-style:preserve-3d] [transform:rotateX(12deg)_rotateY(-12deg)]">
+    <div className="h-full p-2 flex items-center justify-center">
+      <div className="relative w-full max-w-[500px] sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] aspect-square perspective-[1200px] [transform-style:preserve-3d] [transform:rotateX(8deg)_rotateY(-8deg)] scale-[0.7] sm:scale-[0.8] md:scale-[0.9] lg:scale-[0.85] xl:scale-[0.8] max-h-[80vh]">
         <div className="grid grid-cols-2 gap-6 h-full">
           {featured.map((item, idx) => (
             <div key={idx} 

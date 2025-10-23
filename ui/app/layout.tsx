@@ -36,7 +36,7 @@ export default function RootLayout({
               <div className="h-screen flex flex-col relative z-0">
                 <HeroSection />
                 {/* Main */}
-                <main className="flex-1 h-[calc(100vh-160px)] overflow-hidden z-10">
+                <main className="flex-1 overflow-y-auto">
                   {children}
                 </main>
                 <Footer />

@@ -46,7 +46,7 @@ export function StrategyList() {
   })
 
   return (
-    <div className="w-full flex justify-center">
+    <div className="w-full flex justify-center items-center">
       <div className="w-full max-w-5xl px-6 py-16 relative">
         {/* vertical glow line */}
         <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-cyan-500/40 via-cyan-400/10 to-transparent blur-sm" />
@@ -63,7 +63,7 @@ export function StrategyList() {
           />
         </div>
 
-        <div className="mt-16 space-y-16 relative z-10">
+        <div className="mt-12 space-y-14 relative z-8">
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">
               Loading strategies...
