@@ -11,60 +11,85 @@ interface AnimatedStepProps {
 }
 
 export function AnimatedStep({ steps, currentIndex, explorerBase }: AnimatedStepProps) {
+  const completedSteps = steps.slice(0, currentIndex)
+  const currentStep = steps[currentIndex]
+
   return (
-    <div className="w-full min-h-[200px] flex items-center justify-center">
-      <AnimatePresence mode="popLayout">
-        {steps.map((step, index) => {
-          if (index > currentIndex) return null
+    <div className="relative w-full flex flex-col items-center justify-start min-h-[300px]">
+      <div className="relative w-full flex flex-col items-center justify-start">
+        <AnimatePresence>
+          {completedSteps.map((step, index) => {
+            const offsetY = index * 40 
+            const scale = 1 - index * 0.02
+            const brightness = 1 - index * 0.08
 
-          const isCompleted = step.status === "completed"
-          const isCurrent = index === currentIndex
+            return (
+              <motion.div
+                key={step.id}
+                layout
+                initial={{ opacity: 0, y: -30, scale: 0.95 }}
+                animate={{
+                  opacity: 1,
+                  y: offsetY,
+                  scale,
+                  zIndex: completedSteps.length - index,
+                  filter: `brightness(${brightness}) blur(${index * 0.3}px)`,
+                }}
+                exit={{ opacity: 0, y: 60, scale: 0.9 }}
+                transition={{
+                  type: "spring",
+                  damping: 22,
+                  stiffness: 250,
+                  mass: 0.7,
+                }}
+                className="absolute w-full transform-gpu"
+                style={{
+                  transformOrigin: "center top",
+                  perspective: 1000,
+                }}
+              >
+                <StepItem
+                  step={step}
+                  index={index}
+                  explorerBase={explorerBase}
+                />
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+      </div>
 
-          return (
-            <motion.div
-              key={step.id}
-              initial={{
-                y: 60,
-                opacity: 0,
-                scale: 0.9,
-                rotateX: -10,
-              }}
-              animate={{
-                y: isCurrent ? 0 : -index * 40,
-                opacity: 1,
-                scale: isCurrent ? 1 : 0.94,
-                rotateX: isCurrent ? 0 : -5,
-                zIndex: isCurrent ? steps.length + 1 : steps.length - index,
-                filter: isCurrent ? "brightness(1) blur(0px)" : "brightness(0.8) blur(0.5px)",
-              }}
-              exit={{
-                y: -60,
-                opacity: 0,
-                scale: 0.85,
-                rotateX: 10,
-                filter: "blur(2px)",
-              }}
-              transition={{
-                type: "spring",
-                damping: 20,
-                stiffness: 220,
-                mass: 0.7,
-              }}
-              className={`absolute w-full transform-gpu ${
-                isCompleted ? "cursor-pointer hover:-translate-y-3 hover:scale-[1.02] transition-transform" : ""
-              }`}
-              style={{
-                transformOrigin: "center bottom",
-                perspective: 1000,
-              }}
-            >
-              <div className="drop-shadow-lg">
-                <StepItem step={step} index={index} explorerBase={explorerBase} />
-              </div>
-            </motion.div>
-          )
-        })}
-      </AnimatePresence>
+      {/* Step loading */}
+      {currentStep && (
+        <motion.div
+          key={currentStep.id}
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          animate={{
+            opacity: 1,
+            y: (completedSteps.length * 40) + 100, 
+            scale: 1,
+            zIndex: 999,
+            filter: "brightness(1) blur(0px)",
+          }}
+          exit={{ opacity: 0, y: 60, scale: 0.9 }}
+          transition={{
+            type: "spring",
+            damping: 20,
+            stiffness: 200,
+          }}
+          className="absolute w-full transform-gpu"
+          style={{
+            transformOrigin: "center top",
+            perspective: 1000,
+          }}
+        >
+          <StepItem
+            step={currentStep}
+            index={currentIndex}
+            explorerBase={explorerBase}
+          />
+        </motion.div>
+      )}
     </div>
   )
 }
