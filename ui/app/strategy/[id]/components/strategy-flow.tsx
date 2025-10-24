@@ -1,28 +1,29 @@
-"use client";
+"use client"
 
-import { ArrowDown, Bot, Workflow } from "lucide-react";
+import { ArrowDown, Bot, Workflow } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface TokenInfo {
-  assetId?: string | number;
-  symbol?: string;
-  amount?: string | number | null;
+  assetId?: string | number
+  symbol?: string
+  amount?: string | number | null
 }
 
 interface FlowStep {
-  step: number;
-  type: string;
-  agent: string;
-  tokenIn?: TokenInfo | null;
-  tokenOut?: TokenInfo | null;
+  step: number
+  type: string
+  agent: string
+  tokenIn?: TokenInfo | null
+  tokenOut?: TokenInfo | null
 }
 
 interface StrategyFlowProps {
-  steps?: FlowStep[];
-  initialCapital?: TokenInfo;
-  loops?: number;
-  fee?: number;
-  totalSupply?: number;
-  totalBorrow?: number;
+  steps?: FlowStep[]
+  initialCapital?: TokenInfo
+  loops?: number
+  fee?: number
+  totalSupply?: number
+  totalBorrow?: number
 }
 
 export function StrategyFlow({
@@ -33,136 +34,160 @@ export function StrategyFlow({
   totalSupply,
   totalBorrow,
 }: StrategyFlowProps) {
-  const validSteps = Array.isArray(steps) ? steps : [];
+  const validSteps = Array.isArray(steps) ? steps : []
 
   if (!validSteps.length) {
     return (
-      <div className="glass rounded-lg p-6 text-center text-muted-foreground">
+      <div className="rounded-lg p-6 text-center text-gray-500 bg-gray-50 border border-gray-200">
         No flow data available. Please run a simulation first.
       </div>
-    );
+    )
   }
 
   return (
-    <div className="glass rounded-xl border border-primary/20 p-6">
+    <div className="rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-md shadow-xl p-6 font-sans font-semibold text-[13px] tracking-wide">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent flex items-center gap-2">
-          <Workflow className="w-5 h-5 text-[#00D1FF]" />
+        <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
+          <Workflow className="w-4.5 h-4.5 text-blue-500" />
           Strategy Flow
         </h3>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-gray-600">
           Total Steps:{" "}
-          <span className="text-[#00D1FF] font-semibold">{validSteps.length}</span>
+          <span className="text-blue-500 font-bold">{validSteps.length}</span>
         </span>
       </div>
 
-      {/* MAIN LAYOUT */}
-      <div className="flex flex-row gap-6">
-        <div className="w-full lg:w-2/3">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 w-fit mx-auto flex flex-col ">
-            {/* LEFT: STEPS */}
-            <div className="flex-1 flex flex-col space-y-4">
-              {validSteps.map((step, idx) => {
-                const hasIn = !!step.tokenIn;
-                const hasOut = !!step.tokenOut;
+      {/* MAIN GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* LEFT: STEPS */}
+        <div className="lg:col-span-7 flex flex-col items-center gap-9 relative">
+          {validSteps.map((step, idx) => {
+            const hasIn = !!step.tokenIn
+            const hasOut = !!step.tokenOut
 
-                return (
-                  <div key={idx} className="flex flex-col items-center w-full">
-                    {/* STEP CARD */}
-                    <div className="glass w-[400px] rounded-lg border border-primary/20 p-4 hover:border-[#00D1FF]/40 transition-all duration-200 flex flex-col gap-3">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary">{step.step}</span>
-                          </div>
-                          <span className="font-semibold text-[#00D1FF]">{step.type}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground leading-none">
-                          <Bot className="w-3.5 h-3.5 text-[#00D1FF] align-middle" />
-                          <span className="text-foreground font-medium leading-none">{step.agent || "N/A"}</span>
-                        </div>
-                      </div>
-                      {/* Token In */}
-                      {hasIn && (
-                        <>
-                          <hr className="border-primary/10" />
-                          <div className="flex justify-between w-full text-sm text-muted-foreground">
-                            <span>{step.tokenIn?.amount ?? "N/A"}</span>
-                            <span className="font-semibold text-foreground">{step.tokenIn?.symbol || "N/A"}</span>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Arrow between In & Out */}
-                      {hasIn && hasOut && (
-                        <div className="relative flex flex-col items-center w-full my-1">
-                          <hr className="border-primary/10 w-full" />
-                          <div className="absolute -top-2 bg-background px-1">
-                            <ArrowDown className="w-4 h-4 text-muted-foreground animate-bounce-slow" />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Token Out */}
-                      {hasOut && (
-                        <>
-                          {!hasIn && <hr className="border-primary/10" />}
-                          <div className="flex justify-between w-full text-sm text-muted-foreground">
-                            <span>{step.tokenOut?.amount ?? "N/A"}</span>
-                            <span className="font-semibold text-green-500">
-                              {step.tokenOut?.symbol || "N/A"}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Arrow BETWEEN STEPS */}
-                    {idx < validSteps.length - 1 && (
-                      <div className="my-3">
-                        <ArrowDown className="w-5 h-5 text-muted-foreground animate-bounce-slow" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-        {/* RIGHT: INFO SUMMARY */}
-        <div className="w-full lg:w-1/3">
-          <div className="glass p-4 rounded-lg border border-primary/20 bg-white transition-all duration-300 ease-in-out">
-            {[
-              {
-                label: "Initial Capital",
-                value: `${initialCapital?.symbol || "N/A"} (${initialCapital?.assetId || "-"})`,
-              },
-              { label: "Loops", value: loops ?? "N/A" },
-              { label: "Fee", value: fee ?? 0 },
-              { label: "Total Supply", value: totalSupply ?? 0 },
-              { label: "Total Borrow", value: totalBorrow ?? 0 },
-            ].map((info, i) => (
-              <div
-                key={i}
-                className="
-                  flex items-center justify-between py-2 px-3
-                  border-b border-primary/10 last:border-none
-                  rounded-md transition-all duration-300 ease-in-out
-                  hover:bg-[#E6F9FF] hover:shadow-[0_0_8px_rgba(0,209,255,0.3)]
-                "
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                className="relative w-full max-w-[360px] bg-white/75 backdrop-blur-md border border-transparent rounded-lg 
+                           shadow-[0_0_15px_rgba(0,150,255,0.25)] hover:shadow-[0_0_25px_rgba(0,180,255,0.45)] 
+                           transition-all duration-300 p-3.5 flex flex-col justify-between min-h-[80px]"
               >
-                <span className="font-medium text-[#00D1FF]">{info.label}</span>
-                <span className="text-sm text-muted-foreground">{info.value}</span>
-              </div>
-            ))}
-          </div>
+                {/* Step Header */}
+                <div className="flex justify-between items-center mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-5.5 h-5.5 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center text-[11px] font-bold shadow-md">
+                      {step.step}
+                    </div>
+                    <h4 className="text-gray-800 font-semibold text-[13px] tracking-wide">
+                      {step.type}
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                    <Bot className="w-3 h-3 text-blue-400" />
+                    <span className="font-semibold">{step.agent || "N/A"}</span>
+                  </div>
+                </div>
+
+                {/* Token In */}
+                {hasIn && (
+                  <div className="flex justify-between text-[11.5px] text-gray-700 border-t border-gray-200 pt-1.5">
+                    <span>{step.tokenIn?.amount ?? "N/A"}</span>
+                    <span className="font-semibold text-blue-600">
+                      {step.tokenIn?.symbol || "N/A"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Arrow */}
+                {hasIn && hasOut && (
+                  <div className="flex justify-center my-1">
+                    <ArrowDown className="w-3 h-3 text-blue-400 animate-bounce" />
+                  </div>
+                )}
+
+                {/* Token Out */}
+                {hasOut && (
+                  <div className="flex justify-between text-[11.5px] text-gray-700 border-t border-gray-200 pt-1.5">
+                    <span>{step.tokenOut?.amount ?? "N/A"}</span>
+                    <span className="font-semibold text-emerald-600">
+                      {step.tokenOut?.symbol || "N/A"}
+                    </span>
+                  </div>
+                )}
+
+                {/* Connector Arrow */}
+                {idx < validSteps.length - 1 && (
+                  <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2">
+                    <ArrowDown className="w-4 h-4 text-blue-300 animate-bounce" />
+                  </div>
+                )}
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {/* RIGHT: STATISTICS */}
+        <div className="lg:col-span-5">
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white/70 backdrop-blur-md rounded-xl border border-transparent 
+                       shadow-[0_0_20px_rgba(0,150,255,0.25)] hover:shadow-[0_0_30px_rgba(0,180,255,0.45)] 
+                       transition-all duration-500 overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+              <h4 className="text-gray-800 font-bold text-sm uppercase tracking-wide">
+                Statistics Overview
+              </h4>
+              <button className="text-blue-500 text-xs font-semibold hover:underline">
+                View All &gt;
+              </button>
+            </div>
+
+            <div className="flex flex-col divide-y divide-gray-100">
+              {[
+                {
+                  icon: "💰",
+                  label: "Initial Capital",
+                  value: `${initialCapital?.symbol || "N/A"} (${initialCapital?.assetId || "-"})`,
+                  sub: "Base asset",
+                },
+                { icon: "🔁", label: "Loops", value: loops ?? "N/A", sub: "Total cycle count" },
+                { icon: "💸", label: "Fee", value: `${fee ?? 0}%`, sub: "Execution fee" },
+                { icon: "📈", label: "Total Supply", value: totalSupply ?? 0, sub: "Supplied amount" },
+                { icon: "📉", label: "Total Borrow", value: totalBorrow ?? 0, sub: "Borrowed amount" },
+              ].map((info, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-gray-50/80 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-lg">
+                      {info.icon}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-800 text-sm">
+                        {info.label}
+                      </div>
+                      <div className="text-xs text-gray-500">{info.sub}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-emerald-600 font-semibold text-sm">
+                      {info.value}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
-  );
+  )
 }
-
-

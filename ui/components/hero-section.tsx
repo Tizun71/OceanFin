@@ -19,7 +19,7 @@ export function HeroSection() {
       className="fixed top-0 left-0 w-full z-50
       transition-all duration-300"
     >
-      <div className="container mx-auto px-6 py-3 flex items-center justify-between">
+      <div className="container mx-auto px-6 py-1 flex items-center justify-between">
         {/* Left: Logo + Navigation */}
         <div className="flex items-center gap-10">
           {/* Logo */}

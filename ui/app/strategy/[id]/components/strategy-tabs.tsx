@@ -3,53 +3,68 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StrategyOverview } from "./strategy-overview";
 import { StrategyFlow } from "./strategy-flow";
+import StrategyPromptDetails from "./strategy-prompt-details";
+import { MyActivityTable } from "./activity/strategy-my-activity-table";
+import { AllActivityTable } from "./activity/strategy-all-activity-table";
+import { Shield, Workflow, FileText, Activity, Users } from "lucide-react"; // icon set
 
 interface StrategyTabsProps {
-  strategy: {
-    id: string;
-    title: string;
-    description?: string;
-    inputAsset?: string;
-    outputAsset?: string;
-    steps?: any[];
-  };
-  simulateData?: any; 
+  strategy: any;
+  simulateData?: any;
 }
 
 export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
+  const tabs = [
+    { value: "overview", label: "Overview", icon: Shield },
+    { value: "flow", label: "Strategy Flow", icon: Workflow },
+    { value: "prompt", label: "Strategy Prompt", icon: FileText },
+    { value: "activities", label: "My Activities", icon: Activity },
+    { value: "all", label: "All Activities", icon: Users },
+  ];
+
   return (
     <Tabs defaultValue="overview" className="w-full">
-      {/* === TAB HEADER === */}
-      <TabsList className="grid w-full grid-cols-5 bg-card/50 border border-border/40 rounded-xl overflow-hidden backdrop-blur-sm">
-        {["overview", "flow", "prompt", "activities", "all"].map((tab) => (
-          <TabsTrigger
-            key={tab}
-            value={tab}
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#00D1FF] data-[state=active]:to-[#0EA5E9] data-[state=active]:text-black transition-colors"
-          >
-            {tab === "overview"
-              ? "Overview"
-              : tab === "flow"
-              ? "Strategy Flow"
-              : tab === "prompt"
-              ? "Strategy Prompt"
-              : tab === "activities"
-              ? "My Activities"
-              : "All Activities"}
-          </TabsTrigger>
-        ))}
+      {/* === Tabs Header - Chip Style === */}
+      <TabsList
+        className="
+          flex flex-wrap gap-3 bg-transparent border-none justify-start 
+          mt-10 mb-6
+        "
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="
+                 flex items-center gap-2 px-4 py-2.5 rounded-full
+                  border border-gray-300
+                  text-sm font-medium text-gray-700
+                  hover:bg-gray-100 hover:border-gray-400
+                  data-[state=active]:bg-gray-200
+                  data-[state=active]:text-gray-900
+                  data-[state=active]:border-gray-500
+                  transition-all duration-300
+              "
+            >
+              <Icon size={16} className="opacity-80" />
+              {tab.label}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
 
-      {/* === TAB CONTENTS === */}
-      <TabsContent value="overview" className="mt-6">
+      {/* === Tab Contents === */}
+      <TabsContent value="overview">
         <StrategyOverview strategy={strategy} simulateData={simulateData} />
       </TabsContent>
 
-      <TabsContent value="flow" className="mt-6">
+      <TabsContent value="flow">
         <div className="glass rounded-lg p-6">
           {simulateData ? (
             <StrategyFlow
-              key={simulateData ? JSON.stringify(simulateData) : "empty"} 
+              key={simulateData ? JSON.stringify(simulateData) : "empty"}
               steps={Array.isArray(simulateData.steps) ? simulateData.steps : []}
               initialCapital={simulateData.initialCapital}
               loops={simulateData.loops}
@@ -65,27 +80,21 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
         </div>
       </TabsContent>
 
-      <TabsContent value="prompt" className="mt-6">
+      <TabsContent value="prompt">
         <div className="glass rounded-lg p-6">
-          <p className="text-muted-foreground text-sm">
-            Strategy prompt details coming soon...
-          </p>
+          <StrategyPromptDetails />
         </div>
       </TabsContent>
 
-      <TabsContent value="activities" className="mt-6">
+      <TabsContent value="activities">
         <div className="glass rounded-lg p-6">
-          <p className="text-muted-foreground text-sm">
-            Your activities will appear here...
-          </p>
+          <MyActivityTable />
         </div>
       </TabsContent>
 
-      <TabsContent value="all" className="mt-6">
+      <TabsContent value="all">
         <div className="glass rounded-lg p-6">
-          <p className="text-muted-foreground text-sm">
-            All activities will appear here...
-          </p>
+          <AllActivityTable />
         </div>
       </TabsContent>
     </Tabs>
