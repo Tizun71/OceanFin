@@ -73,18 +73,18 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
   return (
     <>
-      <div className="glass rounded-lg p-6 sticky top-24">
+      <div className="rounded-2xl p-6 border border-white/20 bg-white/80 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500 hover:shadow-[0_8px_40px_rgb(0,0,0,0.15)]">
         <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent">
           Input
         </h3>
 
         {/* Amount Input */}
-        <div className="p-4 rounded-lg bg-background/50 border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-muted-foreground">Amount</span>
+        <div className="p-4 rounded-xl bg-white/70 backdrop-blur-md border border-gray-200 shadow-inner transition-all duration-300 hover:bg-white/90">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500 mb-2">Amount</span>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-primary">{inputAsset[0]}</span>
+              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] flex items-center justify-center shadow-md">
+                <span className="text-xs font-bold text-white">{inputAsset[0]}</span>
               </div>
             </div>
           </div>
@@ -94,15 +94,15 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0 text-[#00D1FF] placeholder-[#00D1FF]"
+            className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0 text-[#00A2FF] placeholder-gray-400 transition-all duration-300"
           />
         </div>
 
         {/* Info Text */}
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 mt-4">
-          <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
-          <p className="text-xs text-muted-foreground">
-            Funds will be swapped into {inputAsset} via a DEX. Price impact may occur during swaps.
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-gray-100/70 mt-4 border border-gray-200 hover:bg-gray-100 transition-all duration-300">
+          <Info className="w-4 h-4 text-[#00A2FF] mt-0.5" />
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Funds will be swapped into <span className="text-[#00A2FF]">{inputAsset}</span> via a DEX. Price impact may occur during swaps.
           </p>
         </div>
 
@@ -113,23 +113,23 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             className="w-full text-left"
             onClick={() => setDetailsOpen(!detailsOpen)}
           >
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 hover:bg-background transition-colors">
-              <span className="text-sm">Details</span>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-gray-100 border border-gray-200 transition-colors">
+              <span className="text-sm text-gray-700 font-medium">Details</span>
               <ChevronDown
-                className={`w-4 h-4 text-muted-foreground transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+                className={`w-4 h-4 text-gray-500 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
               />
             </div>
           </button>
 
           {detailsOpen && (
-            <div className="space-y-2 text-sm p-3 rounded-lg bg-background/50">
+            <div className="space-y-2 text-sm p-3 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Est. Network Cost</span>
-                <span className="text-[#00D1FF] font-semibold">{networkCost}</span>
+                <span className="text-gray-500">Est. Network Cost</span>
+                <span className="text-[#00A2FF] font-semibold">{networkCost}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Slippage Tolerance</span>
-                <span className="text-[#00D1FF] font-semibold">{slippage}</span>
+                <span className="text-gray-500">Slippage Tolerance</span>
+                <span className="text-[#00A2FF] font-semibold">{slippage}</span>
               </div>
             </div>
           )}
@@ -137,20 +137,20 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
         {/* Simulation Result */}
         {(simulateResult || simulateError) && (
-          <div className="mt-4 p-3 bg-background/50 rounded-lg text-sm border border-border text-primary animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mt-4 p-3 bg-white/70 border border-gray-200 rounded-xl text-sm shadow-sm text-[#00A2FF] animate-in fade-in slide-in-from-top-2 duration-200">
             {simulateError ? (
               <span className="text-red-500">{simulateError}</span>
             ) : (
               <>
                 <p>
-                  <span className="text-muted-foreground">Input Amount:</span>{" "}
-                  <span className="text-[#00D1FF] font-semibold">
+                  <span className="text-gray-500">Input Amount:</span>{" "}
+                  <span className="text-[#00A2FF] font-semibold">
                     {simulateResult?.initialCapital?.amount} {simulateResult?.initialCapital?.symbol}
                   </span>
                 </p>
 
-                <p className="text-muted-foreground mt-2">Strategy Steps:</p>
-                <ul className="ml-4 list-disc text-xs text-muted-foreground">
+                <p className="text-gray-500 mt-2">Strategy Steps:</p>
+                <ul className="ml-4 list-disc text-xs text-gray-600">
                   {simulateResult?.steps?.map((step: any) => (
                     <li key={step.step}>
                       Step {step.step} - {step.type}{" "}
@@ -168,7 +168,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           {isConnected ? (
             <>
               <Button
-                className="w-full bg-secondary hover:bg-secondary/90"
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-xl transition-all duration-300"
                 disabled={!amount || Number(amount) <= 0 || loadingSimulate}
                 onClick={handleSimulate}
               >
@@ -176,7 +176,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
               </Button>
 
               <Button
-                className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
+                className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                 disabled={!amount || Number(amount) <= 0 || loadingSimulate || !simulateResult}
                 onClick={handleExecute}
               >
@@ -189,11 +189,12 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
               accountStatus="full"
               chainStatus="full"
               showBalance={true}
-              className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 glow-cyan text-black font-semibold"
+              className="w-full bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] hover:opacity-90 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
             />
           )}
         </div>
       </div>
+
       {simulateResult && ( 
         <ExecutionModal 
          open={executionModalOpen}

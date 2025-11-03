@@ -4,9 +4,10 @@ import { Space_Grotesk } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Suspense } from "react"
-import { Sidebar } from "@/components/shared/sidebar"
 import LunoProvider from "@/providers/luno-provider"
 import { LunoProviderWrapper } from "./contexts/luno-context"
+import Footer from "@/components/shared/footer"
+import { HeroSection } from "@/components/hero-section"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -27,24 +28,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`h-full font-sans ${spaceGrotesk.variable} bg-background relative`}>
-         <LunoProvider>
+
+      <body className={`h-screen font-sans ${spaceGrotesk.variable} bg-gradient-to-br from-foreground/40 via-accent/5 to-foreground/80 relative overflow-hidden`}>
+        <LunoProvider>
           <LunoProviderWrapper>
             <Suspense fallback={<div>Loading...</div>}>
-              <div className="flex min-h-screen relative z-0">
-                {/* Sidebar */}
-                <aside className="fixed left-0 top-0 h-screen w-20 border-r bg-card z-40">
-                  <Sidebar />
-                </aside>
+              <div className="h-screen flex flex-col relative z-0">
+                <HeroSection />
                 {/* Main */}
-                <main className="flex-1 ml-20 overflow-y-auto min-h-screen z-10">
+                <main className="flex-1 overflow-y-auto">
                   {children}
                 </main>
-              </div>
+                <Footer />
+                </div>
             </Suspense>
           </LunoProviderWrapper>
-         </LunoProvider>
-          <Analytics />    
+        </LunoProvider>
+        <Analytics />
       </body>
     </html>
   )
