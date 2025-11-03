@@ -5,38 +5,38 @@ import React from "react"
 
 export type MyActivityRow = {
   date: string
-  initialBalance: string
-  lendAmount: string
-  borrowAmount: string
-  progress: string
+  strategy: string
+  step: string
+  apr: string
+  fee: string
   status: "Pending" | "Completed" | "Failed"
 }
 
 const myActivityData: MyActivityRow[] = [
   {
-    date: "2025-10-24",
-    initialBalance: "$5,000",
-    lendAmount: "$2,000",
-    borrowAmount: "$1,500",
-    progress: "50%",
+    date: "2025-11-03",
+    strategy: "STRAT_001",
+    step: "Step 5 / 8",
+    apr: "4.5%",
+    fee: "1%",
     status: "Pending",
   },
   {
-    date: "2025-10-23",
-    initialBalance: "$3,000",
-    lendAmount: "$1,000",
-    borrowAmount: "$500",
-    progress: "100%",
+    date: "2025-10-28",
+    strategy: "STRAT_002",
+    step: "Step 8 / 8",
+    apr: "3.2%",
+    fee: "0.8%",
     status: "Completed",
   },
 ]
 
 const myActivityColumns: Column<MyActivityRow>[] = [
   { key: "date", label: "Date" },
-  { key: "initialBalance", label: "Initial Balance" },
-  { key: "lendAmount", label: "Lend Amount" },
-  { key: "borrowAmount", label: "Borrow Amount" },
-  { key: "progress", label: "Progress" },
+  { key: "strategy", label: "Strategy ID" },
+  { key: "step", label: "Progress" },
+  { key: "apr", label: "APR" },
+  { key: "fee", label: "Fee" },
   {
     key: "status",
     label: "Status",
@@ -56,9 +56,14 @@ const myActivityColumns: Column<MyActivityRow>[] = [
   },
   {
     key: "action",
-    label: "",
-    render: (row) => (row.status === "Pending" ? <button className="text-blue-600">🔄</button> : null),
+    label: "Action",
+    render: (row) =>
+      row.status === "Pending" ? (
+        <button className="text-blue-600 hover:underline">🔁 </button>
+      ) : null,
   },
 ]
 
-export const MyActivityTable = () => <CommonTable columns={myActivityColumns} data={myActivityData} />
+export const MyActivityTable = () => (
+  <CommonTable columns={myActivityColumns} data={myActivityData} />
+)

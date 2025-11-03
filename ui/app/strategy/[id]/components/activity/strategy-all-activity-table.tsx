@@ -6,21 +6,37 @@ import React from "react"
 export type AllActivityRow = {
   date: string
   user: string
-  initialBalance: string
-  progress: string
+  step: string
+  apr: string
+  fee: string
   status: "Pending" | "Completed" | "Failed"
 }
 
 const allActivityData: AllActivityRow[] = [
-  { date: "2025-10-24", user: "0xAbc...123", initialBalance: "$5,000", progress: "50%", status: "Pending" },
-  { date: "2025-10-23", user: "0xDef...456", initialBalance: "$3,000", progress: "100%", status: "Completed" },
+  {
+    date: "2025-11-03",
+    user: "0xAbc...123",
+    step: "Step 5 / 8",
+    apr: "4.5%",
+    fee: "1%",
+    status: "Pending",
+  },
+  {
+    date: "2025-11-02",
+    user: "0xDef...456",
+    step: "Step 8 / 8",
+    apr: "3.8%",
+    fee: "0.9%",
+    status: "Completed",
+  },
 ]
 
 const allActivityColumns: Column<AllActivityRow>[] = [
   { key: "date", label: "Date" },
   { key: "user", label: "User Address" },
-  { key: "initialBalance", label: "Initial Balance" },
-  { key: "progress", label: "Progress" },
+  { key: "step", label: "Progress" },
+  { key: "apr", label: "APR" },
+  { key: "fee", label: "Fee" },
   {
     key: "status",
     label: "Status",
@@ -40,4 +56,6 @@ const allActivityColumns: Column<AllActivityRow>[] = [
   },
 ]
 
-export const AllActivityTable = () => <CommonTable columns={allActivityColumns} data={allActivityData} />
+export const AllActivityTable = () => (
+  <CommonTable columns={allActivityColumns} data={allActivityData} />
+)

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { StrategyInput } from "./strategy-input";
 import { StrategyTabs } from "./strategy-tabs";
-import { StrategyHeader } from "./strategy-header";
 import { Menu } from "lucide-react";
 
 export function StrategyClientWrapper({ strategy }: { strategy: any }) {
@@ -22,7 +21,7 @@ export function StrategyClientWrapper({ strategy }: { strategy: any }) {
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-2 hover:bg-gray-700/40 rounded-lg"
-            title={isCollapsed ? "Mở rộng" : "Thu gọn"}
+            title={isCollapsed ? "Expand" : "Collapse"}
           >
             <Menu size={20} />
           </button>
