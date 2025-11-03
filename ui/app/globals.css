@@ -123,10 +123,10 @@
 
 /* Classic Blue header */
 header {
-  background: rgba(255, 255, 255, 0.3);
-  border-bottom: 1px solid rgba(15, 76, 129, 0.1);
-  backdrop-filter: blur(6px);
-  box-shadow: none;
+  background: transparent; 
+  border: none;
+  box-shadow: none; 
+  backdrop-filter: none; 
 }
 
 /* Classic Blue glass effect */
@@ -206,3 +206,4 @@ header {
 .float-delay-4 {
   animation-delay: 3s;
 }
+
