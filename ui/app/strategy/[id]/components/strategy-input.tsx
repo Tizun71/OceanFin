@@ -106,35 +106,6 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           </p>
         </div>
 
-        {/* Details */}
-        <div className="mt-4 space-y-2">
-          <button
-            type="button"
-            className="w-full text-left"
-            onClick={() => setDetailsOpen(!detailsOpen)}
-          >
-            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-gray-100 border border-gray-200 transition-colors">
-              <span className="text-sm text-gray-700 font-medium">Details</span>
-              <ChevronDown
-                className={`w-4 h-4 text-gray-500 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
-              />
-            </div>
-          </button>
-
-          {detailsOpen && (
-            <div className="space-y-2 text-sm p-3 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">Est. Network Cost</span>
-                <span className="text-[#00A2FF] font-semibold">{networkCost}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500">Slippage Tolerance</span>
-                <span className="text-[#00A2FF] font-semibold">{slippage}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Simulation Result */}
         {(simulateResult || simulateError) && (
           <div className="mt-4 p-3 bg-white/70 border border-gray-200 rounded-xl text-sm shadow-sm text-[#00A2FF] animate-in fade-in slide-in-from-top-2 duration-200">

@@ -16,7 +16,7 @@ type CommonTableProps<T = any> = {
 
 export const CommonTable = <T extends {}>({ columns, data }: CommonTableProps<T>) => {
   return (
-    <div className="bg-white text-gray-900 rounded-2xl p-4 border border-gray-200 shadow-md overflow-x-auto">
+    <div className="p-4 overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead>
           <tr className="text-gray-600 border-b border-gray-300 text-left">

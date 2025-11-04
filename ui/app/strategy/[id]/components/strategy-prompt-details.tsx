@@ -4,7 +4,7 @@ import React from "react"
 
 export default function StrategyPromptDetails() {
   return (
-    <div className="bg-white text-gray-900 rounded-2xl p-6 border border-gray-200 shadow-md">
+    <div className="p-4 overflow-x-auto">
       <h2 className="text-xl font-semibold mb-4 text-black">
         Strategy Prompt Details
       </h2>
