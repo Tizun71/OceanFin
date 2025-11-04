@@ -45,12 +45,11 @@ export function StrategyFlow({
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white/50 backdrop-blur-md shadow-xl p-6 font-sans font-semibold text-[13px] tracking-wide">
+    <div className="p-4 overflow-x-auto">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
           <Workflow className="w-4.5 h-4.5 text-blue-500" />
-          Strategy Flow
         </h3>
         <span className="text-sm text-gray-600">
           Total Steps:{" "}

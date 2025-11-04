@@ -8,11 +8,12 @@ interface StrategyHeaderProps {
     status: "Active" | "Inactive"
     apy: number
     strategist: string
-    strategistName: string;
-    strategistHandle: string;
+    strategistName: string
+    strategistHandle: string
     handle: string
     date: string
   }
+  simulateData?: any
 }
 
 export function StrategyHeader({ strategy }: StrategyHeaderProps) {

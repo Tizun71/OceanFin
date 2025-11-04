@@ -10,14 +10,14 @@ export function StrategyClientWrapper({ strategy }: { strategy: any }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex h-[calc(100vh-60px)] mt-8 overflow-hidden bg-[--background] text-[--foreground]">
+    <div className="flex h-[calc(100vh-60px)] overflow-hidden bg-[--background] text-[--foreground]">
       {/* SIDEBAR */}
       <div
         className={`flex flex-col  transition-all duration-300 ease-in-out
           ${isCollapsed ? "w-[60px]" : "w-1/4"}
         `}
       >
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3 mt-12">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-2 hover:bg-gray-700/40 rounded-lg"
@@ -27,7 +27,7 @@ export function StrategyClientWrapper({ strategy }: { strategy: any }) {
           </button>
         </div>
         {!isCollapsed && (
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 mt-2">
             <StrategyInput
               strategy={strategy}
               onSimulateSuccess={setSimulateData}

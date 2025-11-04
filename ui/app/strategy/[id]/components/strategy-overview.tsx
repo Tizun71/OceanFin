@@ -1,5 +1,5 @@
 import { Bot } from "lucide-react";
-import { StrategyFlow } from "./strategy-flow";
+import { StrategyHeader } from "./strategy-header";
 
 interface StrategyOverviewProps {
   strategy?: {
@@ -32,6 +32,10 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
 
   return (
     <div className="space-y-6">
+    
+      {/* === STRATEGY HEADER === */}
+      <StrategyHeader strategy={strategy as any} simulateData={simulateData} />
+
       {/* === DESCRIPTION SECTION === */}
       <div className="glass rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent">
@@ -59,22 +63,6 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
         {/* Description text */}
         <p className="text-muted-foreground leading-relaxed">{safeDescription}</p>
       </div>
-
-      {/* === STRATEGY FLOW SECTION === */}
-      {safeSteps.length > 0 ? (
-        <StrategyFlow
-          steps={safeSteps}
-          initialCapital={simulateData?.initialCapital}
-          loops={simulateData?.loops}
-          fee={simulateData?.fee}
-          totalSupply={simulateData?.totalSupply}
-          totalBorrow={simulateData?.totalBorrow}
-        />
-      ) : (
-        <div className="glass rounded-lg p-6 text-sm text-muted-foreground">
-          No flow steps available yet.
-        </div>
-      )}
     </div>
   );
 }

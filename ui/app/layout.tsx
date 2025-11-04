@@ -35,7 +35,11 @@ export default function RootLayout({
       >
         <LunoProvider>
           <LunoProviderWrapper>
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
+                Loading...
+              </div>}
+            >
               <div className="min-h-screen flex flex-col relative z-0">
                 <HeroSection /> 
                   <main className="flex-1 pt-[30px]"> 
