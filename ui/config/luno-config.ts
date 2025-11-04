@@ -1,11 +1,9 @@
+import { createConfig } from '@luno-kit/react'
+import { subwalletConnector } from '@luno-kit/react/connectors'
+import { hydration } from './chains/hydration'
 
-import { createConfig } from "@luno-kit/react";
-import { paseo } from "@luno-kit/react/chains";
-import { mimirConnector } from "@luno-kit/react/connectors"; 
-
-export const lunoConfig = createConfig({
-  appName: "MyProject",
-  chains: [paseo],
-  connectors: [mimirConnector()],
-  autoConnect: true,
-});
+export const config = createConfig({
+  appName: 'OceanFin App',
+  chains: [hydration],
+  connectors: [subwalletConnector()],
+})

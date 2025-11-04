@@ -16,7 +16,8 @@ export const buildStepTx = async (step: Step, userAddress: string) => {
         break;
 
         case STEP_TYPE.ENABLE_E_MODE:
-            return setUserEmode(EMODE_CATEGORY.DOT_CORRELATED, userAddress);
+            // return setUserEmode(EMODE_CATEGORY.DOT_CORRELATED, userAddress);
+            break;
 
         default:
         throw new Error(`Unknown step type: ${step.type}`);
