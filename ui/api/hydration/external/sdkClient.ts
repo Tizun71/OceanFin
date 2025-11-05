@@ -26,7 +26,7 @@ async function createCtx() {
 }
 
 export async function getHydrationSDK() {
-  if (apiInstance && (apiInstance as any).isConnected) {
+  if (apiInstance && apiInstance.isConnected) {
     return { api: apiInstance, sdk: sdkInstance! };
   }
   if (creatingPromise) {

@@ -1,28 +1,9 @@
 'use client'
 import '@luno-kit/ui/styles.css';
 import React, { ReactNode } from 'react'
-import { createConfig } from '@luno-kit/react'
 import { LunoKitProvider } from '@luno-kit/ui'
-import {
-  polkadot,
-  kusama,
-  westend,
-  paseo,
-} from '@luno-kit/react/chains'
-import {
-  polkadotjsConnector,
-  subwalletConnector,
-  talismanConnector,
-} from '@luno-kit/react/connectors'
 
-const config = createConfig({
-  chains: [polkadot, kusama, westend, paseo],
-  connectors: [
-    polkadotjsConnector(),
-    subwalletConnector(),
-    talismanConnector(),
-  ],
-})
+import { config } from '@/config/luno-config';
 
 interface LunoProviderProps {
   children: ReactNode

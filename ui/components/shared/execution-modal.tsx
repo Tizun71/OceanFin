@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Check, Loader2, AlertCircle, Zap } from "lucide-react"
+import { Check, Loader2, AlertCircle, ChevronRight } from "lucide-react"
 import type { StrategySimulate, Step as StrategyStep } from "@/types/strategy.type"
-import { STEP_TYPE, TEST_USER_PUBLIC_ADDRESS } from "@/utils/constant"
+import { STEP_TYPE } from "@/utils/constant"
 import { buildStepTx } from "@/services/strategy-step-service"
-import { getHydrationSDK, disconnectHydrationSDK } from "@/api/hydration/external/sdkClient"
-
+import { disconnectHydrationSDK } from "@/api/hydration/external/sdkClient"
+import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
+import { AnimatedStep } from "./animated-step"
+import { motion } from "framer-motion"
 type ExecutionStatus = "pending" | "processing" | "completed" | "failed"
 
 interface ExecutionStep {
@@ -17,6 +19,7 @@ interface ExecutionStep {
   description: string
   status: ExecutionStatus
   original?: StrategyStep
+  txHash?: string
 }
 
 interface ExecutionModalProps {
@@ -73,53 +76,118 @@ const buildExecutionSteps = (strategy?: StrategySimulate): ExecutionStep[] => {
   )
 }
 
-const statusStyles: Record<ExecutionStatus, string> = {
-  completed: "border-emerald-500/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/20",
-  processing: "border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/30",
-  failed: "border-red-500/50 bg-red-500/10 shadow-lg shadow-red-500/20",
-  pending: "border-slate-700/50 bg-slate-900/30",
-}
-
 /* ------------------------------ sub-components ----------------------------- */
 
 function StepItem({
   step,
   index,
+  explorerBase,
 }: {
   step: ExecutionStep
   index: number
+  explorerBase?: string
 }) {
+  const txUrl = step.txHash && explorerBase ? `${explorerBase.replace(/\/$/, "")}/extrinsic/${step.txHash}` : undefined
+
+  const statusConfig = {
+    completed: {
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/30",
+      icon: "bg-emerald-500",
+      text: "text-emerald-600 dark:text-emerald-400",
+    },
+    processing: {
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/30",
+      icon: "bg-blue-500",
+      text: "text-blue-600 dark:text-blue-400",
+    },
+    failed: {
+      bg: "bg-red-500/10",
+      border: "border-red-500/30",
+      icon: "bg-red-500",
+      text: "text-red-600 dark:text-red-400",
+    },
+    pending: {
+      bg: "bg-slate-500/5",
+      border: "border-slate-300 dark:border-slate-700",
+      icon: "bg-slate-200 dark:bg-slate-700",
+      text: "text-slate-500 dark:text-slate-400",
+    },
+  }
+
+  const config = statusConfig[step.status]
+
   return (
-    <div className={`p-4 rounded-xl border transition-all duration-300 backdrop-blur-sm ${statusStyles[step.status]}`}>
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex-shrink-0">
+    <div
+      className={`relative p-4 rounded-xl border transition-all duration-300 ${config.bg} ${config.border} hover:border-opacity-50`}
+    >
+      {step.status !== "pending" && (
+        <div className="absolute -left-[17px] top-12 w-[2px] h-8 bg-gradient-to-b from-current to-transparent opacity-30" />
+      )}
+
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 mt-1">
           {step.status === "completed" && (
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/50">
-              <Check className="w-4 h-4 text-white" />
+            <div
+              className={`w-8 h-8 rounded-full ${config.icon} flex items-center justify-center shadow-lg shadow-emerald-500/20`}
+            >
+              <Check className="w-5 h-5 text-white" strokeWidth={3} />
             </div>
           )}
           {step.status === "processing" && (
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/50">
-              <Loader2 className="w-4 h-4 text-white animate-spin" />
+            <div
+              className={`w-8 h-8 rounded-full ${config.icon} flex items-center justify-center shadow-lg shadow-blue-500/20`}
+            >
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
             </div>
           )}
           {step.status === "failed" && (
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/50">
-              <AlertCircle className="w-4 h-4 text-white" />
+            <div
+              className={`w-8 h-8 rounded-full ${config.icon} flex items-center justify-center shadow-lg shadow-red-500/20`}
+            >
+              <AlertCircle className="w-5 h-5 text-white" />
             </div>
           )}
           {step.status === "pending" && (
-            <div className="w-6 h-6 rounded-full border-2 border-slate-600 bg-slate-800/50 flex items-center justify-center">
-              <span className="text-xs text-slate-400 font-semibold">{index + 1}</span>
+            <div
+              className={`w-8 h-8 rounded-full ${config.icon} border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center font-semibold text-sm text-slate-600 dark:text-slate-400`}
+            >
+              {index + 1}
             </div>
           )}
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-foreground mb-1 text-sm">{step.title}</h4>
-          <p className="text-xs text-muted-foreground">{step.description}</p>
+          <h4 className="font-semibold text-sm text-foreground leading-tight mb-1.5">{step.title}</h4>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-2">{step.description}</p>
+
           {step.status === "processing" && (
-            <p className="text-xs text-cyan-400 mt-2 animate-pulse font-medium">Waiting for confirmation...</p>
+            <div className="flex items-center gap-2 mt-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Waiting for confirmation...</p>
+            </div>
+          )}
+
+          {step.status === "completed" && step.txHash && (
+            <div className="mt-2.5 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-muted-foreground mb-1">Transaction Hash:</p>
+              {txUrl ? (
+                <a
+                  href={txUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`inline-flex items-center gap-1 text-xs font-mono ${config.text} hover:underline transition-colors`}
+                >
+                  {step.txHash.slice(0, 8)}...{step.txHash.slice(-6)}
+                  <ChevronRight className="w-3 h-3" />
+                </a>
+              ) : (
+                <span className={`text-xs font-mono ${config.text}`}>
+                  {step.txHash.slice(0, 8)}...{step.txHash.slice(-6)}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -132,20 +200,24 @@ function StepItem({
 export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalProps) {
   const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const abortRef = useRef(false)
 
-  useEffect(() => {
-    if (!open) return
-    setExecutionSteps(buildExecutionSteps(strategy))
-    setIsExecuting(false)
-  }, [open, strategy])
+  const {
+    sendTransaction,
+    walletAddress,
+    isWalletConnected,
+    isReady,
+    currentChain,
+  } = useLunoPapiClient()
 
   useEffect(() => {
-    abortRef.current = false
-    return () => {
-      abortRef.current = true
+    if (!open) {
+      setExecutionSteps(buildExecutionSteps(strategy))
+      setIsExecuting(false)
+      setCurrentStepIndex(0) // Reset step index when modal opens/closes
     }
-  }, [])
+  }, [open, strategy])
 
   const subtitle = useMemo(() => {
     return strategy?.initialCapital
@@ -155,110 +227,129 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
 
   const startExecution = async () => {
     if (!executionSteps.length || isExecuting) return
+    if (!isWalletConnected || !walletAddress) {
+      alert("Please connect your wallet first")
+      return
+    }
 
     setIsExecuting(true)
-    let sdkOpened = false
-
-    const originals = executionSteps.map((s) => s.original)
+    abortRef.current = false
 
     try {
-      await getHydrationSDK()
-      sdkOpened = true
+      const originals = executionSteps.map((s) => s.original).filter(Boolean)
 
       for (let i = 0; i < originals.length; i++) {
         if (abortRef.current) break
 
+        setCurrentStepIndex(i)
+
+        // Update status of current step
         setExecutionSteps((prev) =>
-          prev.map((s, idx) =>
-            idx === i ? { ...s, status: "processing" } : idx < i ? { ...s, status: "completed" } : s,
-          ),
+          prev.map((s, idx) => (idx === i ? { ...s, status: "processing" } : s)),
         )
 
-        const original = originals[i]
         try {
-          if (original) {
-            const tx = await buildStepTx(original, TEST_USER_PUBLIC_ADDRESS)
-            console.log("Built tx for step:", original.type, tx)
+          const step = originals[i]
+          if (!step) continue
+
+          const tx = await buildStepTx(step, walletAddress)
+          if (tx) {
+            const result = await sendTransaction(tx)
+
+            if (abortRef.current) break
+
+            if (result?.transactionHash) {
+              setExecutionSteps((prev) =>
+                prev.map((s, idx) => (idx === i ? { ...s, status: "completed", txHash: result.transactionHash } : s)),
+              )
+            } else {
+              throw new Error(result?.errorMessage || "Transaction failed")
+            }
+
+
           }
 
-          if (abortRef.current) break
-
-          setExecutionSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, status: "completed" } : s)))
+          // Wait before next step
+          if (i < originals.length - 1) {
+            await new Promise((r) => setTimeout(r, 2000))
+          }
         } catch (err) {
-          if (abortRef.current) break
-
-          setExecutionSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, status: "failed" } : s)))
-
+          setExecutionSteps((prev) =>
+            prev.map((s, idx) => (idx === i ? { ...s, status: "failed" } : s)),
+          )
           break
         }
       }
-    } catch {
-      // keep statuses set above
+    } catch (err) {
+      console.error("Execution error:", err)
     } finally {
-      if (sdkOpened) {
-        try {
-          await disconnectHydrationSDK()
-        } catch {
-          // ignore disconnect errors
-        }
-      }
       setIsExecuting(false)
     }
   }
 
+  const handleCancel = () => {
+    abortRef.current = true
+    setIsExecuting(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-white backdrop-blur-xl border border-slate-800/50 shadow-2xl shadow-slate-950/50">
-        <DialogHeader className="pb-4 border-b border-slate-800/30 flex flex-col items-center text-center">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30">
-              <Zap className="w-4 h-4 text-cyan-400" />
-            </div>
-            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-              Execute Strategy
-            </DialogTitle>
-          </div>
-          <p className="text-xl text-slate-500 font-medium">{subtitle}</p>
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b">
+          <DialogTitle className="text-2xl font-bold">Execute Strategy</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            {subtitle} • Step {currentStepIndex + 1} of {executionSteps.length}
+          </p>
         </DialogHeader>
-
-        <div className="space-y-3 mt-4">
-          {executionSteps.map((step, index) => (
-            <StepItem key={step.id} step={step} index={index} />
-          ))}
-
-          {!executionSteps.length && (
-            <div className="text-sm text-slate-400 text-center py-8">No steps to execute.</div>
+        <div className="relative w-full overflow-hidden py-8 flex items-center justify-center bg-gradient-to-b from-ocean-50/30 to-ocean-100/10 rounded-2xl">
+          {executionSteps.length > 0 ? (
+            <AnimatedStep
+              steps={executionSteps}
+              currentIndex={currentStepIndex}
+              explorerBase={currentChain?.blockExplorers?.default?.url}
+            />
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="text-center"
+            >
+              <p className="text-sm text-muted-foreground">No steps to execute.</p>
+            </motion.div>
           )}
         </div>
 
-        <div className="flex gap-3 mt-6 pt-4 border-t border-slate-800/30">
-          <Button
-            variant="outline"
-            className="flex-1 bg-slate-900/50 hover:bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 text-slate-300 hover:text-slate-100 transition-all duration-200 rounded-lg font-medium"
-            onClick={() => onOpenChange(false)}
-            disabled={isExecuting}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={startExecution}
-            disabled={isExecuting || !executionSteps.length}
-          >
-            {isExecuting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Executing...
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 mr-2" />
-                Start Execution
-              </>
-            )}
-          </Button>
+        <div className="flex gap-3 mt-6 pt-4 border-t">
+          {isExecuting ? (
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleCancel}
+            >
+              Cancel Execution
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                onClick={startExecution}
+                disabled={!executionSteps.length || !isWalletConnected}
+              >
+                {!isWalletConnected ? 'Connect Wallet' : 'Start Execution'}
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
   )
 }
+
