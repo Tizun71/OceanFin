@@ -294,7 +294,9 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-white shadow-xl rounded-2xl border border-gray-200"
+      >
         <DialogHeader className="pb-4 border-b">
           <DialogTitle className="text-2xl font-bold">Execute Strategy</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1.5">
@@ -352,4 +354,3 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
     </Dialog>
   )
 }
-

@@ -38,9 +38,7 @@ export const CommonTable = <T extends {}>({ columns, data }: CommonTableProps<T>
             >
               {columns.map((col) => (
                 <td key={col.key} className="py-3 px-4 text-gray-900">
-                    <td key={col.key} className="py-3 px-4 text-gray-900">
-                        { col.render ? col.render(row) : (row as any)[col.key] ?? "-"}
-                    </td>
+                  {col.render ? col.render(row) : (row as any)[col.key] ?? "-"}
                 </td>
               ))}
             </motion.tr>
