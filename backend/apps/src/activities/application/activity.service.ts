@@ -11,27 +11,32 @@ export class ActivityService {
     return this.activityRepo.findAll();
   }
 
-  async findById(id: string): Promise<Activity> {
-    const activity = await this.activityRepo.findById(id);
-    if (!activity) throw new Error('Activity not found');
-    return activity;
+  async find(id?: string, userAddress?: string): Promise<Activity[]> {
+  if (!id && !userAddress) {
+    return this.activityRepo.findAll();
   }
+  return this.activityRepo.findByFilter({ id, userAddress });
+}
+
+
+
 
   async updateProgress(dto: UpdateActivityProgressDto): Promise<Activity> {
     if (!dto.activityId) throw new Error('activityId is required');
 
-    const activity = await this.findById(dto.activityId);
+    const activities = await this.find(dto.activityId);
+    const activity = activities[0];
+    if (!activity) throw new Error('Activity not found');
+
     const totalSteps = activity.totalSteps ?? 8;
     activity.totalSteps = totalSteps;
+    activity.currentStep = dto.step;
 
     if (dto.status === 'FAILED') {
-      activity.currentStep = dto.step;
       activity.status = 'FAILED';
-    } else if (dto.step && dto.step >= totalSteps) {
-      activity.currentStep = dto.step;
+    } else if (dto.step >= totalSteps) {
       activity.status = 'SUCCESS';
     } else {
-      activity.currentStep = dto.step;
       activity.status = 'PENDING';
     }
 
@@ -43,17 +48,17 @@ export class ActivityService {
     return activity;
   }
 
-  async resumeActivity(dto: UpdateActivityProgressDto): Promise<Activity> {
-    const activity = await this.findById(dto.activityId);
+  async resumeActivity(activityId: string, message?: string): Promise<Activity> {
+    const activity = (await this.find(activityId))[0];
+    if (!activity) throw new Error('Activity not found');
 
     if (activity.status !== 'FAILED') {
       throw new Error('Only FAILED activity can be resumed');
     }
 
     activity.status = 'PENDING';
-
-    if (dto.message) {
-      activity.metadata = { ...activity.metadata, message: dto.message };
+    if (message) {
+      activity.metadata = { ...activity.metadata, message };
     }
 
     await this.activityRepo.save(activity);

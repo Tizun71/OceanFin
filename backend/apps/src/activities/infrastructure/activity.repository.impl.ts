@@ -21,20 +21,25 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     return (data || []).map((row) => this.mapRowToEntity(row));
   }
 
-  async findById(id: string): Promise<Activity | null> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('activities')
-      .select('*')
-      .eq('id', id)
-      .single();
+  async findByFilter(filters: { id?: string; userAddress?: string }): Promise<Activity[]> {
+  let query = this.supabase.getClient().from('activities').select('*');
 
-    if (error || !data) {
-      return null;
-    }
-
-    return this.mapRowToEntity(data);
+  if (filters.id) {
+    query = query.eq('id', filters.id);
   }
+
+  if (filters.userAddress) {
+    query = query.eq('user_address', filters.userAddress);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch activities with filters: ${error.message}`);
+  }
+
+  return (data || []).map((row) => this.mapRowToEntity(row));
+}
 
   async save(activity: Activity): Promise<void> {
     const payload: any = {
