@@ -4,7 +4,7 @@ import { getMaxBorrow } from '../helpers/hydration/get-max-borrow';
 import { SLIPPAGE_TOLERANCE } from './constant';
 import { SimulateResult, Step } from './type';
 
-async function simulateGDOTStrategy(
+async function simulateVDOTStrategy(
   assetInId: string,
   tokenAmount: number,
   iterations: number,
@@ -14,7 +14,7 @@ async function simulateGDOTStrategy(
   let currentStep = 1;
   const totalSupply = 0;
   const totalBorrow = 0;
-  const dotToGdotPrice = await getAssetPrice(ASSET_ID.DOT, ASSET_ID.GDOT);
+  const dotToVdotPrice = await getAssetPrice(ASSET_ID.DOT, ASSET_ID.VDOT);
 
   // ENABLE EMODE
   steps.push({
@@ -25,14 +25,10 @@ async function simulateGDOTStrategy(
 
   // LOOPING
   for (let i = 0; i < iterations; i++) {
-    const gDotSwapOut =
-      Number((iterationAmount * dotToGdotPrice).toFixed(3)) *
-      (1 - SLIPPAGE_TOLERANCE);
-
-    // JOIN STRATEGY
+    // SWAP DOT to vDOT
     steps.push({
       step: currentStep++,
-      type: STEP_TYPE.JOIN_STRATEGY,
+      type: STEP_TYPE.SWAP,
       agent: AGENT.HYDRATION,
       tokenIn: {
         assetId: ASSET_ID.DOT,
@@ -40,14 +36,31 @@ async function simulateGDOTStrategy(
         amount: iterationAmount,
       },
       tokenOut: {
-        assetId: ASSET_ID.GDOT,
-        symbol: ASSET_SYMBOL.GDOT,
-        amount: gDotSwapOut,
+        assetId: ASSET_ID.VDOT,
+        symbol: ASSET_SYMBOL.VDOT,
+        amount: Number((iterationAmount * dotToVdotPrice).toFixed(3)),
+      }
+    });
+
+    const vDotSwapOut =
+      Number((iterationAmount * dotToVdotPrice).toFixed(3)) *
+      (1 - SLIPPAGE_TOLERANCE);
+
+    // SUPPLY
+    steps.push({
+      step: currentStep++,
+      type: STEP_TYPE.SUPPLY,
+      agent: AGENT.HYDRATION,
+      tokenIn: {
+        assetId: ASSET_ID.VDOT,
+        symbol: ASSET_SYMBOL.VDOT,
+        amount: iterationAmount,
       },
     });
 
     const borrowMaxAmount = await getMaxBorrow(ASSET_ID.DOT, iterationAmount);
 
+    // BORROW
     steps.push({
       step: currentStep++,
       type: STEP_TYPE.BORROW,
@@ -75,7 +88,9 @@ async function simulateGDOTStrategy(
     steps,
   };
 
+  console.log('Simulation Result:', result);
+
   return result;
 }
 
-export { simulateGDOTStrategy };
+export { simulateVDOTStrategy };

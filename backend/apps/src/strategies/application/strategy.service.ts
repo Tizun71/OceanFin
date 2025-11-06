@@ -5,6 +5,7 @@ import { title } from 'process';
 import { STRATEGY_LIST } from './strategy-list';
 import { simulateGDOTStrategy } from '../infrastructure/strategy-simulate/gDOT-looping-simulate';
 import { calculateAPY } from '../infrastructure/rewards/get-apy';
+import { simulateVDOTStrategy } from '../infrastructure/strategy-simulate/vDOT-looping-simulate';
 
 @Injectable()
 export class StrategyService {
@@ -71,6 +72,9 @@ export class StrategyService {
     if (strategy.strategistName === STRATEGY_LIST.gDOT_LOOPING) {
       return await simulateGDOTStrategy(assetIn, amountIn, iterations);
     }
+    if (strategy.strategistName === STRATEGY_LIST.vDOT_LOOPING) {
+      return await simulateVDOTStrategy(assetIn, amountIn, iterations);
+    }
     throw new Error('Strategy not found');
   }
 
@@ -87,7 +91,7 @@ export class StrategyService {
     await Promise.all(
       strategies.map(async (strategy) => {
     try {
-      const result = await calculateAPY();
+      const result = await calculateAPY(strategy.strategistName);
       strategy.update({ apy: result.apy });
       await this.strategiesRepo.save(strategy);
       console.log(`Updated APY for ${strategy.strategistName} (ID: ${strategy.id}) = ${result.apy}`);
