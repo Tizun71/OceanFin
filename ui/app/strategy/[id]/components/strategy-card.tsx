@@ -34,11 +34,12 @@ const safeGet = (obj: Record<string, string>, key: string) =>
   "/icons/default.png";
 
 export function StrategyCard({ strategy }: StrategyCardProps) {
-  const isActive = strategy.status === "Active";
-  
+  // const isActive = strategy.status === "Active";
+  const isActive = "Active";
+
   const getAgentGradient = (agents: string[]) => {
     const primaryAgent = agents[0]?.toLowerCase() || '';
-    
+
     const gradients = {
       hydration: 'from-pink-100 to-pink-300/30',
       plasma: 'from-purple-100 to-purple-300/30',
@@ -57,151 +58,149 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
   return (
     <Link href={`/strategy/${strategy.id}`}>
       <Card
-      className={`group relative overflow-hidden p-5 cursor-pointer rounded-2xl
-      shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1
-      border border-accent/10
+        className={`group relative overflow-hidden p-4 cursor-pointer rounded-xl
+      shadow-[0_3px_15px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_6px_24px_rgba(0,209,255,0.15)] hover:-translate-y-1
+      border border-accent/15
       bg-gradient-to-br ${cardGradient} backdrop-blur-sm
-      hover:border-accent/30
+      hover:border-accent/40
       hover:brightness-105`}
-    >
-      {/* Hover Glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl" />
+      >
+        {/* Hover Glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-secondary/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
 
-      <div className="relative z-10 flex flex-col md:flex-row gap-4">
-        <div className="grid grid-cols-4 gap-4">
-        {/* Left Section - Main Info */}
-        <div className="flex-1 min-w-0 col-span-3">
-          {/* Tags and Status */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex gap-2 flex-wrap">
-              {strategy.tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="bg-accent/10 text-accent text-xs font-medium border border-accent/20 rounded-md px-2.5 py-0.5"
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-            
-            <div
-              className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ml-2 flex-shrink-0
-                ${
-                  isActive
-                    ? "bg-accent/10 text-accent border border-accent/30"
-                    : "bg-destructive/10 text-destructive border border-destructive/30"
-                }
+        <div className="relative z-10 flex flex-col md:flex-row gap-3">
+          <div className="grid grid-cols-4 gap-3">
+            {/* Left Section - Main Info */}
+            <div className="flex-1 min-w-0 col-span-3">
+              {/* Tags and Status */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex gap-1.5 flex-wrap">
+                  {strategy.tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="bg-accent/15 text-accent text-xs font-semibold border border-accent/30 rounded-md px-2 py-0.5 shadow-sm"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div
+                  className={`flex items-center gap-0.5 text-[10px] font-medium px-2 py-0.5 rounded-full ml-1.5 flex-shrink-0
+                ${isActive
+                      ? "bg-green-500/10 text-green-500 border border-green-500/30"
+                      : "bg-destructive/10 text-destructive border border-destructive/30"
+                    }
               `}
-            >
-              {isActive ? (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              ) : (
-                <CircleOff className="w-3.5 h-3.5" />
-              )}
-              {isActive ? "Active" : "Inactive"}
-            </div>
-          </div>
+                >
+                  {isActive ? (
+                    <CheckCircle2 className="w-2.5 h-2.5" />
+                  ) : (
+                    <CircleOff className="w-2.5 h-2.5" />
+                  )}
+                  {isActive ? "Active" : "Inactive"}
+                </div>
+              </div>
 
-          {/* Strategist and Title */}
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-accent/30 bg-gradient-to-br from-accent/10 to-accent/5 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-bold text-accent">
-                {strategy.strategistName?.[0]?.toUpperCase() || "P"}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-bold text-foreground group-hover:text-accent transition-colors leading-tight mb-1">
-                {strategy.title}
-              </p>
-              <p className="text-sm font-medium text-foreground">
-                {strategy.strategistName}
-              </p>
-              <p className="text-xs text-muted-foreground">{strategy.strategistHandle}</p>
-            </div>
-          </div>
+              {/* Strategist and Title */}
+              <div className="mb-3">
+                <h3 className="text-lg font-black text-foreground group-hover:text-accent transition-colors leading-tight mb-2 tracking-tight">
+                  {strategy.title}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-foreground">
+                    {strategy.strategistName}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground/80 font-medium">{strategy.strategistHandle}</p>
 
-          {/* Assets / Agents / Chains - Horizontal */}
-          <div className="flex items-center gap-6 pt-3 border-t border-accent/10">
-            {/* Asset */}
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Asset</p>
-              <div className="flex gap-1">
-                {strategy.assets.slice(0, 2).map((asset) => (
-                  <div
-                    key={asset}
-                    className="w-7 h-7 rounded-full border-2 border-accent/20 overflow-hidden flex items-center justify-center bg-white shadow-sm"
-                    title={asset}
-                  >
-                    <img
-                      src={safeGet(assetIcons, asset)}
-                      alt={asset}
-                      className="w-4 h-4 object-contain"
-                    />
+              </div>
+
+              {/* Assets / Agents / Chains - Horizontal */}
+              <div className="flex items-center gap-5 pt-3 border-t border-accent/15">
+                {/* Asset */}
+                <div className="flex items-center gap-2 group/item">
+                  <p className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Asset</p>
+                  <div className="flex gap-1.5">
+                    {strategy.assets.slice(0, 2).map((asset, idx) => (
+                      <div
+                        key={`${asset}-${idx}`}
+                        className="relative w-7 h-7 rounded-full border border-accent/30 overflow-hidden shadow-sm hover:scale-110 hover:border-accent/60 transition-all duration-200 bg-white cursor-help"
+                        title={asset}
+                      >
+                        <Image
+                          src={asset}
+                          alt={asset}
+                          fill
+                          className="object-cover p-0.5"
+                        />
+                      </div>
+                    ))}
+                    {strategy.assets.length > 2 && (
+                      <div className="w-7 h-7 rounded-full bg-accent/15 text-accent border border-accent/30 flex items-center justify-center text-[10px] font-bold shadow-sm hover:scale-110 transition-transform duration-200 cursor-help">
+                        +{strategy.assets.length - 2}
+                      </div>
+                    )}
                   </div>
-                ))}
-                {strategy.assets.length > 2 && (
-                  <div className="w-7 h-7 rounded-full bg-accent/10 text-accent border-2 border-accent/20 flex items-center justify-center text-[9px] font-bold shadow-sm">
-                    +{strategy.assets.length - 2}
+                </div>
+
+                {/* Agent */}
+                <div className="flex items-center gap-2 group/item">
+                  <p className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Agent</p>
+                  <div className="flex gap-1.5">
+                    {strategy.agents.slice(0, 2).map((agent, idx) => (
+                      <div
+                        key={`${agent}-${idx}`}
+                        className="relative w-7 h-7 rounded-full border border-secondary/30 overflow-hidden shadow-sm hover:scale-110 hover:border-secondary/60 transition-all duration-200 bg-white cursor-help"
+                        title={agent}
+                      >
+                        <Image
+                          src={agent}
+                          alt={agent}
+                          fill
+                          className="object-cover p-0.5"
+                        />
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+
+                {/* Chain */}
+                <div className="flex items-center gap-2 group/item">
+                  <p className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Chain</p>
+                  <div className="flex gap-1.5">
+                    {strategy.chains.slice(0, 2).map((chain, idx) => (
+                      <div
+                        key={`${chain}-${idx}`}
+                        className="relative w-7 h-7 rounded-full border border-tertiary/30 overflow-hidden shadow-sm hover:scale-110 hover:border-tertiary/60 transition-all duration-200 bg-white cursor-help"
+                        title={chain}
+                      >
+                        <Image
+                          src={chain}
+                          alt={chain}
+                          fill
+                          className="object-cover p-0.5"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Agent */}
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Agent</p>
-              <div className="flex gap-1">
-                {strategy.agents.slice(0, 2).map((agent) => (
-                  <div
-                    key={agent}
-                    className="w-7 h-7 rounded-full border-2 border-secondary/20 overflow-hidden flex items-center justify-center bg-white shadow-sm"
-                    title={agent}
-                  >
-                    <img
-                      src={safeGet(agentIcons, agent)}
-                      alt={agent}
-                      className="w-4 h-4 object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Chain */}
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Chain</p>
-              <div className="flex gap-1">
-                {strategy.chains.slice(0, 2).map((chain) => (
-                  <div
-                    key={chain}
-                    className="w-7 h-7 rounded-full border-2 border-tertiary/20 overflow-hidden flex items-center justify-center bg-white shadow-sm"
-                    title={chain}
-                  >
-                    <img
-                      src={safeGet(chainIcons, chain)}
-                      alt={chain}
-                      className="w-4 h-4 object-contain"
-                    />
-                  </div>
-                ))}
+            {/* Right Section - APY */}
+            <div className="flex md:flex-col items-center md:items-end justify-center md:justify-start text-right flex-shrink-0 md:min-w-[90px] md:border-l border-accent/10 md:pl-3">
+              <div>
+                <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">APY</p>
+                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent whitespace-nowrap">
+                  {strategy.apy.toFixed(2)}%
+                </p>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Right Section - APY */}
-        <div className="flex md:flex-col items-center md:items-end justify-center md:justify-start text-right flex-shrink-0 md:min-w-[120px] md:border-l border-accent/10 md:pl-5">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">APY</p>
-            <p className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent whitespace-nowrap">
-              {strategy.apy.toFixed(2)}%
-            </p>
-          </div>
-        </div>
-        </div>
-      </div>
-    </Card>
+      </Card>
     </Link>
   );
 }
