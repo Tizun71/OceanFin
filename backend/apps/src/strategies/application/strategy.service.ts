@@ -41,9 +41,10 @@ export class StrategyService {
     return found;
   }
 
-  async findAll(): Promise<Strategy[]> {
-    return this.strategiesRepo.findAll();
-  }
+  async findAll(sortBy?: string, order: 'asc' | 'desc' = 'desc', limit?: number): Promise<Strategy[]> {
+  return this.strategiesRepo.findAll(sortBy, order, limit);
+}
+
 
   async update(
     id: string,
