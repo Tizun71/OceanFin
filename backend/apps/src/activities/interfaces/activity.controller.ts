@@ -4,6 +4,7 @@ import { ActivityService } from '../application/activity.service';
 import { ActivityResponseDto } from './dtos/activity-response.dto';
 import { ActivityMapper } from '../application/mappers/activity.mapper';
 import { UpdateActivityProgressDto } from './dtos/update-activity-progress.dto';
+import { CreateActivityDto } from './dtos/create-activity.dto';
 
 @ApiTags('Activities')
 @Controller('activities')
@@ -36,13 +37,15 @@ async find(
 
 
 
-  @Post('progress')
-  @ApiOperation({ summary: 'Create or update activity progress for current step' })
-  @ApiResponse({ status: 200, description: 'Progress updated', type: ActivityResponseDto })
-  async updateProgress(@Body() dto: UpdateActivityProgressDto): Promise<ActivityResponseDto> {
-    const updated = await this.activityService.updateProgress(dto);
-    return ActivityMapper.toResponse(updated);
-  }
+ @Post()
+@ApiOperation({ summary: 'Create new activity' })
+@ApiResponse({ status: 201, description: 'Activity created', type: ActivityResponseDto })
+async createActivity(@Body() dto: CreateActivityDto): Promise<ActivityResponseDto> {
+  const activity = await this.activityService.create(dto);
+  return ActivityMapper.toResponse(activity);
+}
+
+
   @Put('progress/:id')
   @ApiOperation({ summary: 'Resume or continue activity progress from a failed step' })
   @ApiResponse({ status: 200, description: 'Progress updated', type: ActivityResponseDto })
