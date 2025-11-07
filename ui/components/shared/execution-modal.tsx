@@ -3,29 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Check, Loader2, AlertCircle, ChevronRight } from "lucide-react"
 import type { StrategySimulate, Step as StrategyStep } from "@/types/strategy.type"
+import type { ExecutionStatus, ExecutionStep } from "./types"
 import { STEP_TYPE } from "@/utils/constant"
 import { buildStepTx } from "@/services/strategy-step-service"
-import { disconnectHydrationSDK } from "@/api/hydration/external/sdkClient"
 import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
 import { AnimatedStep } from "./animated-step"
 import { motion } from "framer-motion"
-type ExecutionStatus = "pending" | "processing" | "completed" | "failed"
-
-interface ExecutionStep {
-  id: string
-  title: string
-  description: string
-  status: ExecutionStatus
-  original?: StrategyStep
-  txHash?: string
-}
 
 interface ExecutionModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   strategy: StrategySimulate
+  startFromStep?: number 
 }
 
 /* ----------------------------- helpers (pure) ----------------------------- */
@@ -65,139 +55,23 @@ const getStepDescription = (s: StrategyStep) => {
 }
 
 const buildExecutionSteps = (strategy?: StrategySimulate): ExecutionStep[] => {
-  return (
-    strategy?.steps?.map((s, i) => ({
-      id: `${s.step ?? i + 1}`,
-      title: getStepTitle(s),
-      description: getStepDescription(s),
-      status: "pending" as const,
-      original: s,
-    })) ?? []
-  )
-}
-
-/* ------------------------------ sub-components ----------------------------- */
-
-function StepItem({
-  step,
-  index,
-  explorerBase,
-}: {
-  step: ExecutionStep
-  index: number
-  explorerBase?: string
-}) {
-  const txUrl = step.txHash && explorerBase ? `${explorerBase.replace(/\/$/, "")}/extrinsic/${step.txHash}` : undefined
-
-  const statusConfig = {
-    completed: {
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/30",
-      icon: "bg-emerald-500",
-      text: "text-emerald-600 dark:text-emerald-400",
-    },
-    processing: {
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/30",
-      icon: "bg-blue-500",
-      text: "text-blue-600 dark:text-blue-400",
-    },
-    failed: {
-      bg: "bg-red-500/10",
-      border: "border-red-500/30",
-      icon: "bg-red-500",
-      text: "text-red-600 dark:text-red-400",
-    },
-    pending: {
-      bg: "bg-slate-500/5",
-      border: "border-slate-300 dark:border-slate-700",
-      icon: "bg-slate-200 dark:bg-slate-700",
-      text: "text-slate-500 dark:text-slate-400",
-    },
+  if (!strategy?.steps || !Array.isArray(strategy.steps)) {
+    console.warn("No steps found in strategy:", strategy)
+    return []
   }
-
-  const config = statusConfig[step.status]
-
-  return (
-    <div
-      className={`relative p-4 rounded-xl border transition-all duration-300 ${config.bg} ${config.border} hover:border-opacity-50`}
-    >
-      {step.status !== "pending" && (
-        <div className="absolute -left-[17px] top-12 w-[2px] h-8 bg-gradient-to-b from-current to-transparent opacity-30" />
-      )}
-
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 mt-1">
-          {step.status === "completed" && (
-            <div
-              className={`w-8 h-8 rounded-full ${config.icon} flex items-center justify-center shadow-lg shadow-emerald-500/20`}
-            >
-              <Check className="w-5 h-5 text-white" strokeWidth={3} />
-            </div>
-          )}
-          {step.status === "processing" && (
-            <div
-              className={`w-8 h-8 rounded-full ${config.icon} flex items-center justify-center shadow-lg shadow-blue-500/20`}
-            >
-              <Loader2 className="w-5 h-5 text-white animate-spin" />
-            </div>
-          )}
-          {step.status === "failed" && (
-            <div
-              className={`w-8 h-8 rounded-full ${config.icon} flex items-center justify-center shadow-lg shadow-red-500/20`}
-            >
-              <AlertCircle className="w-5 h-5 text-white" />
-            </div>
-          )}
-          {step.status === "pending" && (
-            <div
-              className={`w-8 h-8 rounded-full ${config.icon} border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center font-semibold text-sm text-slate-600 dark:text-slate-400`}
-            >
-              {index + 1}
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-sm text-foreground leading-tight mb-1.5">{step.title}</h4>
-          <p className="text-xs text-muted-foreground leading-relaxed mb-2">{step.description}</p>
-
-          {step.status === "processing" && (
-            <div className="flex items-center gap-2 mt-2.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Waiting for confirmation...</p>
-            </div>
-          )}
-
-          {step.status === "completed" && step.txHash && (
-            <div className="mt-2.5 pt-2.5 border-t border-slate-200 dark:border-slate-800">
-              <p className="text-xs text-muted-foreground mb-1">Transaction Hash:</p>
-              {txUrl ? (
-                <a
-                  href={txUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`inline-flex items-center gap-1 text-xs font-mono ${config.text} hover:underline transition-colors`}
-                >
-                  {step.txHash.slice(0, 8)}...{step.txHash.slice(-6)}
-                  <ChevronRight className="w-3 h-3" />
-                </a>
-              ) : (
-                <span className={`text-xs font-mono ${config.text}`}>
-                  {step.txHash.slice(0, 8)}...{step.txHash.slice(-6)}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+  
+  return strategy.steps.map((s, i) => ({
+    id: `${s.step ?? i + 1}`,
+    title: getStepTitle(s),
+    description: getStepDescription(s),
+    status: "pending" as const,
+    txHash: undefined,
+  }))
 }
 
 /* --------------------------------- main ---------------------------------- */
 
-export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalProps) {
+export function ExecutionModal({ open, onOpenChange, strategy, startFromStep = 0 }: ExecutionModalProps) {
   const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
@@ -207,82 +81,127 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
     sendTransaction,
     walletAddress,
     isWalletConnected,
-    isReady,
     currentChain,
   } = useLunoPapiClient()
 
   useEffect(() => {
-    if (!open) {
-      setExecutionSteps(buildExecutionSteps(strategy))
+    if (open && strategy) {
+      console.log("Building execution steps from strategy:", strategy)
+      console.log("Starting from step:", startFromStep)
+      
+      const steps = buildExecutionSteps(strategy)
+      
+      const stepsWithStatus = steps.map((step, idx) => ({
+        ...step,
+        status: (idx < startFromStep ? "completed" : "pending") as ExecutionStatus
+      }))
+      
+      console.log("Built steps:", stepsWithStatus)
+      setExecutionSteps(stepsWithStatus)
       setIsExecuting(false)
-      setCurrentStepIndex(0) // Reset step index when modal opens/closes
+      setCurrentStepIndex(startFromStep)
     }
-  }, [open, strategy])
+  }, [open, strategy, startFromStep])
 
   const subtitle = useMemo(() => {
+    const resumeText = startFromStep > 0 ? ` • Resuming from step ${startFromStep + 1}` : ""
     return strategy?.initialCapital
-      ? `Initial: ${formatAmt(strategy.initialCapital.amount)} ${strategy.initialCapital.symbol} • Loops: ${strategy.loops}`
-      : `Loops: ${strategy?.loops ?? "-"}`
-  }, [strategy])
+      ? `Initial: ${formatAmt(strategy.initialCapital.amount)} ${strategy.initialCapital.symbol} • Loops: ${strategy.loops}${resumeText}`
+      : `Loops: ${strategy?.loops ?? "-"}${resumeText}`
+  }, [strategy, startFromStep])
 
   const startExecution = async () => {
-    if (!executionSteps.length || isExecuting) return
+    if (!executionSteps.length || isExecuting) {
+      console.warn("⚠️ Cannot start execution:", { 
+        hasSteps: executionSteps.length > 0, 
+        isExecuting 
+      })
+      return
+    }
     if (!isWalletConnected || !walletAddress) {
       alert("Please connect your wallet first")
       return
     }
 
+    console.log("🚀 Starting execution with", executionSteps.length, "steps")
+    console.log("📍 Starting from step index:", startFromStep)
     setIsExecuting(true)
     abortRef.current = false
 
     try {
-      const originals = executionSteps.map((s) => s.original).filter(Boolean)
+      const originalSteps = strategy?.steps || []
 
-      for (let i = 0; i < originals.length; i++) {
+      for (let i = startFromStep; i < originalSteps.length; i++) {
         if (abortRef.current) break
 
+        console.log(`\n📍 Executing step ${i + 1}/${originalSteps.length}:`, originalSteps[i])
         setCurrentStepIndex(i)
 
-        // Update status of current step
         setExecutionSteps((prev) =>
           prev.map((s, idx) => (idx === i ? { ...s, status: "processing" } : s)),
         )
 
         try {
-          const step = originals[i]
+          const step = originalSteps[i]
           if (!step) continue
 
           const tx = await buildStepTx(step, walletAddress)
-          if (tx) {
-            const result = await sendTransaction(tx)
-
-            if (abortRef.current) break
-
-            if (result?.transactionHash) {
-              setExecutionSteps((prev) =>
-                prev.map((s, idx) => (idx === i ? { ...s, status: "completed", txHash: result.transactionHash } : s)),
-              )
-            } else {
-              throw new Error(result?.errorMessage || "Transaction failed")
+          
+          if (!tx) {
+            console.log(`⏭️ Step ${i} (${step.type}) does not require transaction, marking as completed`)
+            setExecutionSteps((prev) =>
+              prev.map((s, idx) => 
+                idx === i 
+                  ? { ...s, status: "completed" as const } 
+                  : s
+              ),
+            )
+            
+            if (i < originalSteps.length - 1) {
+              await new Promise((r) => setTimeout(r, 1000))
             }
-
-
+            continue
           }
 
-          // Wait before next step
-          if (i < originals.length - 1) {
+          console.log(`🔐 Step ${i} (${step.type}): Requesting signature...`)
+          const result = await sendTransaction(tx)
+          console.log(`📝 Step ${i} result:`, result)
+
+          if (abortRef.current) break
+
+          if (result?.status === "failed" || result?.errorMessage) {
+            throw new Error(result?.errorMessage || "Transaction failed on blockchain")
+          }
+
+          if (result?.transactionHash) {
+            setExecutionSteps((prev) =>
+              prev.map((s, idx) => 
+                idx === i 
+                  ? { ...s, status: "completed" as const, txHash: result.transactionHash || undefined } 
+                  : s
+              ),
+            )
+          } else {
+            throw new Error("No transaction hash returned")
+          }
+
+          if (i < originalSteps.length - 1) {
             await new Promise((r) => setTimeout(r, 2000))
           }
         } catch (err) {
+          console.error(`❌ Step ${i} failed:`, err)
           setExecutionSteps((prev) =>
             prev.map((s, idx) => (idx === i ? { ...s, status: "failed" } : s)),
           )
+          alert(`Step ${i + 1} failed: ${err instanceof Error ? err.message : String(err)}`)
           break
         }
       }
     } catch (err) {
-      console.error("Execution error:", err)
+      console.error("❌ Execution error:", err)
+      alert(`Execution failed: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
+      console.log("✅ Execution finished")
       setIsExecuting(false)
     }
   }
@@ -294,16 +213,15 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-white shadow-xl rounded-2xl border border-gray-200"
-      >
-        <DialogHeader className="pb-4 border-b">
-          <DialogTitle className="text-2xl font-bold">Execute Strategy</DialogTitle>
+      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-card/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-border">
+        <DialogHeader className="pb-4 border-b border-border">
+          <DialogTitle className="text-2xl font-bold text-primary">Execute Strategy</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1.5">
             {subtitle} • Step {currentStepIndex + 1} of {executionSteps.length}
           </p>
         </DialogHeader>
-        <div className="relative w-full overflow-hidden py-8 flex items-center justify-center bg-gradient-to-b from-ocean-50/30 to-ocean-100/10 rounded-2xl">
+        
+        <div className="relative w-full overflow-hidden py-8 flex items-center justify-center bg-gradient-to-b from-accent/5 to-primary/5 rounded-2xl">
           {executionSteps.length > 0 ? (
             <AnimatedStep
               steps={executionSteps}
@@ -322,7 +240,7 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
           )}
         </div>
 
-        <div className="flex gap-3 mt-6 pt-4 border-t">
+        <div className="flex gap-3 mt-6 pt-4 border-t border-border">
           {isExecuting ? (
             <Button
               variant="destructive"
@@ -341,7 +259,7 @@ export function ExecutionModal({ open, onOpenChange, strategy }: ExecutionModalP
                 Close
               </Button>
               <Button
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                className="flex-1 bg-accent hover:bg-accent/90 text-white font-semibold"
                 onClick={startExecution}
                 disabled={!executionSteps.length || !isWalletConnected}
               >

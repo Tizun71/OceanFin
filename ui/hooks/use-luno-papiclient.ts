@@ -1,4 +1,3 @@
-// hooks/useLunoPapiClient.ts
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -168,69 +167,87 @@ export function useLunoPapiClient() {
     async (
       tx: any
     ): Promise<SendResult> => {
-      try {
-        if (!state.isReady || !state.client) {
-          throw new Error("Client not ready");
-        }
-        const { api } = await getHydrationSDK();
-        console.log(walletAddress);
-        const nonce = await api.rpc.system.accountNextIndex(walletAddress as string);
-        const blockHash = await api.rpc.chain.getBlockHash();
-
-        const ss58Prefix = state.client.registry.chainSS58 ?? 0;
-        let formattedFrom = walletAddress;
-
-        if (!isAddress(formattedFrom)) throw new Error(`Invalid fromAddress: ${formattedFrom}`);
-
-        formattedFrom = encodeAddress(decodeAddress(formattedFrom), ss58Prefix);
-        web3Enable("OceanFinApp");
-
-        const injector = await web3FromAddress(formattedFrom);
-
-        const unsub = await tx.signAndSend(
-          formattedFrom,
-          { signer: injector.signer, nonce, era: 0, blockHash },
-          ({ status, dispatchError }: any) => {
-            console.log("[sendTransaction] Status:", status.toHuman());
-
-            if (dispatchError) {
-              let errorMessage = dispatchError.toString();
-              if (dispatchError.isModule) {
-                try {
-                  const decoded = tx.registry.findMetaError(dispatchError.asModule);
-                  const { section, name, docs } = decoded;
-                  errorMessage = `${section}.${name}: ${docs.join(" ")}`;
-                } catch (e) {
-                  // ignore decoding error
-                }
-              }
-              console.error("[sendTransaction] DispatchError:", errorMessage);
-              unsub();
-            }
-
-            if (status.isInBlock) {
-              console.log(`[sendTransaction] Included in block: ${status.asInBlock}`);
-            } else if (status.isFinalized) {
-              console.log(`[sendTransaction] Finalized at block: ${status.asFinalized}`);
-              unsub();
-            }
+      return new Promise(async (resolve, reject) => {
+        try {
+          if (!state.isReady || !state.client) {
+            throw new Error("Client not ready");
           }
-        );
-        return {
-          transactionHash: tx.hash.toHex(),
-          status: "success",
-          errorMessage: null,
-        };
-      } catch (err: any) {
-        console.error("[sendTransaction] Error while sending tx:", err);
-        return {
-          transactionHash: null,
-          status: "failed",
-          errorMessage: err?.message ?? String(err),
-        };
-      }
+          const { api } = await getHydrationSDK();
+          console.log("[sendTransaction] Wallet address:", walletAddress);
+          const nonce = await api.rpc.system.accountNextIndex(walletAddress as string);
+          const blockHash = await api.rpc.chain.getBlockHash();
+
+          const ss58Prefix = state.client.registry.chainSS58 ?? 0;
+          let formattedFrom = walletAddress;
+
+          if (!isAddress(formattedFrom)) throw new Error(`Invalid fromAddress: ${formattedFrom}`);
+
+          formattedFrom = encodeAddress(decodeAddress(formattedFrom), ss58Prefix);
+          await web3Enable("OceanFinApp");
+
+          const injector = await web3FromAddress(formattedFrom);
+          const txHash = tx.hash.toHex();
+
+          const unsub = await tx.signAndSend(
+            formattedFrom,
+            { signer: injector.signer, nonce, era: 0, blockHash },
+            ({ status, dispatchError }: any) => {
+              console.log("[sendTransaction] Status:", status.toHuman());
+
+              if (dispatchError) {
+                let errorMessage = dispatchError.toString();
+                if (dispatchError.isModule) {
+                  try {
+                    const decoded = api.registry.findMetaError(dispatchError.asModule);
+                    const { section, name, docs } = decoded;
+                    errorMessage = `${section}.${name}: ${docs.join(" ")}`;
+                  } catch (e) {
+                    console.warn("Could not decode dispatch error:", e);
+                  }
+                }
+                console.error("[sendTransaction] ❌ DispatchError:", errorMessage);
+                unsub();
+                resolve({
+                  transactionHash: txHash,
+                  status: "failed",
+                  errorMessage,
+                });
+                return;
+              }
+
+              if (status.isInBlock) {
+                console.log(`[sendTransaction] ✅ Included in block: ${status.asInBlock}`);
+                unsub();
+                resolve({
+                  transactionHash: txHash,
+                  status: "success",
+                  errorMessage: null,
+                });
+                return;
+              } 
+              
+              if (status.isFinalized) {
+                console.log(`[sendTransaction] ✅ Finalized at block: ${status.asFinalized}`);
+                unsub();
+                resolve({
+                  transactionHash: txHash,
+                  status: "success",
+                  errorMessage: null,
+                });
+              }
+            }
+          );
+        } catch (err: any) {
+          console.error("[sendTransaction] ❌ Error while sending tx:", err);
+          resolve({
+            transactionHash: null,
+            status: "failed",
+            errorMessage: err?.message ?? String(err),
+          });
+        }
+      });
     },
-    [state.isReady, state.client]
+    [state.isReady, state.client, walletAddress]
   );
 
   useEffect(() => {

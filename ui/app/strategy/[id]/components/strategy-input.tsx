@@ -58,18 +58,32 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
     try {
       const data = await simulateStrategy(strategy, Number(amount))
+      console.log("✅ Simulation successful:", data)
+      
+      if (!data?.steps?.length) {
+        console.warn("⚠️ No steps in simulation result")
+      }
+      
       setSimulateResult(data)
       onSimulateSuccess?.(data)
     } catch (error: any) {
-      console.error("Simulation error:", error)
-      setSimulateError(error?.message || "Simulation failed")
+      console.error("❌ Simulation error:", error)
+      const errorMsg = error?.message || "Simulation failed"
+      setSimulateError(errorMsg)
     } finally {
       setLoadingSimulate(false)
     }
   }
 
   const handleExecute = () => {
-    if (!isConnected || !simulateResult) return
+    if (!isConnected) {
+      alert("Please connect your wallet first")
+      return
+    }
+    if (!simulateResult) {
+      alert("Please simulate the strategy first")
+      return
+    }
     setExecutionModalOpen(true)
   }
 
@@ -138,7 +152,6 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           </p>
         </div>
 
-        {/* Action Buttons */}
         <div className="space-y-3">
           {isConnected ? (
             <>
@@ -176,7 +189,6 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           )}
         </div>
 
-        {/* Simulate Error */}
         {simulateError && (
           <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
             {simulateError}
@@ -185,7 +197,12 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       </div>
 
       {simulateResult && (
-        <ExecutionModal open={executionModalOpen} onOpenChange={setExecutionModalOpen} strategy={simulateResult} />
+        <ExecutionModal 
+          open={executionModalOpen} 
+          onOpenChange={setExecutionModalOpen} 
+          strategy={simulateResult}
+          startFromStep={0}
+        />
       )}
     </>
   )
