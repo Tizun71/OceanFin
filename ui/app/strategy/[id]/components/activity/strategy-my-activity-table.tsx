@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Column, CommonTable } from "@/app/common/common-table"
 import { getActivities, restartActivity, resumeProgress } from "@/services/progress-service"
+import { CommonTable, TableColumn } from "@/app/common/common-table"
 
 export type MyActivityRow = {
   id: string
@@ -14,6 +14,8 @@ export type MyActivityRow = {
   fee: string
   initialCapital: string
   status: "Pending" | "Completed" | "Failed"
+  txHash?: string[]
+  userAddress?: string
 }
 
 export const MyActivityTable = () => {
@@ -23,31 +25,30 @@ export const MyActivityTable = () => {
 
   const fetchActivities = async () => {
     setLoading(true)
-    setError(null)
     try {
       const res = await getActivities()
       const list: any[] = Array.isArray(res) ? res : [res]
-
       const formatted: MyActivityRow[] = list.map((a) => ({
         id: a.id ?? "-",
-        date: a.createdAt ? a.createdAt.slice(0, 10) : "-",
-        strategy: a.strategyId || "-",
+        date: a.createdAt?.slice(0, 10) ?? "-",
+        strategy: a.strategyId ?? "-",
         currentStep: a.currentStep ?? 0,
         totalSteps: a.totalSteps ?? 0,
-        apr: a.metadata?.APR ? `${a.metadata.APR}%` : "-",
-        fee: a.metadata?.fee ? `${a.metadata.fee}%` : "-",
-        initialCapital: a.metadata?.initial_capital || "-",
+        apr: a.metadata?.APR ?? "-",
+        fee: a.metadata?.fee ?? "-",
+        initialCapital: a.metadata?.initial_capital ?? "-",
         status:
           a.status === "FAILED"
             ? "Failed"
             : a.status === "COMPLETED"
             ? "Completed"
             : "Pending",
+        txHash: a.txHash ?? [],
+        userAddress: a.userAddress ?? "-",
       }))
-
       setActivities(formatted)
     } catch (err) {
-      console.error(" Fetch activities failed:", err)
+      console.error(err)
       setError("Failed to load activities.")
     } finally {
       setLoading(false)
@@ -59,82 +60,60 @@ export const MyActivityTable = () => {
   }, [])
 
   const handleRetry = async (id: string, step: number) => {
-    try {
-      await restartActivity(id, step)
-      alert(" Retry successful!")
-      fetchActivities()
-    } catch (err) {
-      console.error(" Retry failed:", err)
-      alert(" Retry failed. Check console for details.")
-    }
+    await restartActivity(id, step)
+    fetchActivities()
   }
 
   const handleResume = async (id: string, step: number) => {
-    try {
-      const payload = {
-        activityId: id,
-        step,
-        status: "IN_PROGRESS",
-        message: "Resumed from frontend",
-      }
-      await resumeProgress(id, payload)
-      alert(" Resume successful!")
-      fetchActivities()
-    } catch (err) {
-      console.error(" Resume failed:", err)
-      alert(" Resume failed. Check console for details.")
-    }
+    await resumeProgress(id, { activityId: id, step })
+    fetchActivities()
   }
 
-  const columns: Column<MyActivityRow>[] = [
+  const columns: TableColumn<MyActivityRow>[] = [
     { key: "date", label: "Date" },
     { key: "strategy", label: "Strategy ID" },
     {
-      key: "progress" as any,
+      key: "progress",
       label: "Progress",
-      render: (row) => (
-        <span>
-          Step {row.currentStep}/{row.totalSteps}
-        </span>
-      ),
+      render: (r) => `Step ${r.currentStep}/${r.totalSteps}`,
     },
     { key: "apr", label: "APR" },
     { key: "fee", label: "Fee" },
-    { key: "initialCapital", label: "Initial Capital" },
+    { key: "initialCapital", label: "Amount" },
     {
       key: "status",
       label: "Status",
-      render: (row) => (
+      render: (r) => (
         <span
           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-            row.status === "Pending"
+            r.status === "Pending"
               ? "bg-yellow-100 text-yellow-600"
-              : row.status === "Completed"
+              : r.status === "Completed"
               ? "bg-green-100 text-green-600"
               : "bg-red-100 text-red-600"
           }`}
         >
-          {row.status}
+          {r.status}
         </span>
       ),
     },
     {
-      key: "action" as any,
+      key: "actions",
       label: "Action",
-      render: (row) => (
+      render: (r) => (
         <div className="flex gap-2">
-          {row.status === "Failed" && (
+          {r.status === "Failed" && (
             <button
+              onClick={() => handleRetry(r.id, r.currentStep)}
               className="text-blue-600 hover:underline"
-              onClick={() => handleRetry(row.id, row.currentStep)}
             >
               🔁 Retry
             </button>
           )}
-          {row.status === "Pending" && (
+          {r.status === "Pending" && (
             <button
+              onClick={() => handleResume(r.id, r.currentStep)}
               className="text-green-600 hover:underline"
-              onClick={() => handleResume(row.id, row.currentStep)}
             >
               ▶ Resume
             </button>
@@ -144,11 +123,42 @@ export const MyActivityTable = () => {
     },
   ]
 
-  if (loading)
-    return <div className="text-center py-4 text-gray-500">Loading activities...</div>
+  //expand (TxHash + Address)
+  const renderExpand = (row: MyActivityRow) => (
+    <div className="grid grid-cols-2 gap-8 text-[15px] text-gray-800">
+      <div>
+        <div className="text-gray-500 text-xs uppercase mb-1">Wallet Address</div>
+        <div className="font-medium truncate">{row.userAddress || "-"}</div>
+      </div>
 
-  if (error)
-    return <div className="text-center py-4 text-red-500">{error}</div>
+      <div>
+        <div className="text-gray-500 text-xs uppercase mb-1">Tx Hash</div>
+        {row.txHash?.length ? (
+          row.txHash.map((hash, i) => (
+            <a
+              key={i}
+              href={`https://etherscan.io/tx/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-blue-600 hover:underline text-sm"
+            >
+              {hash.slice(0, 8)}...{hash.slice(-6)} ↗
+            </a>
+          ))
+        ) : (
+          <span className="text-gray-400 italic">No transactions</span>
+        )}
+      </div>
+    </div>
+  )
 
-  return <CommonTable columns={columns} data={activities} />
+  return (
+    <CommonTable
+      data={activities}
+      columns={columns}
+      expandable={renderExpand}
+      loading={loading}
+      error={error}
+    />
+  )
 }

@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { Column, CommonTable } from "@/app/common/common-table"
 import { getActivities } from "@/services/progress-service"
+import { CommonTable, TableColumn } from "@/app/common/common-table"
 
 export type AllActivityRow = {
   id: string
@@ -13,6 +13,7 @@ export type AllActivityRow = {
   fee: string
   initialCapital: string
   status: "Pending" | "Completed" | "Failed"
+  txHash?: string[]
 }
 
 export const AllActivityTable = () => {
@@ -25,7 +26,6 @@ export const AllActivityTable = () => {
       try {
         setLoading(true)
         const res = await getActivities()
-
         const list = Array.isArray(res) ? res : [res]
 
         const formatted: AllActivityRow[] = list.map((item: any) => ({
@@ -33,8 +33,8 @@ export const AllActivityTable = () => {
           date: new Date(item.createdAt).toISOString().split("T")[0],
           user: item.userAddress || "Unknown",
           step: `Step ${item.currentStep ?? 0} / ${item.totalSteps ?? 0}`,
-          apr: item.metadata?.APR ? `${item.metadata.APR}%` : "-", 
-          fee: item.metadata?.fee ? `${item.metadata.fee}%` : "-", 
+          apr: item.metadata?.APR ?? "-",
+          fee: item.metadata?.fee ?? "-",
           initialCapital: item.metadata?.initial_capital
             ? `$${item.metadata.initial_capital}`
             : "-",
@@ -44,13 +44,12 @@ export const AllActivityTable = () => {
               : item.status === "COMPLETED"
               ? "Completed"
               : "Pending",
+          txHash: item.txHash || [],
         }))
-
-        console.log(" Fetched activities:", formatted) 
 
         setData(formatted)
       } catch (err) {
-        console.error(" Fetch activities failed:", err)
+        console.error("Fetch activities failed:", err)
         setError("Failed to load activities.")
       } finally {
         setLoading(false)
@@ -60,24 +59,25 @@ export const AllActivityTable = () => {
     fetchActivities()
   }, [])
 
-  const columns: Column<AllActivityRow>[] = [
-    { key: "date", label: "Date" },
-    { key: "user", label: "User Address" },
-    { key: "step", label: "Progress" },
-    { key: "apr", label: "APR" },
-    { key: "fee", label: "Fee" },
-    { key: "initialCapital", label: "Initial Capital" },
+  const columns: TableColumn<AllActivityRow>[] = [
+    { key: "date", label: "Date", className: "col-span-1" },
+    { key: "user", label: "User Address", className: "col-span-2 truncate" },
+    { key: "step", label: "Progress", className: "col-span-2" },
+    { key: "apr", label: "APR", className: "col-span-1" },
+    { key: "fee", label: "Fee", className: "col-span-1" },
+    { key: "initialCapital", label: "Amount", className: "col-span-1" },
     {
       key: "status",
       label: "Status",
+      className: "col-span-1 text-center",
       render: (row) => (
         <span
           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             row.status === "Pending"
-              ? "bg-yellow-100 text-yellow-600"
+              ? "bg-yellow-100 text-yellow-700"
               : row.status === "Completed"
-              ? "bg-green-100 text-green-600"
-              : "bg-red-100 text-red-600"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
           }`}
         >
           {row.status}
@@ -86,8 +86,43 @@ export const AllActivityTable = () => {
     },
   ]
 
-  if (loading) return <div className="p-4 text-gray-500">Loading activities...</div>
-  if (error) return <div className="p-4 text-red-500">{error}</div>
+  //Expandable Transaction Hash
+  const renderExpand = (row: AllActivityRow) => (
+    <div className="space-y-2">
+      <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+        Tx Hash
+      </div>
 
-  return <CommonTable columns={columns} data={data} />
+      {row.txHash && row.txHash.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          {row.txHash.map((hash, i) => (
+            <a
+              key={i}
+              href={`https://etherscan.io/tx/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline text-sm"
+            >
+              {hash.slice(0, 10)}...{hash.slice(-8)} ↗
+            </a>
+          ))}
+        </div>
+      ) : (
+        <span className="text-gray-400 italic text-sm">No transactions</span>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="p-4">
+      <CommonTable
+        columns={columns}
+        data={data}
+        expandable={renderExpand}
+        loading={loading}
+        error={error}
+        gridCols="grid-cols-9" 
+      />
+    </div>
+  )
 }
