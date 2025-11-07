@@ -8,6 +8,7 @@ import LunoProvider from "@/providers/luno-provider";
 import { LunoProviderWrapper } from "./contexts/luno-context";
 import Footer from "@/components/shared/footer";
 import { HeroSection } from "@/components/hero-section";
+import { ToastProvider } from "@/providers/toast-provider";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -33,24 +34,26 @@ export default function RootLayout({
         bg-gradient-to-br from-foreground/40 via-accent/5 to-foreground/80 
         relative`}
       >
-        <LunoProvider>
-          <LunoProviderWrapper>
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
-                Loading...
-              </div>}
-            >
-              <div className="min-h-screen flex flex-col relative z-0">
-                <HeroSection /> 
-                  <main className="flex-1 pt-[30px]"> 
-                    {children}
-                  </main>
-                <Footer />
-              </div>
-            </Suspense>
-          </LunoProviderWrapper>
-        </LunoProvider>
-        <Analytics />
+        <ToastProvider>        
+          <LunoProvider>
+            <LunoProviderWrapper>
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
+                  Loading...
+                </div>}
+              >
+                <div className="min-h-screen flex flex-col relative z-0">
+                  <HeroSection /> 
+                    <main className="flex-1 pt-[30px]"> 
+                      {children}
+                    </main>
+                  <Footer />
+                </div>
+              </Suspense>
+            </LunoProviderWrapper>
+          </LunoProvider>
+          <Analytics />
+        </ToastProvider>
       </body>
     </html>
   );
