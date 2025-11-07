@@ -6,6 +6,7 @@ import { getActivities, restartActivity, resumeProgress } from "@/services/progr
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
+import { AnimatePresence, motion } from "framer-motion"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -188,19 +189,7 @@ export const MyActivityTable = () => {
       <div>
         <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Tx Hash</div>
         {row.txHash?.length ? (
-          <div className="space-y-1">
-            {row.txHash.map((hash, i) => (
-              <a
-                key={i}
-                href={`https://etherscan.io/tx/${hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40"
-              >
-                {hash.slice(0, 8)}...{hash.slice(-6)} ↗
-              </a>
-            ))}
-          </div>
+          <TxHashList hashes={row.txHash} />
         ) : (
           <span className="text-muted-foreground italic text-sm">No transactions</span>
         )}
@@ -233,5 +222,48 @@ export const MyActivityTable = () => {
         />
       )}
     </>
+  )
+  
+}
+const TxHashList = ({ hashes }: { hashes: string[] }) => {
+  const [showAll, setShowAll] = useState(false)
+  const limit = 3
+  const sorted = [...hashes].reverse()
+  const visible = showAll ? sorted : sorted.slice(0, limit)
+
+  return (
+    <div>
+      <AnimatePresence>
+        <motion.div
+          layout
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-1 overflow-hidden"
+        >
+          {visible.map((hash, i) => (
+            <a
+              key={i}
+              href={`https://etherscan.io/tx/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 truncate"
+            >
+              {hash.slice(0, 8)}...{hash.slice(-6)} ↗
+            </a>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+
+      {hashes.length > limit && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-2 text-xs text-blue-500 hover:underline font-medium"
+        >
+          {showAll ? "Show less" : `Show ${hashes.length - limit} more`}
+        </button>
+      )}
+    </div>
   )
 }
