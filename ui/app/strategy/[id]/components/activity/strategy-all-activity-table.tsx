@@ -1,61 +1,128 @@
 "use client"
 
-import { Column, CommonTable } from "@/app/common/common-table"
-import React from "react"
+import React, { useEffect, useState } from "react"
+import { getActivities } from "@/services/progress-service"
+import { CommonTable, TableColumn } from "@/app/common/common-table"
 
 export type AllActivityRow = {
+  id: string
   date: string
   user: string
   step: string
   apr: string
   fee: string
+  initialCapital: string
   status: "Pending" | "Completed" | "Failed"
+  txHash?: string[]
 }
 
-const allActivityData: AllActivityRow[] = [
-  {
-    date: "2025-11-03",
-    user: "0xAbc...123",
-    step: "Step 5 / 8",
-    apr: "4.5%",
-    fee: "1%",
-    status: "Pending",
-  },
-  {
-    date: "2025-11-02",
-    user: "0xDef...456",
-    step: "Step 8 / 8",
-    apr: "3.8%",
-    fee: "0.9%",
-    status: "Completed",
-  },
-]
+export const AllActivityTable = () => {
+  const [data, setData] = useState<AllActivityRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-const allActivityColumns: Column<AllActivityRow>[] = [
-  { key: "date", label: "Date" },
-  { key: "user", label: "User Address" },
-  { key: "step", label: "Progress" },
-  { key: "apr", label: "APR" },
-  { key: "fee", label: "Fee" },
-  {
-    key: "status",
-    label: "Status",
-    render: (row) => (
-      <span
-        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-          row.status === "Pending"
-            ? "bg-yellow-100 text-yellow-600"
-            : row.status === "Completed"
-            ? "bg-green-100 text-green-600"
-            : "bg-gray-100 text-gray-600"
-        }`}
-      >
-        {row.status}
-      </span>
-    ),
-  },
-]
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setLoading(true)
+        const res = await getActivities()
+        const list = Array.isArray(res) ? res : [res]
 
-export const AllActivityTable = () => (
-  <CommonTable columns={allActivityColumns} data={allActivityData} />
-)
+        const formatted: AllActivityRow[] = list.map((item: any) => ({
+          id: item.id,
+          date: new Date(item.createdAt).toISOString().split("T")[0],
+          user: item.userAddress || "Unknown",
+          step: `Step ${item.currentStep ?? 0} / ${item.totalSteps ?? 0}`,
+          apr: item.metadata?.APR ?? "-",
+          fee: item.metadata?.fee ?? "-",
+          initialCapital: item.metadata?.initial_capital
+            ? `$${item.metadata.initial_capital}`
+            : "-",
+          status:
+            item.status === "FAILED"
+              ? "Failed"
+              : item.status === "COMPLETED"
+              ? "Completed"
+              : "Pending",
+          txHash: item.txHash || [],
+        }))
+
+        setData(formatted)
+      } catch (err) {
+        console.error("Fetch activities failed:", err)
+        setError("Failed to load activities.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchActivities()
+  }, [])
+
+  const columns: TableColumn<AllActivityRow>[] = [
+    { key: "date", label: "Date", className: "col-span-1" },
+    { key: "user", label: "User Address", className: "col-span-2 truncate" },
+    { key: "step", label: "Progress", className: "col-span-2" },
+    { key: "apr", label: "APR", className: "col-span-1" },
+    { key: "fee", label: "Fee", className: "col-span-1" },
+    { key: "initialCapital", label: "Amount", className: "col-span-1" },
+    {
+      key: "status",
+      label: "Status",
+      className: "col-span-1 text-center",
+      render: (row) => (
+        <span
+          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+            row.status === "Pending"
+              ? "bg-yellow-100 text-yellow-700"
+              : row.status === "Completed"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {row.status}
+        </span>
+      ),
+    },
+  ]
+
+  //Expandable Transaction Hash
+  const renderExpand = (row: AllActivityRow) => (
+    <div className="space-y-2">
+      <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+        Tx Hash
+      </div>
+
+      {row.txHash && row.txHash.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          {row.txHash.map((hash, i) => (
+            <a
+              key={i}
+              href={`https://etherscan.io/tx/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline text-sm"
+            >
+              {hash.slice(0, 10)}...{hash.slice(-8)} ↗
+            </a>
+          ))}
+        </div>
+      ) : (
+        <span className="text-gray-400 italic text-sm">No transactions</span>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="p-4">
+      <CommonTable
+        columns={columns}
+        data={data}
+        expandable={renderExpand}
+        loading={loading}
+        error={error}
+        gridCols="grid-cols-9" 
+      />
+    </div>
+  )
+}

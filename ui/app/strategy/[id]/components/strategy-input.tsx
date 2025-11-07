@@ -97,10 +97,10 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
   return (
     <>
-      <div className="rounded-2xl p-8 border border-accent/20 bg-gradient-to-br from-white/95 to-white/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,209,255,0.08)] transition-all duration-500 hover:shadow-[0_12px_48px_rgba(0,209,255,0.12)] hover:border-accent/30">
+      <div className="rounded-2xl p-8 border border-border bg-card backdrop-blur-xl shadow-lg transition-all duration-500 hover:shadow-xl hover:border-accent/50">
         {/* Header */}
         <div className="mb-7">
-          <h3 className="text-2xl font-extrabold bg-gradient-to-r from-accent via-accent to-accent-light bg-clip-text text-transparent mb-2">
+          <h3 className="text-2xl font-extrabold text-primary mb-2">
             Strategy Input
           </h3>
           <p className="text-sm font-normal text-muted-foreground">Enter the amount you want to simulate</p>
@@ -122,18 +122,18 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           </div>
 
           <div className="flex items-center gap-3">
-            <InputGroup className="flex-1 h-10 bg-white/80 hover:bg-white border-accent/20 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/10 transition-all duration-300 shadow-sm">
+            <InputGroup className="flex-1 h-10 bg-input hover:bg-input/80 border-border focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all duration-300 shadow-sm">
               <InputGroupInput
                 type="number"
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="text-base font-bold text-accent placeholder:text-accent/30 border-0 focus-visible:ring-0 text-right px-3 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                className="text-base font-bold text-primary placeholder:text-muted-foreground border-0 focus-visible:ring-0 text-right px-3 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
               />
             </InputGroup>
 
             {/* Asset Display Badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-lg border-2 border-accent/30 bg-gradient-to-br from-accent/10 to-accent/5 hover:border-accent/50 hover:from-accent/15 hover:to-accent/10 transition-all duration-300 shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-lg border-2 border-accent/30 bg-accent/10 hover:border-accent/50 hover:bg-accent/15 transition-all duration-300 shadow-sm">
               <div className="relative w-4 h-4">
                 <Image
                   src={asset.icon || "/placeholder.svg"}
@@ -151,11 +151,11 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         </div>
 
         {/* Info Text */}
-        <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50/40 border border-blue-200/30 mb-5">
-          <div className="flex-shrink-0 w-4 h-4 rounded-full bg-accent/15 flex items-center justify-center mt-0.5">
+        <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/30 mb-5">
+          <div className="flex-shrink-0 w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center mt-0.5">
             <Info className="w-3 h-3 text-accent" />
           </div>
-          <p className="text-xs text-foreground/70 leading-relaxed">
+          <p className="text-xs text-card-foreground leading-relaxed">
             Market conditions and price impact may affect the final execution.
           </p>
         </div>
@@ -165,7 +165,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           {isConnected ? (
             <>
               <Button
-                className="w-full h-12 bg-white/80 hover:bg-white hover:scale-[1.02] active:scale-[0.98] border-2 border-accent/30 hover:border-accent/50 text-accent font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="w-full h-12 bg-card hover:bg-card/80 hover:scale-[1.02] active:scale-[0.98] border-2 border-accent/30 hover:border-accent/50 text-accent font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 disabled={!amount || Number(amount) <= 0 || loadingSimulate}
                 onClick={handleSimulate}
               >

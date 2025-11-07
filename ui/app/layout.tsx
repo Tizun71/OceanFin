@@ -30,9 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`min-h-screen font-sans ${spaceGrotesk.variable} 
-        bg-gradient-to-br from-foreground/40 via-accent/5 to-foreground/80 
-        relative`}
+        className={`min-h-screen font-sans ${spaceGrotesk.variable} relative overflow-x-hidden`}
       >
         <ToastProvider>        
           <LunoProvider>

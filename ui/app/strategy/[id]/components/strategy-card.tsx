@@ -37,36 +37,13 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
   // const isActive = strategy.status === "Active";
   const isActive = "Active";
 
-  const getAgentGradient = (agents: string[]) => {
-    const primaryAgent = agents[0]?.toLowerCase() || '';
-
-    const gradients = {
-      hydration: 'from-pink-100 to-pink-300/30',
-      plasma: 'from-purple-100 to-purple-300/30',
-      point: 'from-blue-100 to-blue-300/30',
-      hyperevm: 'from-indigo-100 to-indigo-300/30',
-      yield: 'from-emerald-100 to-emerald-300/30',
-      default: 'from-white to-accent/5'
-    };
-
-    // Find the matching gradient or use default
-    return Object.entries(gradients).find(([key]) => primaryAgent.includes(key))?.[1] || gradients.default;
-  };
-
-  const cardGradient = getAgentGradient(strategy.agents);
-
   return (
     <Link href={`/strategy/${strategy.id}`}>
       <Card
-        className={`group relative overflow-hidden p-4 cursor-pointer rounded-xl
-      shadow-[0_3px_15px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_6px_24px_rgba(0,209,255,0.15)] hover:-translate-y-1
-      border border-accent/15
-      bg-gradient-to-br ${cardGradient} backdrop-blur-sm
-      hover:border-accent/40
-      hover:brightness-105`}
+        className="group p-4 cursor-pointer hover:-translate-y-1"
       >
         {/* Hover Glow */}
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-secondary/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
 
         <div className="relative z-10 flex flex-col md:flex-row gap-3">
           <div className="grid grid-cols-4 gap-3">
@@ -189,14 +166,24 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               </div>
             </div>
 
-            {/* Right Section - APY */}
-            <div className="flex md:flex-col items-center md:items-end justify-center md:justify-start text-right flex-shrink-0 md:min-w-[90px] md:border-l border-accent/10 md:pl-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">APY</p>
-                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent whitespace-nowrap">
+            {/* Right Section - APY and CTA */}
+            <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start text-right flex-shrink-0 md:min-w-[120px] md:border-l border-accent/10 md:pl-4 gap-3">
+              <div className="flex-1">
+                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide font-semibold">APY</p>
+                <p className="text-3xl md:text-4xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent whitespace-nowrap leading-none" style={{ fontFamily: 'var(--font-display, inherit)' }}>
                   {strategy.apy.toFixed(2)}%
                 </p>
               </div>
+              <button 
+                className="px-4 py-2 bg-primary hover:bg-accent-light text-primary-foreground text-sm font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 group/btn flex items-center gap-2 whitespace-nowrap"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Handle try now action
+                }}
+              >
+                Try Now
+                <span className="inline-block group-hover/btn:translate-x-1 transition-transform">→</span>
+              </button>
             </div>
           </div>
         </div>
