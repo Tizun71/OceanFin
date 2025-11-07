@@ -38,29 +38,29 @@ export function StrategyFlow({
 
   if (!validSteps.length) {
     return (
-      <div className="rounded-lg p-6 text-center text-gray-500 bg-gray-50 border border-gray-200">
+      <div className="rounded-lg p-6 text-center text-muted-foreground bg-card border border-border">
         No flow data available. Please run a simulation first.
       </div>
     )
   }
 
   return (
-    <div className="p-4 overflow-x-auto">
+    <div className="p-3">
       {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-          <Workflow className="w-4.5 h-4.5 text-blue-500" />
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <Workflow className="w-4 h-4 text-primary" />
         </h3>
-        <span className="text-sm text-gray-600">
+        <span className="text-xs text-muted-foreground">
           Total Steps:{" "}
-          <span className="text-blue-500 font-bold">{validSteps.length}</span>
+          <span className="text-primary font-bold">{validSteps.length}</span>
         </span>
       </div>
 
       {/* MAIN GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT: STEPS */}
-        <div className="lg:col-span-7 flex flex-col items-center gap-9 relative">
+        <div className="lg:col-span-7 flex flex-col items-center gap-6 relative max-h-[350px] overflow-y-auto pr-2">
           {validSteps.map((step, idx) => {
             const hasIn = !!step.tokenIn
             const hasOut = !!step.tokenOut
@@ -71,31 +71,31 @@ export function StrategyFlow({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className="relative w-full max-w-[360px] bg-white/75 backdrop-blur-md border border-transparent rounded-lg 
-                           shadow-[0_0_15px_rgba(0,150,255,0.25)] hover:shadow-[0_0_25px_rgba(0,180,255,0.45)] 
-                           transition-all duration-300 p-3.5 flex flex-col justify-between min-h-[80px]"
+                className="relative w-full max-w-[360px] bg-card backdrop-blur-md border border-border rounded-lg 
+                           shadow-lg hover:shadow-xl hover:border-accent/50
+                           transition-all duration-300 p-3 flex flex-col justify-between min-h-[70px]"
               >
                 {/* Step Header */}
-                <div className="flex justify-between items-center mb-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-5.5 h-5.5 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-white flex items-center justify-center text-[11px] font-bold shadow-md">
+                <div className="flex justify-between items-center mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground flex items-center justify-center text-[10px] font-bold shadow-md">
                       {step.step}
                     </div>
-                    <h4 className="text-gray-800 font-semibold text-[13px] tracking-wide">
+                    <h4 className="text-foreground font-semibold text-[12px] tracking-wide">
                       {step.type}
                     </h4>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                    <Bot className="w-3 h-3 text-blue-400" />
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Bot className="w-3 h-3 text-primary" />
                     <span className="font-semibold">{step.agent || "N/A"}</span>
                   </div>
                 </div>
 
                 {/* Token In */}
                 {hasIn && (
-                  <div className="flex justify-between text-[11.5px] text-gray-700 border-t border-gray-200 pt-1.5">
+                  <div className="flex justify-between text-[10.5px] text-card-foreground border-t border-border pt-1">
                     <span>{step.tokenIn?.amount ?? "N/A"}</span>
-                    <span className="font-semibold text-blue-600">
+                    <span className="font-semibold text-primary">
                       {step.tokenIn?.symbol || "N/A"}
                     </span>
                   </div>
@@ -103,16 +103,16 @@ export function StrategyFlow({
 
                 {/* Arrow */}
                 {hasIn && hasOut && (
-                  <div className="flex justify-center my-1">
-                    <ArrowDown className="w-3 h-3 text-blue-400 animate-bounce" />
+                  <div className="flex justify-center my-0.5">
+                    <ArrowDown className="w-2.5 h-2.5 text-primary animate-bounce" />
                   </div>
                 )}
 
                 {/* Token Out */}
                 {hasOut && (
-                  <div className="flex justify-between text-[11.5px] text-gray-700 border-t border-gray-200 pt-1.5">
+                  <div className="flex justify-between text-[10.5px] text-card-foreground border-t border-border pt-1">
                     <span>{step.tokenOut?.amount ?? "N/A"}</span>
-                    <span className="font-semibold text-emerald-600">
+                    <span className="font-semibold text-accent">
                       {step.tokenOut?.symbol || "N/A"}
                     </span>
                   </div>
@@ -120,8 +120,8 @@ export function StrategyFlow({
 
                 {/* Connector Arrow */}
                 {idx < validSteps.length - 1 && (
-                  <div className="absolute left-1/2 -bottom-8 transform -translate-x-1/2">
-                    <ArrowDown className="w-4 h-4 text-blue-300 animate-bounce" />
+                  <div className="absolute left-1/2 -bottom-5 transform -translate-x-1/2">
+                    <ArrowDown className="w-3.5 h-3.5 text-primary/60 animate-bounce" />
                   </div>
                 )}
               </motion.div>
@@ -135,20 +135,20 @@ export function StrategyFlow({
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-white/70 backdrop-blur-md rounded-xl border border-transparent 
-                       shadow-[0_0_20px_rgba(0,150,255,0.25)] hover:shadow-[0_0_30px_rgba(0,180,255,0.45)] 
+            className="bg-card backdrop-blur-md rounded-xl border border-border
+                       shadow-lg hover:shadow-xl hover:border-accent/50
                        transition-all duration-500 overflow-hidden"
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-              <h4 className="text-gray-800 font-bold text-sm uppercase tracking-wide">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+              <h4 className="text-foreground font-bold text-xs uppercase tracking-wide">
                 Statistics Overview
               </h4>
-              <button className="text-blue-500 text-xs font-semibold hover:underline">
+              <button className="text-primary text-[10px] font-semibold hover:underline">
                 View All &gt;
               </button>
             </div>
 
-            <div className="flex flex-col divide-y divide-gray-100">
+            <div className="flex flex-col divide-y divide-border">
               {[
                 {
                   icon: "💰",
@@ -163,21 +163,21 @@ export function StrategyFlow({
               ].map((info, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between px-5 py-3 hover:bg-gray-50/80 transition-all"
+                  className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/5 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center text-lg">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-base">
                       {info.icon}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-800 text-sm">
+                      <div className="font-semibold text-foreground text-xs">
                         {info.label}
                       </div>
-                      <div className="text-xs text-gray-500">{info.sub}</div>
+                      <div className="text-[10px] text-muted-foreground">{info.sub}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-emerald-600 font-semibold text-sm">
+                    <div className="text-accent font-semibold text-xs">
                       {info.value}
                     </div>
                   </div>

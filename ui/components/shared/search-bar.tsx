@@ -70,11 +70,11 @@ export function SearchBar({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 bg-transparent">
+            <Button variant="outline" className="gap-2 bg-card/50 border-border hover:bg-accent/10">
               <SlidersHorizontal className="w-4 h-4" />
               Filters
               {selectedTags.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-primary-foreground">
                   {selectedTags.length}
                 </Badge>
               )}
@@ -132,14 +132,15 @@ export function SearchBar({
           <Badge
             key={tag}
             variant="secondary"
-            className={`cursor-pointer transition-colors ${
+            className={`cursor-pointer transition-all duration-200 ${
               selectedTags.includes(tag)
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-white hover:bg-muted/80"
+                ? "bg-primary text-primary-foreground hover:bg-accent-light shadow-md scale-105"
+                : "bg-card/80 border border-border text-foreground hover:bg-accent/10 hover:border-primary/30"
             }`}
             onClick={() => toggleTag(tag)}
           >
             {tag}
+            {selectedTags.includes(tag) && <span className="ml-1">✓</span>}
           </Badge>
         ))}
       </div>

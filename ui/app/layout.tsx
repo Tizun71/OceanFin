@@ -8,6 +8,7 @@ import LunoProvider from "@/providers/luno-provider";
 import { LunoProviderWrapper } from "./contexts/luno-context";
 import Footer from "@/components/shared/footer";
 import { HeroSection } from "@/components/hero-section";
+import { BackgroundVideo } from "@/components/background-video";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -29,10 +30,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`min-h-screen font-sans ${spaceGrotesk.variable} 
-        bg-gradient-to-br from-foreground/40 via-accent/5 to-foreground/80 
-        relative`}
+        className={`min-h-screen font-sans ${spaceGrotesk.variable} relative overflow-x-hidden`}
       >
+        {/* Background Video */}
+        <BackgroundVideo />
+
+        {/* Video fade-out gradient overlay */}
+        <div className="fixed inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-[1] pointer-events-none" />
+
         <LunoProvider>
           <LunoProviderWrapper>
             <Suspense fallback={
@@ -40,7 +45,10 @@ export default function RootLayout({
                 Loading...
               </div>}
             >
-              <div className="min-h-screen flex flex-col relative z-0">
+              {/* Dark overlay */}
+              <div className="fixed inset-0 bg-black/65 z-[2]" />
+              
+              <div className="min-h-screen flex flex-col relative z-10">
                 <HeroSection /> 
                   <main className="flex-1 pt-[30px]"> 
                     {children}
