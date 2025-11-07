@@ -34,14 +34,13 @@ export function CommonTable<T extends { id: string }>({
     setExpanded(expanded === id ? null : id)
   }
 
-  if (loading) return <div className="text-center py-4 text-gray-500">Loading...</div>
-  if (error) return <div className="text-center py-4 text-red-500">{error}</div>
+  if (loading) return <div className="text-center py-4 text-muted-foreground">Loading...</div>
+  if (error) return <div className="text-center py-4 text-destructive">{error}</div>
 
   return (
     <div className="space-y-3">
-      {/* Header */}
       <div
-        className={`grid ${gridCols} items-center bg-gray-100 text-gray-700 text-sm font-semibold px-6 py-3 rounded-t-lg border border-gray-200`}
+        className={`grid ${gridCols} items-center bg-card/50 text-foreground text-sm font-semibold px-6 py-3 rounded-t-lg border border-border backdrop-blur-sm`}
       >
         {columns.map((col) => (
           <div key={String(col.key)} className={col.className}>
@@ -50,14 +49,12 @@ export function CommonTable<T extends { id: string }>({
         ))}
       </div>
 
-      {/* Rows */}
       {data.map((row) => (
         <div
           key={row.id}
-          className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden"
+          className="border border-border rounded-lg bg-card shadow-lg overflow-hidden hover:border-accent/50 transition-all duration-300"
         >
-          {/* Main row */}
-          <div className={`relative grid ${gridCols} items-center text-sm px-6 py-3 pr-12`}>
+          <div className={`relative grid ${gridCols} items-center text-sm text-card-foreground px-6 py-3 pr-12`}>
             {columns.map((col) => (
               <div key={String(col.key)} className={col.className}>
                 {col.render ? col.render(row) : (row[col.key as keyof T] as React.ReactNode)}
@@ -67,7 +64,7 @@ export function CommonTable<T extends { id: string }>({
             {expandable && (
               <button
                 onClick={() => toggleExpand(row.id)}
-                className={`absolute top-1/2 right-5 -translate-y-1/2 text-gray-500 hover:text-gray-800 transition-transform duration-300 ${
+                className={`absolute top-1/2 right-5 -translate-y-1/2 text-muted-foreground hover:text-primary transition-all duration-300 ${
                   expanded === row.id ? "rotate-180" : "rotate-0"
                 }`}
               >
@@ -76,7 +73,6 @@ export function CommonTable<T extends { id: string }>({
             )}
           </div>
 
-          {/* Expanded content */}
           <AnimatePresence initial={false}>
             {expandable && expanded === row.id && (
               <motion.div
@@ -85,7 +81,7 @@ export function CommonTable<T extends { id: string }>({
                 exit={{ opacity: 0, scaleY: 0.8 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
                 style={{ originY: 0 }}
-                className="bg-gray-50 border-t border-gray-200 px-14 py-5 text-sm"
+                className="bg-card/30 border-t border-border px-14 py-5 text-sm backdrop-blur-sm"
               >
                 {expandable(row)}
               </motion.div>

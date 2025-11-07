@@ -1,13 +1,21 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
 import { getActivities, restartActivity, resumeProgress } from "@/services/progress-service"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
+import { simulateStrategy } from "@/services/strategy-service"
+import type { StrategySimulate } from "@/types/strategy.type"
+
+const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
+  ssr: false,
+})
 
 export type MyActivityRow = {
   id: string
   date: string
   strategy: string
+  strategyId: string
   currentStep: number
   totalSteps: number
   apr: string
@@ -22,6 +30,11 @@ export const MyActivityTable = () => {
   const [activities, setActivities] = useState<MyActivityRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reExecuting, setReExecuting] = useState<string | null>(null)
+  const [executionModalOpen, setExecutionModalOpen] = useState(false)
+  const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
+  const [simulateError, setSimulateError] = useState<string | null>(null)
+  const [startFromStep, setStartFromStep] = useState<number>(0)
 
   const fetchActivities = async () => {
     setLoading(true)
@@ -32,6 +45,7 @@ export const MyActivityTable = () => {
         id: a.id ?? "-",
         date: a.createdAt?.slice(0, 10) ?? "-",
         strategy: a.strategyId ?? "-",
+        strategyId: a.strategyId ?? "-",
         currentStep: a.currentStep ?? 0,
         totalSteps: a.totalSteps ?? 0,
         apr: a.metadata?.APR ?? "-",
@@ -64,9 +78,40 @@ export const MyActivityTable = () => {
     fetchActivities()
   }
 
-  const handleResume = async (id: string, step: number) => {
-    await resumeProgress(id, { activityId: id, step })
-    fetchActivities()
+  const handleReExecute = async (row: MyActivityRow) => {
+    setReExecuting(row.id)
+    setSimulateError(null)
+    
+    try {
+      const amount = parseFloat(row.initialCapital)
+      if (!amount || amount <= 0) {
+        throw new Error("Invalid initial capital amount")
+      }
+
+      const strategyData = { id: row.strategyId }
+      
+      const simulationResult = await simulateStrategy(strategyData, amount)
+      console.log("✅ Simulation successful:", simulationResult)
+      
+      if (!simulationResult?.steps?.length) {
+        console.warn("⚠️ No steps in simulation result")
+      }
+      
+      const resumeFromStep = Math.max(0, row.currentStep - 1)
+      console.log(`🔄 Resuming from step ${resumeFromStep} (current: ${row.currentStep}, total: ${row.totalSteps})`)
+      
+      setStartFromStep(resumeFromStep)
+      setSimulateResult(simulationResult)
+      setExecutionModalOpen(true)
+      
+    } catch (error: any) {
+      console.error("❌ Re-execute error:", error)
+      const errorMsg = error?.message || "Re-execution failed"
+      setError(errorMsg)
+      setSimulateError(errorMsg)
+    } finally {
+      setReExecuting(null)
+    }
   }
 
   const columns: TableColumn<MyActivityRow>[] = [
@@ -87,10 +132,10 @@ export const MyActivityTable = () => {
         <span
           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             r.status === "Pending"
-              ? "bg-yellow-100 text-yellow-600"
+              ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
               : r.status === "Completed"
-              ? "bg-green-100 text-green-600"
-              : "bg-red-100 text-red-600"
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-red-500/20 text-red-400 border border-red-500/30"
           }`}
         >
           {r.status}
@@ -105,17 +150,25 @@ export const MyActivityTable = () => {
           {r.status === "Failed" && (
             <button
               onClick={() => handleRetry(r.id, r.currentStep)}
-              className="text-blue-600 hover:underline"
+              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 hover:border-primary/50 rounded-lg transition-all font-medium text-xs"
             >
               🔁 Retry
             </button>
           )}
           {r.status === "Pending" && (
             <button
-              onClick={() => handleResume(r.id, r.currentStep)}
-              className="text-green-600 hover:underline"
+              onClick={() => handleReExecute(r)}
+              disabled={reExecuting === r.id}
+              className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 hover:border-accent/50 rounded-lg transition-all font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ▶ Resume
+              {reExecuting === r.id ? (
+                <span className="flex items-center gap-1">
+                  <span className="w-3 h-3 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+                  Re-executing...
+                </span>
+              ) : (
+                "▶ Re-execute"
+              )}
             </button>
           )}
         </div>
@@ -123,42 +176,62 @@ export const MyActivityTable = () => {
     },
   ]
 
-  //expand (TxHash + Address)
   const renderExpand = (row: MyActivityRow) => (
-    <div className="grid grid-cols-2 gap-8 text-[15px] text-gray-800">
+    <div className="grid grid-cols-2 gap-8 text-sm text-card-foreground">
       <div>
-        <div className="text-gray-500 text-xs uppercase mb-1">Wallet Address</div>
-        <div className="font-medium truncate">{row.userAddress || "-"}</div>
+        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Wallet Address</div>
+        <div className="font-medium truncate bg-accent/10 px-3 py-2 rounded border border-accent/20">
+          {row.userAddress || "-"}
+        </div>
       </div>
 
       <div>
-        <div className="text-gray-500 text-xs uppercase mb-1">Tx Hash</div>
+        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Tx Hash</div>
         {row.txHash?.length ? (
-          row.txHash.map((hash, i) => (
-            <a
-              key={i}
-              href={`https://etherscan.io/tx/${hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-blue-600 hover:underline text-sm"
-            >
-              {hash.slice(0, 8)}...{hash.slice(-6)} ↗
-            </a>
-          ))
+          <div className="space-y-1">
+            {row.txHash.map((hash, i) => (
+              <a
+                key={i}
+                href={`https://etherscan.io/tx/${hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40"
+              >
+                {hash.slice(0, 8)}...{hash.slice(-6)} ↗
+              </a>
+            ))}
+          </div>
         ) : (
-          <span className="text-gray-400 italic">No transactions</span>
+          <span className="text-muted-foreground italic text-sm">No transactions</span>
         )}
       </div>
     </div>
   )
 
   return (
-    <CommonTable
-      data={activities}
-      columns={columns}
-      expandable={renderExpand}
-      loading={loading}
-      error={error}
-    />
+    <>
+      <CommonTable
+        data={activities}
+        columns={columns}
+        expandable={renderExpand}
+        loading={loading}
+        error={error}
+      />
+
+      {simulateError && (
+        <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+          {simulateError}
+        </div>
+      )}
+
+      {simulateResult && (
+        <ExecutionModal 
+          open={executionModalOpen} 
+          onOpenChange={setExecutionModalOpen} 
+          strategy={simulateResult}
+          startFromStep={startFromStep}
+        />
+      )}
+    </>
   )
 }

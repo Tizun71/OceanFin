@@ -74,10 +74,10 @@ export const AllActivityTable = () => {
         <span
           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             row.status === "Pending"
-              ? "bg-yellow-100 text-yellow-700"
+              ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
               : row.status === "Completed"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-red-500/20 text-red-400 border border-red-500/30"
           }`}
         >
           {row.status}
@@ -86,29 +86,28 @@ export const AllActivityTable = () => {
     },
   ]
 
-  //Expandable Transaction Hash
   const renderExpand = (row: AllActivityRow) => (
-    <div className="space-y-2">
-      <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-        Tx Hash
+    <div className="space-y-3">
+      <div className="text-muted-foreground text-xs uppercase tracking-wide mb-2 font-semibold">
+        Transaction Hash
       </div>
 
       {row.txHash && row.txHash.length > 0 ? (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           {row.txHash.map((hash, i) => (
             <a
               key={i}
               href={`https://etherscan.io/tx/${hash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline text-sm"
+              className="text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 inline-block"
             >
               {hash.slice(0, 10)}...{hash.slice(-8)} ↗
             </a>
           ))}
         </div>
       ) : (
-        <span className="text-gray-400 italic text-sm">No transactions</span>
+        <span className="text-muted-foreground italic text-sm">No transactions</span>
       )}
     </div>
   )
