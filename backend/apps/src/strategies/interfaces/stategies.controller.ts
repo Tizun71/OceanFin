@@ -32,12 +32,19 @@ export class StrategiesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all strategies' })
-  @ApiResponse({ status: 200, description: 'List of strategies', type: [StrategyResponseDto] })
-  async findAll(): Promise<StrategyResponseDto[]> {
-    const list = await this.strategyService.findAll();
-    return StrategyMapper.toResponseList(list);
-  }
+@ApiOperation({ summary: 'List all strategies with optional filter/sort/limit' })
+@ApiQuery({ name: 'sortBy', required: false, example: 'apy' })
+@ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], example: 'desc' })
+@ApiQuery({ name: 'limit', required: false, example: 5 })
+async findAll(
+  @Query('sortBy') sortBy?: string,
+  @Query('order') order: 'asc' | 'desc' = 'desc',
+  @Query('limit') limit?: number,
+): Promise<StrategyResponseDto[]> {
+  const list = await this.strategyService.findAll(sortBy, order, limit ? Number(limit) : undefined);
+  return StrategyMapper.toResponseList(list);
+}
+
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a strategy by ID' })
