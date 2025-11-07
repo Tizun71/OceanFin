@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ActivityRepository } from '../domain/activity.repository';
 import { Activity, ActivityStatus } from '../domain/activity.entity';
 import { UpdateActivityProgressDto } from '../interfaces/dtos/update-activity-progress.dto';
+import { CreateActivityDto } from '../interfaces/dtos/create-activity.dto';
 
 @Injectable()
 export class ActivityService {
@@ -16,10 +17,26 @@ export class ActivityService {
     return this.activityRepo.findAll();
   }
   return this.activityRepo.findByFilter({ id, userAddress });
-}
+  }
 
+  async create(dto: CreateActivityDto): Promise<Activity> {
+  const id = crypto.randomUUID(); 
 
+  const activity = new Activity(
+    id,                       
+    dto.userAddress,
+    dto.strategyId,
+    [],                       
+    'PENDING',                
+    { initial_capital: dto.initialCapital },
+    dto.currentStep ?? 1,
+    dto.totalSteps ?? 8,
+    new Date()
+  );
 
+  await this.activityRepo.save(activity);
+  return activity;
+  }
 
   async updateProgress(dto: UpdateActivityProgressDto): Promise<Activity> {
     if (!dto.activityId) throw new Error('activityId is required');
@@ -39,28 +56,18 @@ export class ActivityService {
     } else {
       activity.status = 'PENDING';
     }
-
-    if (dto.message) {
-      activity.metadata = { ...activity.metadata, message: dto.message };
-    }
-
     await this.activityRepo.save(activity);
     return activity;
   }
 
-  async resumeActivity(activityId: string, message?: string): Promise<Activity> {
+  async resumeActivity(activityId: string): Promise<Activity> {
     const activity = (await this.find(activityId))[0];
     if (!activity) throw new Error('Activity not found');
 
     if (activity.status !== 'FAILED') {
       throw new Error('Only FAILED activity can be resumed');
     }
-
     activity.status = 'PENDING';
-    if (message) {
-      activity.metadata = { ...activity.metadata, message };
-    }
-
     await this.activityRepo.save(activity);
     return activity;
   }

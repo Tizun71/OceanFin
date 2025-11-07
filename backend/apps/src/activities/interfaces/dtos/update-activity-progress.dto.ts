@@ -15,8 +15,5 @@ export class UpdateActivityProgressDto {
 	@IsIn(['PENDING', 'FAILED', 'SUCCESS'])
 	status: 'PENDING' | 'FAILED' | 'SUCCESS';
 
-	@ApiPropertyOptional({ description: 'Optional message for this step' })
-	@IsOptional()
-	@IsString()
-	message?: string;
+	
 }
