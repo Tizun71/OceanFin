@@ -21,16 +21,23 @@ export class StrategiesRepositoryImplement implements StrategiesRepository {
     return this.mapRowToEntity(data);
   }
 
-  async findAll(): Promise<Strategy[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('strategies')
-      .select('*');
+  async findAll(sortBy?: string, order: 'asc' | 'desc' = 'desc', limit?: number): Promise<Strategy[]> {
+  let query = this.supabase.getClient().from('strategies').select('*');
 
-    if (error) throw new Error(`Failed to fetch strategies: ${error.message}`);
-
-    return (data ?? []).map((r) => this.mapRowToEntity(r));
+  if (sortBy) {
+    query = query.order(sortBy, { ascending: order === 'asc' });
   }
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to fetch strategies: ${error.message}`);
+
+  return (data ?? []).map((r) => this.mapRowToEntity(r));
+}
+
 
   async save(strategy: Strategy): Promise<void> {
     const { error } = await this.supabase.getClient().from('strategies').upsert({
