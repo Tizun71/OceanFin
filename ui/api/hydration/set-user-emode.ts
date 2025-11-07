@@ -14,10 +14,26 @@ export async function setUserEmode(categoryId: number, userAddress: string) {
 
     const user = H160.fromAny(userAddress);
 
-    const txBuilder = await pool.setUserEMode({
+    const txs = await pool.setUserEMode({
         user,
         categoryId
     });
 
-    return txBuilder;
+    const builtTx = txs[0] as any;
+
+    const evmTx = api.tx.evm.call(
+        H160.fromAny(userAddress),
+        builtTx.to as string,
+        builtTx.data as string,
+        '0',
+        1200000,
+        3080573,
+        3080573,
+        null,
+        []
+    )
+
+    console.log("Built setUserEmode evmTx:", evmTx);
+
+    return evmTx;
 }
