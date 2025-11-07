@@ -10,6 +10,7 @@ import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { useLuno } from "@/app/contexts/luno-context"
 import { ConnectButton } from "@luno-kit/ui"
+import { displayToast } from "@/components/shared/toast-manager"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -50,7 +51,14 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   }
 
   const handleSimulate = async () => {
-    if (!amount || Number(amount) <= 0 || !isConnected) return
+    if (!amount || Number(amount) <= 0) {
+      displayToast("warning", "Please enter a valid amount.")
+      return
+    }
+    if (!isConnected) {
+      displayToast("error", "Please connect your wallet first.")
+      return
+    }
 
     setLoadingSimulate(true)
     setSimulateResult(null)
@@ -66,6 +74,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       
       setSimulateResult(data)
       onSimulateSuccess?.(data)
+      displayToast("success", "Simulation completed successfully!")
     } catch (error: any) {
       console.error("❌ Simulation error:", error)
       const errorMsg = error?.message || "Simulation failed"
