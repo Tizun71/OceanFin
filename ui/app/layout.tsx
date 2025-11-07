@@ -38,10 +38,9 @@ export default function RootLayout({
 
         {/* Video fade-out gradient overlay */}
         <div className="fixed inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-[1] pointer-events-none" />
-
-        <LunoProvider>
-          <LunoProviderWrapper>
-            <ToastProvider>
+        <ToastProvider>
+          <LunoProvider>
+            <LunoProviderWrapper>            
               <Suspense fallback={
                 <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
                   Loading...
@@ -57,10 +56,10 @@ export default function RootLayout({
                     </main>
                   <Footer />
                 </div>
-              </Suspense>
-            </ToastProvider>
-          </LunoProviderWrapper>
-        </LunoProvider>
+              </Suspense>             
+            </LunoProviderWrapper>
+          </LunoProvider>
+        </ToastProvider>
         <Analytics />
       </body>
     </html>

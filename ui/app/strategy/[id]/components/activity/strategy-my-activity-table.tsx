@@ -7,6 +7,7 @@ import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { AnimatePresence, motion } from "framer-motion"
+import { displayToast } from "@/components/shared/toast-manager"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -65,6 +66,7 @@ export const MyActivityTable = () => {
     } catch (err) {
       console.error(err)
       setError("Failed to load activities.")
+      displayToast("error", "Failed to load activities.")
     } finally {
       setLoading(false)
     }
@@ -75,8 +77,14 @@ export const MyActivityTable = () => {
   }, [])
 
   const handleRetry = async (id: string, step: number) => {
-    await restartActivity(id, step)
-    fetchActivities()
+    try {
+      await restartActivity(id, step)
+      displayToast("success", `Retry step ${step} successfully!`)
+      fetchActivities()
+    } catch (error: any) {
+      console.error("❌ Retry failed:", error)
+      displayToast("error", error?.message || "Retry failed. Please try again.")
+    }
   }
 
   const handleReExecute = async (row: MyActivityRow) => {
@@ -104,12 +112,14 @@ export const MyActivityTable = () => {
       setStartFromStep(resumeFromStep)
       setSimulateResult(simulationResult)
       setExecutionModalOpen(true)
+      displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
       
     } catch (error: any) {
       console.error("❌ Re-execute error:", error)
       const errorMsg = error?.message || "Re-execution failed"
       setError(errorMsg)
       setSimulateError(errorMsg)
+      displayToast("error", errorMsg)
     } finally {
       setReExecuting(null)
     }
