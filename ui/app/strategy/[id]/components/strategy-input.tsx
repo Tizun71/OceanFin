@@ -1,17 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Info } from "lucide-react"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { useLuno } from "@/app/contexts/luno-context"
 import { ConnectButton } from "@luno-kit/ui"
+import { checkEvmAccountBound } from "@/api/hydration/bind-evm-account"
+import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
+  ssr: false,
+})
+
+const BindAccountModal = dynamic(() => import("@/components/shared/bind-account-modal").then((m) => m.BindAccountModal), {
   ssr: false,
 })
 
@@ -33,12 +39,42 @@ interface StrategyInputProps {
 export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProps) {
   const [amount, setAmount] = useState("")
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [bindModalOpen, setBindModalOpen] = useState(false)
   const [loadingSimulate, setLoadingSimulate] = useState(false)
+  const [checkingBind, setCheckingBind] = useState(false)
+  const [isAccountBound, setIsAccountBound] = useState(false)
   const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
   const [simulateError, setSimulateError] = useState<string | null>(null)
 
   const { isConnected } = useLuno()
+  const { walletAddress } = useLunoPapiClient()
+
+  useEffect(() => {
+    const checkBinding = async () => {
+      if (!walletAddress) {
+        setIsAccountBound(false)
+        return
+      }
+      
+      setCheckingBind(true)
+      try {
+        const isBound = await checkEvmAccountBound(walletAddress)
+        setIsAccountBound(isBound)
+      } catch (error) {
+        console.error("Error checking account binding:", error)
+        setIsAccountBound(false)
+      } finally {
+        setCheckingBind(false)
+      }
+    }
+
+    checkBinding()
+  }, [walletAddress])
+
+  const handleBindSuccess = () => {
+    setIsAccountBound(true)
+    setBindModalOpen(false)
+  }
 
   const inputAsset = strategy.inputAsset || "-"
   const networkCost = strategy.networkCost || "-"
@@ -80,11 +116,23 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       alert("Please connect your wallet first")
       return
     }
+    if (!isAccountBound) {
+      setBindModalOpen(true)
+      return
+    }
     if (!simulateResult) {
       alert("Please simulate the strategy first")
       return
     }
     setExecutionModalOpen(true)
+  }
+
+  const handleBindAccountClick = () => {
+    if (!isConnected) {
+      alert("Please connect your wallet first")
+      return
+    }
+    setBindModalOpen(true)
   }
 
   return (
@@ -172,10 +220,19 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
               <Button
                 className="w-full h-12 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
-                disabled={!amount || Number(amount) <= 0 || loadingSimulate || !simulateResult}
-                onClick={handleExecute}
+                disabled={!amount || Number(amount) <= 0 || loadingSimulate || (isAccountBound && !simulateResult) || checkingBind}
+                onClick={isAccountBound ? handleExecute : handleBindAccountClick}
               >
-                Execute Strategy
+                {checkingBind ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Checking...
+                  </span>
+                ) : isAccountBound ? (
+                  "Execute Strategy"
+                ) : (
+                  "Bind Account First"
+                )}
               </Button>
             </>
           ) : (
@@ -204,6 +261,12 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           startFromStep={0}
         />
       )}
+
+      <BindAccountModal
+        open={bindModalOpen}
+        onOpenChange={setBindModalOpen}
+        onBindSuccess={handleBindSuccess}
+      />
     </>
   )
 }
