@@ -23,14 +23,17 @@ export const AllActivityTable = () => {
 
   useEffect(() => {
     const fetchActivities = async () => {
+      setLoading(true)
+      setError(null)
       try {
-        setLoading(true)
         const res = await getActivities()
-        const list = Array.isArray(res) ? res : [res]
+        const list = Array.isArray(res) ? res : res ? [res] : []
 
         const formatted: AllActivityRow[] = list.map((item: any) => ({
           id: item.id,
-          date: new Date(item.createdAt).toISOString().split("T")[0],
+          date: item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString("en-CA") 
+            : "-",
           user: item.userAddress || "Unknown",
           step: `Step ${item.currentStep ?? 0} / ${item.totalSteps ?? 0}`,
           apr: item.metadata?.APR ?? "-",
@@ -94,13 +97,13 @@ export const AllActivityTable = () => {
 
       {row.txHash && row.txHash.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {row.txHash.map((hash, i) => (
+          {row.txHash.map((hash) => (
             <a
-              key={i}
+              key={hash}
               href={`https://etherscan.io/tx/${hash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 inline-block"
+              className="text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 truncate"
             >
               {hash.slice(0, 10)}...{hash.slice(-8)} ↗
             </a>
@@ -122,6 +125,11 @@ export const AllActivityTable = () => {
         error={error}
         gridCols="grid-cols-9" 
       />
+      {!loading && !error && data.length === 0 && (
+        <div className="text-center text-muted-foreground py-6 text-sm italic">
+          No activities found.
+        </div>
+      )}
     </div>
   )
 }
