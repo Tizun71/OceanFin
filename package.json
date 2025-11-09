@@ -1,0 +1,16 @@
+{
+  "name": "oceanfin",
+  "private": true,
+  "workspaces": [
+    "ui",
+    "backend/apps"
+  ],
+  "scripts": {
+    "dev": "concurrently -n UI,API -c magenta,cyan \"npm run dev -w ui\" \"npm run start:dev -w backend/apps\"",
+    "dev:ui": "npm run dev -w ui",
+    "dev:api": "npm run start:dev -w backend/apps"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
