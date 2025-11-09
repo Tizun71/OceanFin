@@ -1,3 +1,4 @@
+import { ActivityFilter } from '@/types/activity.interface';
 import axios from 'axios';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -20,7 +21,13 @@ export const API_ENDPOINTS = {
   },
 
   ACTIVITIES: {
-    LIST: () => `/activities`,
+    LIST: (filter?: ActivityFilter) => {
+      const params = new URLSearchParams();
+      if (filter?.userAddress) params.append("userAddress", filter.userAddress);
+      if (filter?.strategyId) params.append("strategyId", filter.strategyId);
+
+      return `/activities?${params.toString()}`;
+    },
     GET: (id: string) => `/activities/${id}`,
     CREATE: () => `/activities`,
     UPDATE_PROGRESS: () => `/activities/progress`,

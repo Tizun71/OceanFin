@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { getActivities, restartActivity, resumeProgress } from "@/services/progress-service"
+import { getActivities } from "@/services/activity-service"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { AnimatePresence, motion } from "framer-motion"
 import { displayToast } from "@/components/shared/toast-manager"
+import { ActivityResponse } from "@/types/activity.interface"
+import { useLuno } from "@/app/contexts/luno-context"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -38,10 +40,13 @@ export const MyActivityTable = () => {
   const [simulateError, setSimulateError] = useState<string | null>(null)
   const [startFromStep, setStartFromStep] = useState<number>(0)
 
+  const { address } = useLuno();
+
   const fetchActivities = async () => {
     setLoading(true)
     try {
-      const res = await getActivities()
+      const filter: ActivityResponse = { userAddress: address }
+      const res = await getActivities(filter)
       const list = Array.isArray(res) ? res : res ? [res] : []
       const formatted = list.map((a): MyActivityRow => ({
         id: a.id ?? "-",
@@ -57,8 +62,8 @@ export const MyActivityTable = () => {
           a.status === "FAILED"
             ? "Failed"
             : a.status === "COMPLETED"
-            ? "Completed"
-            : "Pending",
+              ? "Completed"
+              : "Pending",
         txHash: a.txHash ?? [],
         userAddress: a.userAddress ?? "-",
       }))
@@ -78,7 +83,6 @@ export const MyActivityTable = () => {
 
   const handleRetry = async (id: string, step: number) => {
     try {
-      await restartActivity(id, step)
       displayToast("success", `Retry step ${step} successfully!`)
       fetchActivities()
     } catch (error: any) {
@@ -89,7 +93,7 @@ export const MyActivityTable = () => {
   const handleReExecute = async (row: MyActivityRow) => {
     setReExecuting(row.id)
     setSimulateError(null)
-    
+
     try {
       const amount = Number(row.initialCapital.toString().replace(/,/g, ""))
       if (!amount || amount <= 0) {
@@ -97,20 +101,20 @@ export const MyActivityTable = () => {
       }
 
       const strategyData = { id: row.strategyId }
-      
+
       const simulationResult = await simulateStrategy(strategyData, amount)
-      
+
       if (!simulationResult?.steps?.length) {
         throw new Error("No steps in simulation result")
       }
-      
+
       const resumeFromStep = Math.max(0, row.currentStep - 1)
-      
+
       setStartFromStep(resumeFromStep)
       setSimulateResult(simulationResult)
       setExecutionModalOpen(true)
       displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
-      
+
     } catch (error: any) {
       displayToast("error", error?.message || "Re-execution failed.")
     } finally {
@@ -138,13 +142,12 @@ export const MyActivityTable = () => {
       label: "Status",
       render: (r) => (
         <span
-          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-            r.status === "Pending"
+          className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === "Pending"
               ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
               : r.status === "Completed"
-              ? "bg-green-500/20 text-green-400 border border-green-500/30"
-              : "bg-red-500/20 text-red-400 border border-red-500/30"
-          }`}
+                ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                : "bg-red-500/20 text-red-400 border border-red-500/30"
+            }`}
         >
           {r.status}
         </span>
@@ -214,16 +217,18 @@ export const MyActivityTable = () => {
       )}
 
       {simulateResult && (
-        <ExecutionModal 
-          open={executionModalOpen} 
-          onOpenChange={setExecutionModalOpen} 
+        <ExecutionModal
+          open={executionModalOpen}
+          onOpenChange={setExecutionModalOpen}
           strategy={simulateResult}
+          strategyId={activities.find(a => a.id === reExecuting)?.strategyId || ""}
           startFromStep={startFromStep}
+          activityId={activities.find(a => a.id === reExecuting)?.id || null}
         />
       )}
     </>
   )
-  
+
 }
 const TxHashList = ({ hashes }: { hashes: string[] }) => {
   const [showAll, setShowAll] = useState(false)

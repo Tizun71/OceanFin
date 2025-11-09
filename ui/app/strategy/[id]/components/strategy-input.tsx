@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { useLuno } from "@/app/contexts/luno-context"
 import { ConnectButton } from "@luno-kit/ui"
 import { displayToast } from "@/components/shared/toast-manager"
 import { isEvmAccountBound } from "@/services/user-service"
+import { useParams } from "next/navigation"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then(m => m.ExecutionModal), { ssr: false })
 const BindAccountModal = dynamic(() => import("@/components/shared/bind-account-modal").then(m => m.BindAccountModal), { ssr: false })
@@ -67,6 +68,17 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   const inputAsset = strategy.inputAsset || "-"
   const networkCost = strategy.networkCost || "-"
   const slippage = strategy.slippage || "-"
+
+    const params = useParams<{ id: string | string[] }>()
+  const rawId = params?.id
+    const strategyId = useMemo(() => {
+      const val = Array.isArray(rawId) ? rawId[0] : (rawId || "")
+      try {
+        return decodeURIComponent(val)
+      } catch {
+        return val
+      }
+    }, [rawId])
 
   const asset = {
     symbol: "DOT",
@@ -252,6 +264,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           open={executionModalOpen}
           onOpenChange={setExecutionModalOpen}
           strategy={simulateResult}
+          strategyId={strategyId}
           startFromStep={0}
         />
       )}

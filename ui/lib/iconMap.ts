@@ -1,6 +1,7 @@
 export const assetIcons: Record<string, string> = {
-  USDC: "/icons/assets/usd-coin.png",
-  DAI: "/icons/assets/dai.png",
+  DOT: "/icons/assets/dot.svg",
+  GDOT: "/icons/assets/gdot.svg",
+  VDOT: "/icons/assets/vdot.svg",
 };
 
 export const agentIcons: Record<string, string> = {

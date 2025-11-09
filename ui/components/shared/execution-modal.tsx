@@ -8,20 +8,29 @@ import type { ExecutionStatus, ExecutionStep } from "./types"
 import { STEP_TYPE } from "@/utils/constant"
 import { buildStepTx } from "@/services/strategy-step-service"
 import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
-import { AnimatedStep } from "./animated-step"
 import { motion } from "framer-motion"
 import { displayToast } from "./toast-manager"
+import StepStack from "./execution-step-stack"
+import { assetIcons } from "@/lib/iconMap"
+import { createActivity, updateActivity } from "@/services/activity-service"
+import type { UpdateActivityPayload } from "@/types/activity.interface"
 
 interface ExecutionModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   strategy: StrategySimulate
-  startFromStep?: number 
+  strategyId: string
+  startFromStep?: number
+  activityId?: string | null
 }
 
 /* ----------------------------- helpers (pure) ----------------------------- */
 
 const formatAmt = (v?: number) => (typeof v === "number" ? Number(v.toFixed(6)) : "-")
+
+const mapStatusToBackend = (status: 'completed' | 'failed'): 'SUCCESS' | 'FAILED' => {
+  return status === 'completed' ? 'SUCCESS' : 'FAILED'
+}
 
 const getStepTitle = (s: StrategyStep) => {
   switch (s.type) {
@@ -61,156 +70,210 @@ const buildExecutionSteps = (strategy?: StrategySimulate): ExecutionStep[] => {
     return []
   }
   
-  return strategy.steps.map((s, i) => ({
-    id: `${s.step ?? i + 1}`,
-    title: getStepTitle(s),
-    description: getStepDescription(s),
-    status: "pending" as const,
-    txHash: undefined,
-  }))
+  return strategy.steps.map((s, i) => {
+    const fromToken = s.tokenIn ? {
+      icon: assetIcons[s.tokenIn.symbol],
+      symbol: s.tokenIn.symbol,
+    } : undefined
+
+    const toToken = s.tokenOut ? {
+      icon: assetIcons[s.tokenOut.symbol],
+      symbol: s.tokenOut.symbol,
+    } : undefined
+
+    return {
+      id: `${s.step ?? i + 1}`,
+      title: getStepTitle(s),
+      description: getStepDescription(s),
+      status: "pending" as const,
+      txHash: undefined,
+      fromToken,
+      fromAmount: s.tokenIn?.amount ? String(formatAmt(s.tokenIn.amount)) : undefined,
+      toToken,
+      toAmount: s.tokenOut?.amount ? String(formatAmt(s.tokenOut.amount)) : undefined,
+    }
+  })
 }
 
 /* --------------------------------- main ---------------------------------- */
 
-export function ExecutionModal({ open, onOpenChange, strategy, startFromStep = 0 }: ExecutionModalProps) {
+export function ExecutionModal({ 
+  open, 
+  onOpenChange, 
+  strategy, 
+  strategyId, 
+  startFromStep = 0,
+  activityId: initialActivityId = null 
+}: ExecutionModalProps) {
   const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [activityId, setActivityId] = useState<string | null>(initialActivityId)
   const abortRef = useRef(false)
 
   const {
     sendTransaction,
     walletAddress,
     isWalletConnected,
-    currentChain,
   } = useLunoPapiClient()
 
+  // Initialize execution steps
   useEffect(() => {
     if (open && strategy) {
-      console.log("Building execution steps from strategy:", strategy)
-      console.log("Starting from step:", startFromStep)
-      
+      console.log("Strategy ID:", strategyId)
       const steps = buildExecutionSteps(strategy)
-      
       const stepsWithStatus = steps.map((step, idx) => ({
         ...step,
         status: (idx < startFromStep ? "completed" : "pending") as ExecutionStatus
       }))
       
-      console.log("Built steps:", stepsWithStatus)
       setExecutionSteps(stepsWithStatus)
       setIsExecuting(false)
       setCurrentStepIndex(startFromStep)
+      
+      // Set activity ID from props if provided (re-execute scenario)
+      setActivityId(initialActivityId)
     }
-  }, [open, strategy, startFromStep])
+  }, [open, strategy, startFromStep, initialActivityId])
 
   const subtitle = useMemo(() => {
     const resumeText = startFromStep > 0 ? ` • Resuming from step ${startFromStep + 1}` : ""
+    const modeText = initialActivityId ? " (Re-execute)" : " (New)"
     return strategy?.initialCapital
-      ? `Initial: ${formatAmt(strategy.initialCapital.amount)} ${strategy.initialCapital.symbol} • Loops: ${strategy.loops}${resumeText}`
-      : `Loops: ${strategy?.loops ?? "-"}${resumeText}`
-  }, [strategy, startFromStep])
+      ? `Initial: ${formatAmt(strategy.initialCapital.amount)} ${strategy.initialCapital.symbol} • Loops: ${strategy.loops}${resumeText}${modeText}`
+      : `Loops: ${strategy?.loops ?? "-"}${resumeText}${modeText}`
+  }, [strategy, startFromStep, initialActivityId])
 
-  const startExecution = async () => {
-    if (!executionSteps.length || isExecuting) {
-      console.warn("⚠️ Cannot start execution:", { 
-        hasSteps: executionSteps.length > 0, 
-        isExecuting 
-      })
-      return
+  // Update step status in UI
+  const updateStepStatus = (stepIndex: number, status: ExecutionStatus, txHash?: string) => {
+    setExecutionSteps((prev) =>
+      prev.map((s, idx) => 
+        idx === stepIndex 
+          ? { ...s, status, ...(txHash && { txHash }) } 
+          : s
+      )
+    )
+  }
+
+  // Update activity in backend
+  const syncActivityProgress = async (stepIndex: number, status: 'completed' | 'failed', txHash?: string) => {
+    if (!activityId) return
+
+    try {
+      const payload: UpdateActivityPayload = {
+        activityId,
+        step: stepIndex + 1,
+        status: mapStatusToBackend(status),
+        message: txHash 
+          ? `Step ${stepIndex + 1} ${status} with txHash: ${txHash}`
+          : `Step ${stepIndex + 1} ${status}`
+      }
+      
+      await updateActivity(activityId, payload)
+      console.log(`✅ Activity synced: step ${stepIndex + 1} - ${status}`)
+    } catch (err) {
+      console.error("⚠️ Failed to sync activity:", err)
     }
+  }
+
+  // Execute a single step
+  const executeStep = async (stepIndex: number, step: StrategyStep) => {
+    updateStepStatus(stepIndex, "processing")
+
+    const tx = await buildStepTx(step, walletAddress!)
+    
+    // Steps that don't require transaction
+    if (!tx) {
+      console.log(`⏭️ Step ${stepIndex + 1} (${step.type}) - No transaction required`)
+      updateStepStatus(stepIndex, "completed")
+      return { success: true, skipDelay: stepIndex >= strategy.steps.length - 1 }
+    }
+
+    // Execute transaction
+    console.log(`🔐 Step ${stepIndex + 1} (${step.type}) - Requesting signature...`)
+    const result = await sendTransaction(tx)
+    
+    if (abortRef.current) {
+      throw new Error("Execution cancelled by user")
+    }
+
+    if (result?.status === "failed" || result?.errorMessage) {
+      throw new Error(result?.errorMessage || "Transaction failed")
+    }
+
+    if (!result?.transactionHash) {
+      throw new Error("No transaction hash returned")
+    }
+
+    // Success
+    updateStepStatus(stepIndex, "completed", result.transactionHash)
+    displayToast("success", `Step ${stepIndex + 1} completed successfully.`)
+    
+    return { 
+      success: true, 
+      txHash: result.transactionHash,
+      skipDelay: stepIndex >= strategy.steps.length - 1 
+    }
+  }
+
+  // Main execution flow
+  const startExecution = async () => {
+    if (!executionSteps.length || isExecuting) return
     if (!isWalletConnected || !walletAddress) {
       displayToast("warning", "Please connect your wallet first.")
       return
     }
 
-    console.log("🚀 Starting execution with", executionSteps.length, "steps")
-    console.log("📍 Starting from step index:", startFromStep)
     setIsExecuting(true)
     abortRef.current = false
 
     try {
-      const originalSteps = strategy?.steps || []
+      // Create activity record only if no activityId provided (new execution)
+      if (!activityId) {
+        const activity = await createActivity({
+          userAddress: walletAddress,
+          strategyId,
+          initialCapital: String(strategy.initialCapital?.amount || 0),
+          totalSteps: executionSteps.length,
+          currentStep: 1,
+        })
+        setActivityId(activity?.id || null)
+        console.log("✅ New activity created:", activity?.id)
+      } else {
+        console.log("✅ Re-executing with existing activity:", activityId)
+      }
 
-      for (let i = startFromStep; i < originalSteps.length; i++) {
+      // Execute steps sequentially
+      for (let i = startFromStep; i < strategy.steps.length; i++) {
         if (abortRef.current) break
 
-        console.log(`\n📍 Executing step ${i + 1}/${originalSteps.length}:`, originalSteps[i])
         setCurrentStepIndex(i)
+        console.log(`\n📍 Executing step ${i + 1}/${strategy.steps.length}`)
 
-        setExecutionSteps((prev) =>
-          prev.map((s, idx) => (idx === i ? { ...s, status: "processing" } : s)),
-        )
+        // Update activity progress when moving to this step
+        await syncActivityProgress(i, 'completed')
 
         try {
-          const step = originalSteps[i]
-          if (!step) continue
-
-          const tx = await buildStepTx(step, walletAddress)
+          const result = await executeStep(i, strategy.steps[i])
           
-          if (!tx) {
-            console.log(`⏭️ Step ${i} (${step.type}) does not require transaction, marking as completed`)
-            setExecutionSteps((prev) =>
-              prev.map((s, idx) => 
-                idx === i 
-                  ? { ...s, status: "completed" as const } 
-                  : s
-              ),
-            )
-            
-            if (i < originalSteps.length - 1) {
-              await new Promise((r) => setTimeout(r, 1000))
-            }
-            continue
-          }
-
-          console.log(`🔐 Step ${i} (${step.type}): Requesting signature...`)
-          const result = await sendTransaction(tx)
-          console.log(`📝 Step ${i} result:`, result)
-
-          if (abortRef.current) break
-
-          if (result?.status === "failed" || result?.errorMessage) {
-            throw new Error(result?.errorMessage || "Transaction failed on blockchain")
-          }
-
-          if (result?.transactionHash) {
-            setExecutionSteps((prev) =>
-              prev.map((s, idx) => 
-                idx === i 
-                  ? { ...s, status: "completed" as const, txHash: result.transactionHash || undefined } 
-                  : s
-              ),
-            )
-            displayToast("success", `Step ${i + 1} completed successfully.`)
-          } else {
-            throw new Error("No transaction hash returned")
-          }
-
-          if (i < originalSteps.length - 1) {
-            await new Promise((r) => setTimeout(r, 2000))
+          // Delay between steps (except last step)
+          if (!result.skipDelay) {
+            await new Promise((resolve) => setTimeout(resolve, 2000))
           }
         } catch (err) {
-          console.error(`❌ Step ${i} failed:`, err)
-          setExecutionSteps((prev) =>
-            prev.map((s, idx) => (idx === i ? { ...s, status: "failed" } : s)),
-          )
-          displayToast(
-            "error",
-            `Step ${i + 1} failed: ${err instanceof Error ? err.message : String(err)}`
-          )
+          console.error(`❌ Step ${i + 1} failed:`, err)
+          updateStepStatus(i, "failed")
+          await syncActivityProgress(i, 'failed')
+          displayToast("error", `Step ${i + 1} failed: ${err instanceof Error ? err.message : String(err)}`)
           break
         }
       }
     } catch (err) {
       console.error("❌ Execution error:", err)
-      displayToast(
-        "error",
-        `Execution failed: ${err instanceof Error ? err.message : String(err)}`
-      )
+      displayToast("error", `Execution failed: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
-      console.log("✅ Execution finished")
       setIsExecuting(false)
+      console.log("✅ Execution finished")
     }
   }
 
@@ -229,12 +292,12 @@ export function ExecutionModal({ open, onOpenChange, strategy, startFromStep = 0
           </p>
         </DialogHeader>
         
-        <div className="relative w-full overflow-hidden py-8 flex items-center justify-center bg-gradient-to-b from-accent/5 to-primary/5 rounded-2xl">
+        <div className="flex-1">
           {executionSteps.length > 0 ? (
-            <AnimatedStep
+            
+            <StepStack
               steps={executionSteps}
-              currentIndex={currentStepIndex}
-              explorerBase={currentChain?.blockExplorers?.default?.url}
+              currentStep={currentStepIndex}
             />
           ) : (
             <motion.div
