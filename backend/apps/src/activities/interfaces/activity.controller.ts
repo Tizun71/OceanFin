@@ -24,14 +24,14 @@ export class ActivityController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get activities (filter by id or userAddress)' })
-  @ApiQuery({ name: 'id', required: false, description: 'Activity ID' })
+  @ApiOperation({ summary: 'Get activities (filter by strategyId or userAddress)' })
+  @ApiQuery({ name: 'strategyId', required: false, description: 'Strategy ID' })
   @ApiQuery({ name: 'userAddress', required: false, description: 'Wallet address of user' })
   async find(
-    @Query('id') id?: string,
+    @Query('strategyId') strategyId?: string,
     @Query('userAddress') userAddress?: string,
   ): Promise<ActivityResponseDto[]> {
-    const activities = await this.activityService.find(id, userAddress);
+    const activities = await this.activityService.find(strategyId, userAddress);
     return ActivityMapper.toResponseList(activities);
   }
 

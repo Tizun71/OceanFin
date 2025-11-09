@@ -21,11 +21,11 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     return (data || []).map((row) => this.mapRowToEntity(row));
   }
 
-  async findByFilter(filters: { id?: string; userAddress?: string }): Promise<Activity[]> {
+  async findByFilter(filters: { strategyId?: string; userAddress?: string }): Promise<Activity[]> {
     try {
       let query = this.supabase.getClient().from('activities').select('*');
-      if (filters.id) {
-        query = query.eq('id', filters.id);
+      if (filters.strategyId) {
+        query = query.eq('strategy_id', filters.strategyId);
       }
       if (filters.userAddress) {
         query = query.eq('user_address', filters.userAddress);
@@ -43,6 +43,26 @@ export class ActivityRepositoryImplement implements ActivityRepository {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.warn(`Error fetching activities with filters: ${JSON.stringify(filters)}`, errorMessage);
       return [];
+    }
+  }
+
+  async findById(id: string): Promise<Activity | null> {
+    try {
+      const { data, error } = await this.supabase
+        .getClient()
+        .from('activities')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return this.mapRowToEntity(data);
+    } catch (error) {
+      console.warn(`Error fetching activity by id: ${id}`, error);
+      return null;
     }
   }
 
