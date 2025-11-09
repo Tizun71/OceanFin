@@ -16,8 +16,12 @@ export class ActivityService {
   if (!id && !userAddress) {
     return this.activityRepo.findAll();
   }
-  return this.activityRepo.findByFilter({ id, userAddress });
+
+  const result = await this.activityRepo.findByFilter({ id, userAddress });
+
+  return result ?? [];
   }
+
 
   async create(dto: CreateActivityDto): Promise<Activity> {
   const id = crypto.randomUUID(); 
