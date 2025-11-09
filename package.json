@@ -8,7 +8,10 @@
   "scripts": {
     "dev": "concurrently -n UI,API -c magenta,cyan \"npm run dev -w ui\" \"npm run start:dev -w backend/apps\"",
     "dev:ui": "npm run dev -w ui",
-    "dev:api": "npm run start:dev -w backend/apps"
+    "dev:api": "npm run start:dev -w backend/apps",
+    "build": "concurrently -n UI,API -c magenta,cyan \"npm run build -w ui\" \"npm run build -w backend/apps\"",
+    "build:ui": "npm run build -w ui",
+    "build:api": "npm run build -w backend/apps"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
