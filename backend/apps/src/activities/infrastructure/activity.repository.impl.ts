@@ -21,25 +21,50 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     return (data || []).map((row) => this.mapRowToEntity(row));
   }
 
-  async findByFilter(filters: { id?: string; userAddress?: string }): Promise<Activity[]> {
-  let query = this.supabase.getClient().from('activities').select('*');
-
-  if (filters.id) {
-    query = query.eq('id', filters.id);
+  async findByFilter(filters: { strategyId?: string; userAddress?: string }): Promise<Activity[]> {
+    try {
+      let query = this.supabase.getClient().from('activities').select('*');
+      if (filters.strategyId) {
+        query = query.eq('strategy_id', filters.strategyId);
+      }
+      if (filters.userAddress) {
+        query = query.eq('user_address', filters.userAddress);
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) {
+        console.warn(`No activities found with filters: ${JSON.stringify(filters)}, error: ${error.message}`);
+        return [];
+      }
+      if (!data || data.length === 0) {
+        return [];
+      }
+      return data.map((row) => this.mapRowToEntity(row));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn(`Error fetching activities with filters: ${JSON.stringify(filters)}`, errorMessage);
+      return [];
+    }
   }
 
-  if (filters.userAddress) {
-    query = query.eq('user_address', filters.userAddress);
+  async findById(id: string): Promise<Activity | null> {
+    try {
+      const { data, error } = await this.supabase
+        .getClient()
+        .from('activities')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return this.mapRowToEntity(data);
+    } catch (error) {
+      console.warn(`Error fetching activity by id: ${id}`, error);
+      return null;
+    }
   }
-
-  const { data, error } = await query.order('created_at', { ascending: false });
-
-  if (error) {
-    throw new Error(`Failed to fetch activities with filters: ${error.message}`);
-  }
-
-  return (data || []).map((row) => this.mapRowToEntity(row));
-}
 
   async save(activity: Activity): Promise<void> {
     const payload: any = {

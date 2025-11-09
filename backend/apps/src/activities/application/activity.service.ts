@@ -12,12 +12,20 @@ export class ActivityService {
     return this.activityRepo.findAll();
   }
 
-  async find(id?: string, userAddress?: string): Promise<Activity[]> {
-  if (!id && !userAddress) {
-    return this.activityRepo.findAll();
+  async find(strategyId?: string, userAddress?: string): Promise<Activity[]> {
+    if (!strategyId && !userAddress) {
+      return this.activityRepo.findAll();
+    }
+
+    const result = await this.activityRepo.findByFilter({ strategyId, userAddress });
+
+    return result ?? [];
   }
-  return this.activityRepo.findByFilter({ id, userAddress });
+
+  async findById(id: string): Promise<Activity | null> {
+    return this.activityRepo.findById(id);
   }
+
 
   async create(dto: CreateActivityDto): Promise<Activity> {
   const id = crypto.randomUUID(); 
@@ -41,8 +49,7 @@ export class ActivityService {
   async updateProgress(dto: UpdateActivityProgressDto): Promise<Activity> {
     if (!dto.activityId) throw new Error('activityId is required');
 
-    const activities = await this.find(dto.activityId);
-    const activity = activities[0];
+    const activity = await this.findById(dto.activityId);
     if (!activity) throw new Error('Activity not found');
 
     const totalSteps = activity.totalSteps ?? 8;
@@ -61,7 +68,7 @@ export class ActivityService {
   }
 
   async resumeActivity(activityId: string): Promise<Activity> {
-    const activity = (await this.find(activityId))[0];
+    const activity = await this.findById(activityId);
     if (!activity) throw new Error('Activity not found');
 
     if (activity.status !== 'FAILED') {
