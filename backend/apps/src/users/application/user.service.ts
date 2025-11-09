@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { UserRepository } from '../domain/user.repository';
 import { User } from '../domain/user.entity';
 import { CreateUserDto } from '../interfaces/dtos/create-user.dto';
+import { HydrationSdkService } from '../../shared/infrastructure/hydration-sdk.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepo: UserRepository) {}
+  constructor(
+    private readonly userRepo: UserRepository,
+    private readonly hydrationSdk: HydrationSdkService,
+  ) {}
 
   async createUser(dto: CreateUserDto): Promise<User> {
     const id = this.generateId();
@@ -38,5 +42,9 @@ export class UserService {
     user.changeUsername(newUsername);
     await this.userRepo.save(user);
     return user;
+  }
+
+  async checkEvmBinding(substrateAddress: string): Promise<{ isBound: boolean; evmAddress: string }> {
+    return this.hydrationSdk.checkEvmBinding(substrateAddress);
   }
 }

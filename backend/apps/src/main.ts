@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-import "src/strategies/infrastructure/rewards/get-apy";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

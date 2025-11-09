@@ -77,4 +77,14 @@ export class UserController {
     const user = await this.userService.renameUsername(id, updateDto.username);
     return UserMapper.toResponse(user);
   }
+
+  @Get('evm-binding/:substrateAddress')
+  @ApiOperation({ summary: 'Check if a Substrate address has a bound EVM account on Hydration' })
+  @ApiParam({ name: 'substrateAddress', description: 'Substrate (ss58) address to check' })
+  @ApiResponse({ status: 200, description: 'Binding status returned' })
+  async checkEvmBinding(
+    @Param('substrateAddress') substrateAddress: string,
+  ): Promise<{ isBound: boolean; evmAddress: string }> {
+    return this.userService.checkEvmBinding(substrateAddress);
+  }
 }

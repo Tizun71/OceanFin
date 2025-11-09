@@ -1,6 +1,5 @@
 import { AGENT, ASSET_ID, ASSET_SYMBOL, STEP_TYPE } from '../helpers';
-import { getAssetPrice } from '../helpers/hydration/get-asset-price';
-import { getMaxBorrow } from '../helpers/hydration/get-max-borrow';
+import { HydrationStrategyService } from '../../application/hydration-strategy.service';
 import { SLIPPAGE_TOLERANCE } from './constant';
 import { SimulateResult, Step } from './type';
 
@@ -8,13 +7,14 @@ async function simulateVDOTStrategy(
   assetInId: string,
   tokenAmount: number,
   iterations: number,
+  hydrationService: HydrationStrategyService,
 ) {
   const steps: Step[] = [];
   let iterationAmount = tokenAmount;
   let currentStep = 1;
   const totalSupply = 0;
   const totalBorrow = 0;
-  const dotToVdotPrice = await getAssetPrice(ASSET_ID.DOT, ASSET_ID.VDOT);
+  const dotToVdotPrice = await hydrationService.getAssetPrice(ASSET_ID.DOT, ASSET_ID.VDOT);
 
   // ENABLE EMODE
   steps.push({
@@ -58,7 +58,7 @@ async function simulateVDOTStrategy(
       },
     });
 
-    const borrowMaxAmount = await getMaxBorrow(ASSET_ID.DOT, iterationAmount);
+  const borrowMaxAmount = await hydrationService.getMaxBorrow(ASSET_ID.DOT, iterationAmount);
 
     // BORROW
     steps.push({

@@ -3,13 +3,18 @@ import { StrategiesRepository } from '../domain/strategies.repository';
 import { Strategy } from '../domain/strategies.entity';
 import { title } from 'process';
 import { STRATEGY_LIST } from './strategy-list';
-import { simulateGDOTStrategy } from '../infrastructure/strategy-simulate/gDOT-looping-simulate';
-import { calculateAPY } from '../infrastructure/rewards/get-apy';
-import { simulateVDOTStrategy } from '../infrastructure/strategy-simulate/vDOT-looping-simulate';
+import { RewardsService } from './rewards.service';
+import { HydrationStrategyService } from './hydration-strategy.service';
+import { StrategySimulationService } from './strategy-simulation.service';
 
 @Injectable()
 export class StrategyService {
-  constructor(private readonly strategiesRepo: StrategiesRepository) {}
+  constructor(
+    private readonly strategiesRepo: StrategiesRepository,
+    private readonly hydrationStrategy: HydrationStrategyService,
+    private readonly rewards: RewardsService,
+    private readonly simulation: StrategySimulationService,
+  ) {}
 
   async create(dto: {
     strategistName: string;
@@ -69,12 +74,12 @@ export class StrategyService {
   }
 
   async simulateStrategy(strategyId: string, assetIn: string, amountIn: number, iterations: number = 3) {
-    const strategy = await this.findById(strategyId);  
+    const strategy = await this.findById(strategyId);
     if (strategy.strategistName === STRATEGY_LIST.gDOT_LOOPING) {
-      return await simulateGDOTStrategy(assetIn, amountIn, iterations);
+      return await this.simulation.simulateGdot(assetIn, amountIn, iterations);
     }
     if (strategy.strategistName === STRATEGY_LIST.vDOT_LOOPING) {
-      return await simulateVDOTStrategy(assetIn, amountIn, iterations);
+      return await this.simulation.simulateVdot(assetIn, amountIn, iterations);
     }
     throw new Error('Strategy not found');
   }
@@ -92,7 +97,7 @@ export class StrategyService {
     await Promise.all(
       strategies.map(async (strategy) => {
     try {
-      const result = await calculateAPY(strategy.strategistName);
+  const result = await this.rewards.calculateAPY(strategy.strategistName);
       strategy.update({ apy: result.apy });
       await this.strategiesRepo.save(strategy);
       console.log(`Updated APY for ${strategy.strategistName} (ID: ${strategy.id}) = ${result.apy}`);
