@@ -26,4 +26,8 @@ export const API_ENDPOINTS = {
     UPDATE_PROGRESS: () => `/activities/progress`,
     RESUME: (id: string) => `/activities/progress/${id}`,
   },
+
+  USERS: {
+    EVM_BINDING: (substrateAddress: string) => `/users/evm-binding/${substrateAddress}`,
+  }
 };

@@ -3,6 +3,7 @@ import { PolkadotEvmRpcProvider } from "./external/polkadotEVMProvider";
 import { getHydrationSDK } from "./external/sdkClient";
 import { Pool } from "@aave/contract-helpers";
 import { H160 } from "@galacticcouncil/sdk";
+import { getGasPrice } from "./get-gas-price";
 
 export async function setUserEmode(categoryId: number, userAddress: string) {
     const { api } = await getHydrationSDK();
@@ -21,19 +22,19 @@ export async function setUserEmode(categoryId: number, userAddress: string) {
 
     const builtTx = txs[0] as any;
 
+    const gasPrice = await getGasPrice();
+
     const evmTx = api.tx.evm.call(
         H160.fromAny(userAddress),
         builtTx.to as string,
         builtTx.data as string,
         '0',
         1200000,
-        3080573,
-        3080573,
+        gasPrice,
+        gasPrice,
         null,
         []
     )
-
-    console.log("Built setUserEmode evmTx:", evmTx);
 
     return evmTx;
 }

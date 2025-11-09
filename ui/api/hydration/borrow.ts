@@ -5,6 +5,7 @@ import { ASSET_ID, ASSET_SYMBOL } from "@/utils/constant";
 import { parseUnits } from "ethers/lib/utils"
 import { InterestRate } from "@aave/contract-helpers";
 import { getHydrationSDK } from "./external/sdkClient";
+import { getGasPrice } from "./get-gas-price";
 
 export async function borrow(assetBorrow: string, amountBorrow: string, userAddress: string) {
     const { api, sdk } = await getHydrationSDK();
@@ -21,14 +22,16 @@ export async function borrow(assetBorrow: string, amountBorrow: string, userAddr
             debtTokenAddress: poolReverse.variableDebtTokenAddress,
         }, userAddress);
 
+        const gasPrice = await getGasPrice();
+
         const evmTx = api.tx.evm.call(
             H160.fromAny(userAddress),
             builtTx.to as string,
             builtTx.data as string,
             '0',
             Number(builtTx.gasLimit),
-            3583220,
-            3583220,
+            gasPrice,
+            gasPrice,
             null,
             []
         )

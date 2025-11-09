@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -11,10 +11,10 @@ import type { StrategySimulate } from "@/types/strategy.type"
 import { useLuno } from "@/app/contexts/luno-context"
 import { ConnectButton } from "@luno-kit/ui"
 import { displayToast } from "@/components/shared/toast-manager"
+import { isEvmAccountBound } from "@/services/user-service"
 
-const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
-  ssr: false,
-})
+const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then(m => m.ExecutionModal), { ssr: false })
+const BindAccountModal = dynamic(() => import("@/components/shared/bind-account-modal").then(m => m.BindAccountModal), { ssr: false })
 
 interface StrategyInputProps {
   strategy: {
@@ -39,7 +39,30 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
   const [simulateError, setSimulateError] = useState<string | null>(null)
 
-  const { isConnected } = useLuno()
+  const [checkingBind, setCheckingBind] = useState(false)
+  const [isAccountBound, setIsAccountBound] = useState<boolean | null>(null)
+  const [bindModalOpen, setBindModalOpen] = useState(false)
+
+  const { isConnected, address } = useLuno()
+
+  useEffect(() => {
+    const check = async () => {
+      if (!isConnected || !address) {
+        setIsAccountBound(null)
+        return
+      }
+      setCheckingBind(true)
+      try {
+        const res = await isEvmAccountBound(address)
+        setIsAccountBound(!!res?.isBound)
+      } catch {
+        setIsAccountBound(false)
+      } finally {
+        setCheckingBind(false)
+      }
+    }
+    check()
+  }, [isConnected, address])
 
   const inputAsset = strategy.inputAsset || "-"
   const networkCost = strategy.networkCost || "-"
@@ -59,6 +82,10 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       displayToast("error", "Please connect your wallet first.")
       return
     }
+    if (isAccountBound === false) {
+      displayToast("error", "Bind EVM account first.")
+      return
+    }
 
     setLoadingSimulate(true)
     setSimulateResult(null)
@@ -66,17 +93,11 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
     try {
       const data = await simulateStrategy(strategy, Number(amount))
-      console.log("✅ Simulation successful:", data)
-      
-      if (!data?.steps?.length) {
-        console.warn("⚠️ No steps in simulation result")
-      }
-      
+      if (!data?.steps?.length) console.warn("No steps in simulation result")
       setSimulateResult(data)
       onSimulateSuccess?.(data)
-      displayToast("success", "Simulation completed successfully!")
+      displayToast("success", "Simulation completed successfully.")
     } catch (error: any) {
-      console.error("❌ Simulation error:", error)
       const errorMsg = error?.message || "Simulation failed"
       setSimulateError(errorMsg)
     } finally {
@@ -86,30 +107,43 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
   const handleExecute = () => {
     if (!isConnected) {
-      alert("Please connect your wallet first")
+      displayToast("error", "Please connect wallet.")
+      return
+    }
+    if (isAccountBound === false) {
+      setBindModalOpen(true)
       return
     }
     if (!simulateResult) {
-      alert("Please simulate the strategy first")
+      displayToast("warning", "Simulate strategy first.")
       return
     }
     setExecutionModalOpen(true)
   }
 
+  const handleBindButton = () => {
+    if (!isConnected) {
+      displayToast("error", "Connect wallet first.")
+      return
+    }
+    setBindModalOpen(true)
+  }
+
+  const onBindSuccess = () => {
+    setIsAccountBound(true)
+    setBindModalOpen(false)
+    displayToast("success", "EVM account bound successfully.")
+  }
+
   return (
     <>
       <div className="rounded-2xl p-8 border border-border bg-card backdrop-blur-xl shadow-lg transition-all duration-500 hover:shadow-xl hover:border-accent/50">
-        {/* Header */}
         <div className="mb-7">
-          <h3 className="text-2xl font-extrabold text-primary mb-2">
-            Strategy Input
-          </h3>
+          <h3 className="text-2xl font-extrabold text-primary mb-2">Strategy Input</h3>
           <p className="text-sm font-normal text-muted-foreground">Enter the amount you want to simulate</p>
         </div>
 
-        {/* Amount Input Section */}
         <div className="space-y-4 mb-5">
-          {/* Slippage Info with Tooltip */}
           <div className="flex items-center justify-end gap-1.5 group">
             <p className="text-sm text-muted-foreground">
               Est. Slippage: <span className="font-semibold text-foreground">1%</span>
@@ -122,36 +156,32 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <InputGroup className="flex-1 h-10 bg-input hover:bg-input/80 border-border focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all duration-300 shadow-sm">
-              <InputGroupInput
-                type="number"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="text-base font-bold text-primary placeholder:text-muted-foreground border-0 focus-visible:ring-0 text-right px-3 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-              />
-            </InputGroup>
-
-            {/* Asset Display Badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-lg border-2 border-accent/30 bg-accent/10 hover:border-accent/50 hover:bg-accent/15 transition-all duration-300 shadow-sm">
-              <div className="relative w-4 h-4">
-                <Image
-                  src={asset.icon || "/placeholder.svg"}
-                  alt={asset.symbol}
-                  width={16}
-                  height={16}
-                  className="rounded-full object-cover"
+            <div className="flex items-center gap-3">
+              <InputGroup className="flex-1 h-10 bg-input hover:bg-input/80 border-border focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all duration-300 shadow-sm">
+                <InputGroupInput
+                  type="number"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="text-base font-bold text-primary placeholder:text-muted-foreground border-0 focus-visible:ring-0 text-right px-3 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                 />
+              </InputGroup>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-lg border-2 border-accent/30 bg-accent/10 hover:border-accent/50 hover:bg-accent/15 transition-all duration-300 shadow-sm">
+                <div className="relative w-4 h-4">
+                  <Image
+                    src={asset.icon || "/placeholder.svg"}
+                    alt={asset.symbol}
+                    width={16}
+                    height={16}
+                    className="rounded-full object-cover"
+                  />
+                </div>
+                <span className="font-bold text-accent text-sm tracking-wide">{asset.symbol}</span>
               </div>
-              <span className="font-bold text-accent text-sm tracking-wide">{asset.symbol}</span>
             </div>
-          </div>
-
-
         </div>
 
-        {/* Info Text */}
         <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/30 mb-5">
           <div className="flex-shrink-0 w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center mt-0.5">
             <Info className="w-3 h-3 text-accent" />
@@ -166,26 +196,38 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             <>
               <Button
                 className="w-full h-12 bg-card hover:bg-card/80 hover:scale-[1.02] active:scale-[0.98] border-2 border-accent/30 hover:border-accent/50 text-accent font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                disabled={!amount || Number(amount) <= 0 || loadingSimulate}
+                disabled={!amount || Number(amount) <= 0 || loadingSimulate || checkingBind || isAccountBound === false}
                 onClick={handleSimulate}
               >
-                {loadingSimulate ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
-                    <span className="animate-pulse">Simulating...</span>
-                  </span>
-                ) : (
-                  "Simulate Strategy"
-                )}
+                {checkingBind
+                  ? "Checking binding..."
+                  : loadingSimulate
+                  ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+                      <span className="animate-pulse">Simulating...</span>
+                    </span>
+                  )
+                  : "Simulate Strategy"}
               </Button>
 
-              <Button
-                className="w-full h-12 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
-                disabled={!amount || Number(amount) <= 0 || loadingSimulate || !simulateResult}
-                onClick={handleExecute}
-              >
-                Execute Strategy
-              </Button>
+              {isAccountBound === false ? (
+                <Button
+                  className="w-full h-12 bg-gradient-to-r from-destructive via-destructive to-destructive/80 hover:shadow-[0_8px_24px_rgba(220,38,38,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50"
+                  onClick={handleBindButton}
+                  disabled={checkingBind}
+                >
+                  Bind Account
+                </Button>
+              ) : (
+                <Button
+                  className="w-full h-12 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
+                  disabled={!amount || Number(amount) <= 0 || loadingSimulate || !simulateResult}
+                  onClick={handleExecute}
+                >
+                  Execute Strategy
+                </Button>
+              )}
             </>
           ) : (
             <ConnectButton
@@ -205,14 +247,20 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         )}
       </div>
 
-      {simulateResult && (
-        <ExecutionModal 
-          open={executionModalOpen} 
-          onOpenChange={setExecutionModalOpen} 
+      {simulateResult && isAccountBound && (
+        <ExecutionModal
+          open={executionModalOpen}
+          onOpenChange={setExecutionModalOpen}
           strategy={simulateResult}
           startFromStep={0}
         />
       )}
+
+      <BindAccountModal
+        open={bindModalOpen}
+        onOpenChange={setBindModalOpen}
+        onBindSuccess={onBindSuccess}
+      />
     </>
   )
 }
