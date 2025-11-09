@@ -109,6 +109,7 @@ export function ExecutionModal({
   const [isExecuting, setIsExecuting] = useState(false)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [activityId, setActivityId] = useState<string | null>(initialActivityId)
+  const [allStepsCompleted, setAllStepsCompleted] = useState(false)
   const abortRef = useRef(false)
 
   const {
@@ -130,11 +131,12 @@ export function ExecutionModal({
       setExecutionSteps(stepsWithStatus)
       setIsExecuting(false)
       setCurrentStepIndex(startFromStep)
+      setAllStepsCompleted(false)
       
       // Set activity ID from props if provided (re-execute scenario)
       setActivityId(initialActivityId)
     }
-  }, [open, strategy, startFromStep, initialActivityId])
+  }, [open, strategy, startFromStep, initialActivityId, strategyId])
 
   const subtitle = useMemo(() => {
     const resumeText = startFromStep > 0 ? ` • Resuming from step ${startFromStep + 1}` : ""
@@ -256,8 +258,16 @@ export function ExecutionModal({
         try {
           const result = await executeStep(i, strategy.steps[i])
           
-          // Delay between steps (except last step)
-          if (!result.skipDelay) {
+          // Check if this is the last step
+          const isLastStep = i === strategy.steps.length - 1
+          
+          if (isLastStep) {
+            // Mark all steps as completed
+            setAllStepsCompleted(true)
+            displayToast("success", "🎉 All steps completed successfully!")
+            console.log("✅ All steps completed!")
+          } else {
+            // Delay between steps (except last step)
             await new Promise((resolve) => setTimeout(resolve, 2000))
           }
         } catch (err) {
@@ -286,9 +296,14 @@ export function ExecutionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-card/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-border">
         <DialogHeader className="pb-4 border-b border-border">
-          <DialogTitle className="text-2xl font-bold text-primary">Execute Strategy</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-primary">
+            {allStepsCompleted ? "Execution Completed! 🎉" : "Execute Strategy"}
+          </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1.5">
-            {subtitle} • Step {currentStepIndex + 1} of {executionSteps.length}
+            {allStepsCompleted 
+              ? `All ${executionSteps.length} steps completed successfully!`
+              : `${subtitle} • Step ${currentStepIndex + 1} of ${executionSteps.length}`
+            }
           </p>
         </DialogHeader>
         
@@ -311,6 +326,25 @@ export function ExecutionModal({
           )}
         </div>
 
+        {allStepsCompleted && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mx-6 p-4 rounded-xl bg-accent/10 border border-accent/30"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                <span className="text-2xl">✓</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-accent-light">Success!</p>
+                <p className="text-xs text-foreground/70">Your strategy has been executed successfully.</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="flex gap-3 mt-6 pt-4 border-t border-border">
           {isExecuting ? (
             <Button
@@ -329,13 +363,15 @@ export function ExecutionModal({
               >
                 Close
               </Button>
-              <Button
-                className="flex-1 bg-accent hover:bg-accent/90 text-white font-semibold"
-                onClick={startExecution}
-                disabled={!executionSteps.length || !isWalletConnected}
-              >
-                {!isWalletConnected ? 'Connect Wallet' : 'Start Execution'}
-              </Button>
+              {!allStepsCompleted && (
+                <Button
+                  className="flex-1 bg-accent hover:bg-accent/90 text-white font-semibold"
+                  onClick={startExecution}
+                  disabled={!executionSteps.length || !isWalletConnected}
+                >
+                  {!isWalletConnected ? 'Connect Wallet' : 'Start Execution'}
+                </Button>
+              )}
             </>
           )}
         </div>
