@@ -5,5 +5,5 @@ export async function getGasPrice(): Promise<number> {
     const gasPrice = await api.rpc.eth.gasPrice();
     const gas = gasPrice.toString();
     
-    return Number(gas) * 1.05;
+    return Number(gas);
 }
