@@ -6,4 +6,14 @@ export interface ExecutionStep {
   description: string
   status: ExecutionStatus
   txHash?: string
+  fromToken?: {
+    icon: string
+    symbol: string
+  }
+  fromAmount?: string
+  toToken?: {
+    icon: string
+    symbol: string
+  }
+  toAmount?: string
 }
