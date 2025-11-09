@@ -207,7 +207,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           {isConnected ? (
             <>
               <Button
-                className="w-full h-12 bg-card hover:bg-card/80 hover:scale-[1.02] active:scale-[0.98] border-2 border-accent/30 hover:border-accent/50 text-accent font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="w-full h-10 bg-card hover:bg-card/80 hover:scale-[1.02] active:scale-[0.98] border-2 border-accent/30 hover:border-accent/50 text-accent font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 disabled={!amount || Number(amount) <= 0 || loadingSimulate || checkingBind || isAccountBound === false}
                 onClick={handleSimulate}
               >
@@ -225,7 +225,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
               {isAccountBound === false ? (
                 <Button
-                  className="w-full h-12 bg-gradient-to-r from-destructive via-destructive to-destructive/80 hover:shadow-[0_8px_24px_rgba(220,38,38,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50"
+                  className="w-full h-10 bg-gradient-to-r from-destructive via-destructive to-destructive/80 hover:shadow-[0_8px_24px_rgba(220,38,38,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50"
                   onClick={handleBindButton}
                   disabled={checkingBind}
                 >
@@ -233,7 +233,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
                 </Button>
               ) : (
                 <Button
-                  className="w-full h-12 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
+                  className="w-full h-10 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100"
                   disabled={!amount || Number(amount) <= 0 || loadingSimulate || !simulateResult}
                   onClick={handleExecute}
                 >
@@ -247,7 +247,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
               accountStatus="full"
               chainStatus="full"
               showBalance={true}
-              className="w-full h-12 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] text-white font-bold rounded-xl transition-all duration-300"
+              className="w-full h-10 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] text-white font-bold rounded-xl transition-all duration-300"
             />
           )}
         </div>

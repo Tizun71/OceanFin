@@ -43,12 +43,14 @@ export function HeroSection() {
         flex items-center justify-between
         px-8 py-3
         rounded-full
-        backdrop-blur-2xl
-        bg-white/40
-        border border-white/30
-        shadow-[0_8px_25px_rgba(200,200,200,0.2)]
+        backdrop-blur-lg
+        bg-transparent
+        border border-white/10
+        shadow-[0_4px_20px_rgba(0,0,0,0.1)]
         w-[95vw] max-w-[1200px]
         transition-all duration-700
+        hover:border-accent/30
+        hover:shadow-[0_4px_25px_rgba(0,194,203,0.15)]
       "
       >
         {/* Left: Logo + Navigation */}
@@ -62,7 +64,7 @@ export function HeroSection() {
                 height={42}
                 className="transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6"
               />
-              <div className="absolute inset-0 blur-md bg-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 blur-md bg-accent/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           </Link>
 
@@ -75,12 +77,16 @@ export function HeroSection() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative flex items-center gap-2 px-4 py-2 text-[15px] font-medium rounded-md transition-all
+                  className={`
+                    relative flex items-center gap-2 px-4 py-2 
+                    text-[15px] font-medium rounded-lg
+                    transition-all duration-300
                     ${
                       isActive
-                        ? "text-accent"
-                        : "text-black hover:text-accent/80"
-                    }`}
+                        ? "text-accent-light bg-white/5"
+                        : "text-foreground/80 hover:text-accent hover:bg-white/5"
+                    }
+                  `}
                 >
                   {Icon && <Icon className="w-4 h-4" />}
                   <span>{item.label}</span>
@@ -88,7 +94,7 @@ export function HeroSection() {
                   {isActive && (
                     <motion.div
                       layoutId="active-nav-underline"
-                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-accent to-accent/60 rounded-full"
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-accent via-accent-light to-accent rounded-full"
                     />
                   )}
                 </Link>

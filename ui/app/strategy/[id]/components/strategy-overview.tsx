@@ -37,31 +37,48 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
       <StrategyHeader strategy={strategy as any} simulateData={simulateData} />
 
       {/* === DESCRIPTION SECTION === */}
-      <div className="glass rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-[#00D1FF] to-[#0EA5E9] bg-clip-text text-transparent">
-          Description
-        </h3>
+      <div className="glass rounded-lg p-6 space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="h-1 w-1 rounded-full bg-accent"></div>
+          <h3 className="text-xl font-semibold text-foreground">
+            Strategy Description
+          </h3>
+        </div>
+
+        {/* Description text */}
+        <p className="text-foreground/80 leading-relaxed text-[15px]">
+          {safeDescription}
+        </p>
 
         {/* Agents */}
         {safeAgents.length > 0 && (
-          <div className="flex items-start gap-3 mb-4">
-            <span className="text-sm font-semibold">Executed by Agents:</span>
+          <div className="pt-4 border-t border-border/50">
+            <div className="flex items-center gap-2 mb-3">
+              <Bot className="w-4 h-4 text-accent" />
+              <span className="text-sm font-semibold text-foreground/90">
+                Executed by Agents
+              </span>
+            </div>
             <div className="flex flex-wrap gap-2">
               {safeAgents.map((agent, idx) => (
                 <div
                   key={`${agent}-${idx}`}
-                  className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-sm"
+                  className="
+                    group px-4 py-2 rounded-lg 
+                    bg-card/60 border border-border/50
+                    hover:border-accent/50 hover:bg-accent/10
+                    transition-all duration-300
+                    backdrop-blur-sm
+                  "
                 >
-                  <Bot className="w-4 h-4 text-[#00D1FF]" />
-                  <span className="text-sm text-foreground">{agent}</span>
+                  <span className="text-sm text-foreground/90 group-hover:text-accent-light transition-colors">
+                    {agent}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         )}
-
-        {/* Description text */}
-        <p className="text-muted-foreground leading-relaxed">{safeDescription}</p>
       </div>
     </div>
   );

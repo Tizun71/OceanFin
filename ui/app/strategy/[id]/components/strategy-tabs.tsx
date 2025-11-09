@@ -24,7 +24,6 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
 
   return (
     <Tabs defaultValue="overview" className="w-full">
-      {/* === Tabs Header - Chip Style === */}
       <TabsList
         className="
           flex flex-wrap gap-3 bg-transparent border-none justify-start 
@@ -38,14 +37,15 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
               key={tab.value}
               value={tab.value}
               className="
-                 flex items-center gap-2 px-4 py-2.5 rounded-full
-                  border border-gray-300
-                  text-sm font-medium text-gray-700
-                  hover:bg-gray-100 hover:border-gray-400
-                  data-[state=active]:bg-gray-200
-                  data-[state=active]:text-gray-900
-                  data-[state=active]:border-gray-500
-                  transition-all duration-300
+                flex items-center gap-2 px-5 py-2.5 rounded-full
+                border border-border bg-card/40 backdrop-blur-sm
+                text-sm font-medium text-foreground/70
+                hover:bg-card/60 hover:border-accent/40 hover:text-foreground
+                data-[state=active]:bg-accent/20
+                data-[state=active]:text-accent-light
+                data-[state=active]:border-accent
+                data-[state=active]:shadow-[0_0_15px_rgba(0,194,203,0.3)]
+                transition-all duration-300
               "
             >
               <Icon size={16} className="opacity-80" />
