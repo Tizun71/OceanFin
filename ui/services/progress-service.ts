@@ -1,23 +1,21 @@
-import axios from "axios"
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+import { api, API_ENDPOINTS } from "./api"
 
 export async function getActivities() {
   try {
-    const res = await axios.get(`${API_BASE}/activities`)
+    const res = await api.get(API_ENDPOINTS.ACTIVITIES.LIST())
     return res.data || [] 
   } catch (err: any) {
-    console.error(" Fetch activities failed:", err.response?.data || err.message)
+    console.error("❌ Fetch activities failed:", err.response?.data || err.message)
     throw err
   }
 }
 
 export async function getActivityById(id: string) {
   try {
-    const res = await axios.get(`${API_BASE}/activities/${id}`)
+    const res = await api.get(API_ENDPOINTS.ACTIVITIES.GET(id))
     return res.data
   } catch (err: any) {
-    console.error(" Fetch activity failed:", err.response?.data || err.message)
+    console.error("❌ Fetch activity failed:", err.response?.data || err.message)
     throw err
   }
 }
@@ -34,27 +32,27 @@ export async function updateProgress({
   message: string
 }) {
   try {
-    const res = await axios.post(`${API_BASE}/activities/progress`, {
+    const res = await api.post(API_ENDPOINTS.ACTIVITIES.UPDATE_PROGRESS(), {
       activityId,
       step,
       status,
       message,
     })
-    console.log(" Progress updated:", res.data)
+    console.log("✅ Progress updated:", res.data)
     return res.data
   } catch (err: any) {
-    console.error(" Progress update failed:", err.response?.data || err.message)
+    console.error("❌ Progress update failed:", err.response?.data || err.message)
     throw err
   }
 }
 
 export async function resumeProgress(id: string, payload: any) {
   try {
-    const res = await axios.put(`${API_BASE}/activities/progress/${id}`, payload)
-    console.log(" Resume success:", res.data)
+    const res = await api.put(API_ENDPOINTS.ACTIVITIES.RESUME(id), payload)
+    console.log("✅ Resume success:", res.data)
     return res.data
   } catch (err: any) {
-    console.error(" Resume progress failed:", err.response?.data || err.message)
+    console.error("❌ Resume progress failed:", err.response?.data || err.message)
     throw err
   }
 }

@@ -77,7 +77,6 @@
     font-family: "Inter", system-ui, sans-serif;
     min-height: 100vh;
     color: var(--foreground);
-    background: url('/path-to-your-background.jpg') no-repeat center center fixed;
     background-size: cover;
     backdrop-filter: blur(10px);
     transition: all 0.4s ease;
