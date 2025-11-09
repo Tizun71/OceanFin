@@ -10,6 +10,7 @@ import { buildStepTx } from "@/services/strategy-step-service"
 import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
 import { AnimatedStep } from "./animated-step"
 import { motion } from "framer-motion"
+import { displayToast } from "./toast-manager"
 
 interface ExecutionModalProps {
   open: boolean
@@ -119,7 +120,7 @@ export function ExecutionModal({ open, onOpenChange, strategy, startFromStep = 0
       return
     }
     if (!isWalletConnected || !walletAddress) {
-      alert("Please connect your wallet first")
+      displayToast("warning", "Please connect your wallet first.")
       return
     }
 
@@ -181,6 +182,7 @@ export function ExecutionModal({ open, onOpenChange, strategy, startFromStep = 0
                   : s
               ),
             )
+            displayToast("success", `Step ${i + 1} completed successfully.`)
           } else {
             throw new Error("No transaction hash returned")
           }
@@ -193,13 +195,19 @@ export function ExecutionModal({ open, onOpenChange, strategy, startFromStep = 0
           setExecutionSteps((prev) =>
             prev.map((s, idx) => (idx === i ? { ...s, status: "failed" } : s)),
           )
-          alert(`Step ${i + 1} failed: ${err instanceof Error ? err.message : String(err)}`)
+          displayToast(
+            "error",
+            `Step ${i + 1} failed: ${err instanceof Error ? err.message : String(err)}`
+          )
           break
         }
       }
     } catch (err) {
       console.error("❌ Execution error:", err)
-      alert(`Execution failed: ${err instanceof Error ? err.message : String(err)}`)
+      displayToast(
+        "error",
+        `Execution failed: ${err instanceof Error ? err.message : String(err)}`
+      )
     } finally {
       console.log("✅ Execution finished")
       setIsExecuting(false)

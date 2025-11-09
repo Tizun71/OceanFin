@@ -6,6 +6,8 @@ import { getActivities, restartActivity, resumeProgress } from "@/services/progr
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
+import { AnimatePresence, motion } from "framer-motion"
+import { displayToast } from "@/components/shared/toast-manager"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -40,8 +42,8 @@ export const MyActivityTable = () => {
     setLoading(true)
     try {
       const res = await getActivities()
-      const list: any[] = Array.isArray(res) ? res : [res]
-      const formatted: MyActivityRow[] = list.map((a) => ({
+      const list = Array.isArray(res) ? res : res ? [res] : []
+      const formatted = list.map((a): MyActivityRow => ({
         id: a.id ?? "-",
         date: a.createdAt?.slice(0, 10) ?? "-",
         strategy: a.strategyId ?? "-",
@@ -64,6 +66,7 @@ export const MyActivityTable = () => {
     } catch (err) {
       console.error(err)
       setError("Failed to load activities.")
+      displayToast("error", "Failed to load activities.")
     } finally {
       setLoading(false)
     }
@@ -74,8 +77,13 @@ export const MyActivityTable = () => {
   }, [])
 
   const handleRetry = async (id: string, step: number) => {
-    await restartActivity(id, step)
-    fetchActivities()
+    try {
+      await restartActivity(id, step)
+      displayToast("success", `Retry step ${step} successfully!`)
+      fetchActivities()
+    } catch (error: any) {
+      displayToast("error", error?.message || "Retry failed. Please try again.")
+    }
   }
 
   const handleReExecute = async (row: MyActivityRow) => {
@@ -83,7 +91,7 @@ export const MyActivityTable = () => {
     setSimulateError(null)
     
     try {
-      const amount = parseFloat(row.initialCapital)
+      const amount = Number(row.initialCapital.toString().replace(/,/g, ""))
       if (!amount || amount <= 0) {
         throw new Error("Invalid initial capital amount")
       }
@@ -91,28 +99,28 @@ export const MyActivityTable = () => {
       const strategyData = { id: row.strategyId }
       
       const simulationResult = await simulateStrategy(strategyData, amount)
-      console.log("✅ Simulation successful:", simulationResult)
       
       if (!simulationResult?.steps?.length) {
-        console.warn("⚠️ No steps in simulation result")
+        throw new Error("No steps in simulation result")
       }
       
       const resumeFromStep = Math.max(0, row.currentStep - 1)
-      console.log(`🔄 Resuming from step ${resumeFromStep} (current: ${row.currentStep}, total: ${row.totalSteps})`)
       
       setStartFromStep(resumeFromStep)
       setSimulateResult(simulationResult)
       setExecutionModalOpen(true)
+      displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
       
     } catch (error: any) {
-      console.error("❌ Re-execute error:", error)
-      const errorMsg = error?.message || "Re-execution failed"
-      setError(errorMsg)
-      setSimulateError(errorMsg)
+      displayToast("error", error?.message || "Re-execution failed.")
     } finally {
       setReExecuting(null)
     }
   }
+
+  useEffect(() => {
+    if (!executionModalOpen) setSimulateResult(null)
+  }, [executionModalOpen])
 
   const columns: TableColumn<MyActivityRow>[] = [
     { key: "date", label: "Date" },
@@ -179,28 +187,9 @@ export const MyActivityTable = () => {
   const renderExpand = (row: MyActivityRow) => (
     <div className="grid grid-cols-2 gap-8 text-sm text-card-foreground">
       <div>
-        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Wallet Address</div>
-        <div className="font-medium truncate bg-accent/10 px-3 py-2 rounded border border-accent/20">
-          {row.userAddress || "-"}
-        </div>
-      </div>
-
-      <div>
         <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Tx Hash</div>
         {row.txHash?.length ? (
-          <div className="space-y-1">
-            {row.txHash.map((hash, i) => (
-              <a
-                key={i}
-                href={`https://etherscan.io/tx/${hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40"
-              >
-                {hash.slice(0, 8)}...{hash.slice(-6)} ↗
-              </a>
-            ))}
-          </div>
+          <TxHashList hashes={row.txHash} />
         ) : (
           <span className="text-muted-foreground italic text-sm">No transactions</span>
         )}
@@ -218,9 +207,9 @@ export const MyActivityTable = () => {
         error={error}
       />
 
-      {simulateError && (
-        <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
-          {simulateError}
+      {!loading && !error && activities.length === 0 && (
+        <div className="text-center text-muted-foreground py-6 text-sm italic">
+          No activity records found.
         </div>
       )}
 
@@ -233,5 +222,48 @@ export const MyActivityTable = () => {
         />
       )}
     </>
+  )
+  
+}
+const TxHashList = ({ hashes }: { hashes: string[] }) => {
+  const [showAll, setShowAll] = useState(false)
+  const limit = 3
+  const sorted = [...hashes].reverse()
+  const visible = showAll ? sorted : sorted.slice(0, limit)
+
+  return (
+    <div>
+      <AnimatePresence>
+        <motion.div
+          layout
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-1 overflow-hidden"
+        >
+          {visible.map((hash) => (
+            <a
+              key={hash}
+              href={`https://etherscan.io/tx/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 truncate"
+            >
+              {hash.slice(0, 8)}...{hash.slice(-6)} ↗
+            </a>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+
+      {hashes.length > limit && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-2 text-xs text-blue-500 hover:underline font-medium"
+        >
+          {showAll ? "Show less" : `Show ${hashes.length - limit} more`}
+        </button>
+      )}
+    </div>
   )
 }
