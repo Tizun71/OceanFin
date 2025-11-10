@@ -68,7 +68,7 @@ export function FeaturedStrategies() {
           animate={{ opacity: 1, y: 0 }}
           className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary"
         >
-          AI Yield Assistant
+          Polkadot DeFi Strategies
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: -10 }}
@@ -76,7 +76,7 @@ export function FeaturedStrategies() {
           transition={{ delay: 0.1 }}
           className="text-base md:text-lg text-muted-foreground font-medium"
         >
-          Automate your DeFi growth with AI-driven strategies.
+          Maximize your DeFi growth with smart, automated strategies.
         </motion.p>
       </div>
 
