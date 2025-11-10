@@ -64,6 +64,7 @@ export function StrategyFlow({
           {validSteps.map((step, idx) => {
             const hasIn = !!step.tokenIn
             const hasOut = !!step.tokenOut
+            const hasBoth = hasIn && hasOut
 
             return (
               <motion.div
@@ -71,12 +72,12 @@ export function StrategyFlow({
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className="relative w-full max-w-[360px] bg-card backdrop-blur-md border border-border rounded-lg 
-                           shadow-lg hover:shadow-xl hover:border-accent/50
-                           transition-all duration-300 p-3 flex flex-col justify-between min-h-[70px]"
+                className="relative w-full max-w-[360px] bg-card backdrop-blur-md border border-border rounded-lg
+                          shadow-lg hover:shadow-xl hover:border-accent/50
+                          transition-all duration-300 p-3 flex flex-col min-h-[110px]"
               >
                 {/* Step Header */}
-                <div className="flex justify-between items-center mb-1">
+                <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground flex items-center justify-center text-[10px] font-bold shadow-md">
                       {step.step}
@@ -91,32 +92,40 @@ export function StrategyFlow({
                   </div>
                 </div>
 
-                {/* Token In */}
-                {hasIn && (
-                  <div className="flex justify-between text-[10.5px] text-card-foreground border-t border-border pt-1">
-                    <span>{step.tokenIn?.amount ?? "N/A"}</span>
-                    <span className="font-semibold text-primary">
-                      {step.tokenIn?.symbol || "N/A"}
-                    </span>
+                <div className="flex flex-col flex-1">
+                  {/* TokenIn */}
+                  <div className="flex-1 flex justify-between items-center text-[10.5px] text-card-foreground border-t border-border pt-1 px-1">
+                    {hasIn ? (
+                      <>
+                        <span>{step.tokenIn?.amount ?? "N/A"}</span>
+                        <span className="font-semibold text-primary">{step.tokenIn?.symbol || "N/A"}</span>
+                      </>
+                    ) : (
+                      <span className="opacity-0">placeholder</span>
+                    )}
                   </div>
-                )}
 
-                {/* Arrow */}
-                {hasIn && hasOut && (
-                  <div className="flex justify-center my-0.5">
-                    <ArrowDown className="w-2.5 h-2.5 text-primary animate-bounce" />
+                  {/* Arrow */}
+                  <div className="flex-1 flex justify-center items-center">
+                    {hasBoth ? (
+                      <ArrowDown className="w-2.5 h-2.5 text-primary animate-bounce" />
+                    ) : (
+                      <span className="opacity-0">placeholder</span>
+                    )}
                   </div>
-                )}
 
-                {/* Token Out */}
-                {hasOut && (
-                  <div className="flex justify-between text-[10.5px] text-card-foreground border-t border-border pt-1">
-                    <span>{step.tokenOut?.amount ?? "N/A"}</span>
-                    <span className="font-semibold text-accent">
-                      {step.tokenOut?.symbol || "N/A"}
-                    </span>
+                  {/* TokenOut */}
+                  <div className="flex-1 flex justify-between items-center text-[10.5px] text-card-foreground border-t border-border pt-1 px-1">
+                    {hasOut ? (
+                      <>
+                        <span>{step.tokenOut?.amount ?? "N/A"}</span>
+                        <span className="font-semibold text-accent">{step.tokenOut?.symbol || "N/A"}</span>
+                      </>
+                    ) : (
+                      <span className="opacity-0">placeholder</span>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Connector Arrow */}
                 {idx < validSteps.length - 1 && (
@@ -157,7 +166,7 @@ export function StrategyFlow({
                   sub: "Base asset",
                 },
                 { icon: "🔁", label: "Loops", value: loops ?? "N/A", sub: "Total cycle count" },
-                { icon: "💸", label: "Fee", value: `${fee ?? 0}%`, sub: "Execution fee" },
+                { icon: "💸", label: "Fee", value: `${fee ?? 0}`, sub: "Execution fee" },
                 { icon: "📈", label: "Total Supply", value: totalSupply ?? 0, sub: "Supplied amount" },
                 { icon: "📉", label: "Total Borrow", value: totalBorrow ?? 0, sub: "Borrowed amount" },
               ].map((info, i) => (

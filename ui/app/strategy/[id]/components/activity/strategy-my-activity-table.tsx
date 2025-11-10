@@ -57,12 +57,7 @@ export const MyActivityTable = () => {
       apr: a.metadata?.APR ?? "-",
       fee: a.metadata?.fee ?? "-",
       initialCapital: a.metadata?.initial_capital ?? "-",
-      status:
-        a.status === "FAILED"
-          ? "Failed"
-          : a.status === "COMPLETED"
-            ? "Completed"
-            : "Pending",
+      status: a.status === "COMPLETED" ? "Completed" : "Pending",
       txHash: a.txHash ?? [],
       userAddress: a.userAddress ?? "-",
     }))
@@ -113,28 +108,24 @@ export const MyActivityTable = () => {
   }, [executionModalOpen])
 
   const columns: TableColumn<MyActivityRow>[] = [
-    { key: "id", label: "ID" },
     { key: "date", label: "Date" },
-    { key: "strategy", label: "Strategy ID" },
+    { key: "initialCapital", label: "Amount" },
     {
       key: "progress",
       label: "Progress",
       render: (r) => `Step ${r.currentStep}/${r.totalSteps}`,
     },
-    { key: "apr", label: "APR" },
-    { key: "fee", label: "Fee" },
-    { key: "initialCapital", label: "Amount" },
+    
     {
       key: "status",
       label: "Status",
       render: (r) => (
         <span
-          className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === "Pending"
+          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+            r.status === "Pending"
               ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-              : r.status === "Completed"
-                ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                : "bg-red-500/20 text-red-400 border border-red-500/30"
-            }`}
+              : "bg-green-500/20 text-green-400 border border-green-500/30"
+          }`}
         >
           {r.status}
         </span>

@@ -26,7 +26,7 @@ export function CommonTable<T extends { id: string }>({
   expandable,
   loading,
   error,
-  gridCols = "grid-cols-8",
+  gridCols = "grid-cols-5",
 }: CommonTableProps<T>) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
