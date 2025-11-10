@@ -48,12 +48,13 @@ async createActivity(@Body() dto: CreateActivityDto): Promise<ActivityResponseDt
 
   @Put('progress/:id')
   @ApiOperation({ summary: 'Resume or continue activity progress from a failed step' })
+  @ApiParam({ name: 'id', description: 'Activity ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Progress updated', type: ActivityResponseDto })
   async resumeProgress(
+    @Param('id') id: string,
     @Body() dto: UpdateActivityProgressDto,
   ): Promise<ActivityResponseDto> {
-    const merged = { ...dto};
-    const updated = await this.activityService.updateProgress(merged);
+    const updated = await this.activityService.updateProgress(id, dto);
     return ActivityMapper.toResponse(updated);
   }
 

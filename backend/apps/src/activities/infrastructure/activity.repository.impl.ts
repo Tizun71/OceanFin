@@ -90,11 +90,20 @@ export class ActivityRepositoryImplement implements ActivityRepository {
   }
 
   private mapRowToEntity(row: any): Activity {
+    let txHash: string | null = null;
+    if (row.tx_hash) {
+      if (Array.isArray(row.tx_hash)) {
+        txHash = row.tx_hash.join('');
+      } else if (typeof row.tx_hash === 'string') {
+        txHash = row.tx_hash;
+      }
+    }
+
     return new Activity(
       row.id,
       row.user_address,
       row.strategy_id,
-      row.tx_hash || [],
+      row.tx_hash ?? [],
       row.status as ActivityStatus,
       row.metadata || undefined,
       row.current_step || undefined,
