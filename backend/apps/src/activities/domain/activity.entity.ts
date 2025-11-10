@@ -5,7 +5,7 @@ export class Activity {
     public readonly id: string,
     public userAddress: string,
     public strategyId: string,
-    public txHash: string[] = [],
+    public txHash: string[],
     public status: ActivityStatus = 'PENDING',
     public metadata?: Record<string, any>,
     public currentStep?: number,

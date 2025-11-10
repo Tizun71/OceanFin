@@ -46,10 +46,8 @@ export class ActivityService {
   return activity;
   }
 
-  async updateProgress(dto: UpdateActivityProgressDto): Promise<Activity> {
-    if (!dto.activityId) throw new Error('activityId is required');
-
-    const activity = await this.findById(dto.activityId);
+  async updateProgress(id: string, dto: UpdateActivityProgressDto): Promise<Activity> {
+    const activity = await this.findById(id);
     if (!activity) throw new Error('Activity not found');
 
     const totalSteps = activity.totalSteps ?? 8;
@@ -63,9 +61,19 @@ export class ActivityService {
     } else {
       activity.status = 'PENDING';
     }
+    if (dto.txHash) {
+      const txHashArray = Array.isArray(dto.txHash) ? dto.txHash : [dto.txHash];
+      const validTxHashes = txHashArray
+        .map(hash => String(hash).trim())
+        .filter(hash => hash.length > 0);
+      if (validTxHashes.length > 0) {
+        activity.txHash = [...(activity.txHash || []), ...validTxHashes];
+      }
+    }
     await this.activityRepo.save(activity);
     return activity;
   }
+
 
   async resumeActivity(activityId: string): Promise<Activity> {
     const activity = await this.findById(activityId);
