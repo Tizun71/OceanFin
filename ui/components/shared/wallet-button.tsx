@@ -8,7 +8,8 @@ export function WalletButton() {
       label="Connect Wallet"
       accountStatus="full"
       chainStatus="full"
-      showBalance={true}
+      showBalance={false}
+      displayPreference="name"
     />
   );
 }
