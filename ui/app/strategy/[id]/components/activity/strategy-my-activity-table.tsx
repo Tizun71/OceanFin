@@ -1,15 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
-import { getActivities } from "@/services/activity-service"
-import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { AnimatePresence, motion } from "framer-motion"
 import { displayToast } from "@/components/shared/toast-manager"
 import { ActivityResponse } from "@/types/activity.interface"
 import { useLuno } from "@/app/contexts/luno-context"
+import { useActivities } from "@/hooks/use-activity-service"
+import { CommonTable, TableColumn } from "@/app/common/common-table"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -31,64 +31,44 @@ export type MyActivityRow = {
 }
 
 export const MyActivityTable = () => {
-  const [activities, setActivities] = useState<MyActivityRow[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { address } = useLuno()
+  
+  const { data: activitiesData, isLoading: loading, error: queryError } = useActivities({ 
+    userAddress: address 
+  })
+
   const [reExecuting, setReExecuting] = useState<string | null>(null)
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
   const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
   const [simulateError, setSimulateError] = useState<string | null>(null)
   const [startFromStep, setStartFromStep] = useState<number>(0)
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string>("")
 
-  const { address } = useLuno();
+  const activities = useMemo(() => {
+    const list = Array.isArray(activitiesData) ? activitiesData : activitiesData ? [activitiesData] : []
+    return list.map((a): MyActivityRow => ({
+      id: a.id ?? "-",
+      date: a.createdAt?.slice(0, 10) ?? "-",
+      strategy: a.strategyId ?? "-",
+      strategyId: a.strategyId ?? "-",
+      currentStep: a.currentStep ?? 0,
+      totalSteps: a.totalSteps ?? 0,
+      apr: a.metadata?.APR ?? "-",
+      fee: a.metadata?.fee ?? "-",
+      initialCapital: a.metadata?.initial_capital ?? "-",
+      status:
+        a.status === "FAILED"
+          ? "Failed"
+          : a.status === "COMPLETED"
+            ? "Completed"
+            : "Pending",
+      txHash: a.txHash ?? [],
+      userAddress: a.userAddress ?? "-",
+    }))
+  }, [activitiesData])
 
-  const fetchActivities = async () => {
-    setLoading(true)
-    try {
-      const filter: ActivityResponse = { userAddress: address }
-      const res = await getActivities(filter)
-      const list = Array.isArray(res) ? res : res ? [res] : []
-      const formatted = list.map((a): MyActivityRow => ({
-        id: a.id ?? "-",
-        date: a.createdAt?.slice(0, 10) ?? "-",
-        strategy: a.strategyId ?? "-",
-        strategyId: a.strategyId ?? "-",
-        currentStep: a.currentStep ?? 0,
-        totalSteps: a.totalSteps ?? 0,
-        apr: a.metadata?.APR ?? "-",
-        fee: a.metadata?.fee ?? "-",
-        initialCapital: a.metadata?.initial_capital ?? "-",
-        status:
-          a.status === "FAILED"
-            ? "Failed"
-            : a.status === "COMPLETED"
-              ? "Completed"
-              : "Pending",
-        txHash: a.txHash ?? [],
-        userAddress: a.userAddress ?? "-",
-      }))
-      setActivities(formatted)
-    } catch (err) {
-      console.error(err)
-      setError("Failed to load activities.")
-      displayToast("error", "Failed to load activities.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchActivities()
-  }, [])
-
-  const handleRetry = async (id: string, step: number) => {
-    try {
-      displayToast("success", `Retry step ${step} successfully!`)
-      fetchActivities()
-    } catch (error: any) {
-      displayToast("error", error?.message || "Retry failed. Please try again.")
-    }
-  }
+  const error = queryError ? "Failed to load activities." : null
 
   const handleReExecute = async (row: MyActivityRow) => {
     setReExecuting(row.id)
@@ -112,6 +92,8 @@ export const MyActivityTable = () => {
 
       setStartFromStep(resumeFromStep)
       setSimulateResult(simulationResult)
+      setSelectedActivityId(row.id)
+      setSelectedStrategyId(row.strategyId)
       setExecutionModalOpen(true)
       displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
 
@@ -123,10 +105,15 @@ export const MyActivityTable = () => {
   }
 
   useEffect(() => {
-    if (!executionModalOpen) setSimulateResult(null)
+    if (!executionModalOpen) {
+      setSimulateResult(null)
+      setSelectedActivityId(null)
+      setSelectedStrategyId("")
+    }
   }, [executionModalOpen])
 
   const columns: TableColumn<MyActivityRow>[] = [
+    { key: "id", label: "ID" },
     { key: "date", label: "Date" },
     { key: "strategy", label: "Strategy ID" },
     {
@@ -158,14 +145,6 @@ export const MyActivityTable = () => {
       label: "Action",
       render: (r) => (
         <div className="flex gap-2">
-          {r.status === "Failed" && (
-            <button
-              onClick={() => handleRetry(r.id, r.currentStep)}
-              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 hover:border-primary/50 rounded-lg transition-all font-medium text-xs"
-            >
-              🔁 Retry
-            </button>
-          )}
           {r.status === "Pending" && (
             <button
               onClick={() => handleReExecute(r)}
@@ -221,9 +200,9 @@ export const MyActivityTable = () => {
           open={executionModalOpen}
           onOpenChange={setExecutionModalOpen}
           strategy={simulateResult}
-          strategyId={activities.find(a => a.id === reExecuting)?.strategyId || ""}
+          strategyId={selectedStrategyId}
           startFromStep={startFromStep}
-          activityId={activities.find(a => a.id === reExecuting)?.id || null}
+          activityId={selectedActivityId}
         />
       )}
     </>
