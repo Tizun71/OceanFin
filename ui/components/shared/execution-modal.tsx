@@ -218,7 +218,9 @@ export function ExecutionModal({
           if (currentActivityId) await syncActivityProgress(currentActivityId, i + 1, 'completed', result.txHash)
 
           const isLastStep = i === strategy.steps.length - 1
+          updateStepStatus(i, "completed", result.txHash)
           if (isLastStep) {
+            setCurrentStepIndex(i + 1)
             setAllStepsCompleted(true)
             displayToast("success", "🎉 All steps completed successfully!")
           } else {
@@ -260,7 +262,8 @@ export function ExecutionModal({
         
         <div className="flex-1">
           {executionSteps.length > 0 ? (
-            <StepStack steps={executionSteps} currentStep={currentStepIndex} />
+            <StepStack steps={executionSteps} currentStep={currentStepIndex} allStepsCompleted={allStepsCompleted} />
+
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -294,7 +297,11 @@ export function ExecutionModal({
 
         <div className="flex gap-3 mt-6 pt-4 border-t border-border">
           {isExecuting ? (
-            <Button variant="destructive" className="flex-1" onClick={handleCancel}>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-400/50 
+                        ring-1 ring-red-500/40 hover:scale-105 transform transition-all duration-200"
+              onClick={handleCancel}
+            >
               Cancel Execution
             </Button>
           ) : (
