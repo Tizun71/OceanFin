@@ -23,20 +23,12 @@ interface SearchBarProps {
 }
 
 const availableTags = [
-  "Staking",
-  "Liquid",
-  "Yield",
-  "Liquidity",
-  "zkEVM",
-  "Omnipool",
-  "Multi-Asset",
-  "Lending",
-  "Leverage",
-  "Bitcoin",
-  "Cross-chain",
-  "Privacy",
-  "RWA",
-  "IBC",
+  "Looping",
+  "Yield Farming",
+  "Points",
+  "Airdrop",
+  "Stablecoin",
+  "Nativecoin"
 ]
 
 export function SearchBar({
