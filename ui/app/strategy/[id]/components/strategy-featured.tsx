@@ -8,6 +8,7 @@ import { TrendingUp, Droplets, Target, ArrowLeftRight, Info } from "lucide-react
 import { useState, useEffect } from "react"
 import { fetchStrategies } from "@/services/strategy-service"
 import Image from "next/image"
+import { ParticleTextEffect } from "@/components/effect/interactive-text-effect"
 
 export function FeaturedStrategies() {
   const [trendingStrategy, setTrendingStrategy] = useState<any>(null)
@@ -68,7 +69,12 @@ export function FeaturedStrategies() {
           animate={{ opacity: 1, y: 0 }}
           className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary"
         >
-          Polkadot DeFi Strategies
+          <div className="h-30">
+            <ParticleTextEffect
+              text="OCEAN FIN"
+              colors={['56aed6', '298ac3', '00C2CB', '00A6A6', '1e3a59']}
+            />
+          </div>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: -10 }}
