@@ -11,9 +11,13 @@ import { displayToast } from "@/components/shared/toast-manager"
 import { ActivityResponse } from "@/types/activity.interface"
 import { useLuno } from "@/app/contexts/luno-context"
 
-const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
-  ssr: false,
-})
+const ExecutionModal = dynamic(
+  () =>
+    import("@/components/shared/execution-modal").then(
+      (m) => m.ExecutionModal
+    ),
+  { ssr: false }
+)
 
 export type MyActivityRow = {
   id: string
@@ -25,7 +29,7 @@ export type MyActivityRow = {
   apr: string
   fee: string
   initialCapital: string
-  status: "Pending" | "Completed" | "Failed"
+  status: "Pending" | "Completed"
   txHash?: string[]
   userAddress?: string
 }
@@ -36,11 +40,12 @@ export const MyActivityTable = () => {
   const [error, setError] = useState<string | null>(null)
   const [reExecuting, setReExecuting] = useState<string | null>(null)
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
-  const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
-  const [simulateError, setSimulateError] = useState<string | null>(null)
+  const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(
+    null
+  )
   const [startFromStep, setStartFromStep] = useState<number>(0)
 
-  const { address } = useLuno();
+  const { address } = useLuno()
 
   const fetchActivities = async () => {
     setLoading(true)
@@ -48,6 +53,7 @@ export const MyActivityTable = () => {
       const filter: ActivityResponse = { userAddress: address }
       const res = await getActivities(filter)
       const list = Array.isArray(res) ? res : res ? [res] : []
+
       const formatted = list.map((a): MyActivityRow => ({
         id: a.id ?? "-",
         date: a.createdAt?.slice(0, 10) ?? "-",
@@ -59,14 +65,13 @@ export const MyActivityTable = () => {
         fee: a.metadata?.fee ?? "-",
         initialCapital: a.metadata?.initial_capital ?? "-",
         status:
-          a.status === "FAILED"
-            ? "Failed"
-            : a.status === "COMPLETED"
-              ? "Completed"
-              : "Pending",
+          a.status === "COMPLETED"
+            ? "Completed"
+            : "Pending",
         txHash: a.txHash ?? [],
         userAddress: a.userAddress ?? "-",
       }))
+
       setActivities(formatted)
     } catch (err) {
       console.error(err)
@@ -79,42 +84,27 @@ export const MyActivityTable = () => {
 
   useEffect(() => {
     fetchActivities()
-  }, [])
+  }, [address])
 
-  const handleRetry = async (id: string, step: number) => {
-    try {
-      displayToast("success", `Retry step ${step} successfully!`)
-      fetchActivities()
-    } catch (error: any) {
-      displayToast("error", error?.message || "Retry failed. Please try again.")
-    }
-  }
-
+  // Handle re-execution
   const handleReExecute = async (row: MyActivityRow) => {
     setReExecuting(row.id)
-    setSimulateError(null)
-
     try {
       const amount = Number(row.initialCapital.toString().replace(/,/g, ""))
-      if (!amount || amount <= 0) {
+      if (!amount || amount <= 0)
         throw new Error("Invalid initial capital amount")
-      }
 
       const strategyData = { id: row.strategyId }
-
       const simulationResult = await simulateStrategy(strategyData, amount)
 
-      if (!simulationResult?.steps?.length) {
+      if (!simulationResult?.steps?.length)
         throw new Error("No steps in simulation result")
-      }
 
       const resumeFromStep = Math.max(0, row.currentStep - 1)
-
       setStartFromStep(resumeFromStep)
       setSimulateResult(simulationResult)
       setExecutionModalOpen(true)
       displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
-
     } catch (error: any) {
       displayToast("error", error?.message || "Re-execution failed.")
     } finally {
@@ -122,32 +112,30 @@ export const MyActivityTable = () => {
     }
   }
 
+  // Close modal cleanup
   useEffect(() => {
     if (!executionModalOpen) setSimulateResult(null)
   }, [executionModalOpen])
 
+  // Table Columns
   const columns: TableColumn<MyActivityRow>[] = [
     { key: "date", label: "Date" },
-    { key: "strategy", label: "Strategy ID" },
+    { key: "initialCapital", label: "Amount" },
     {
       key: "progress",
       label: "Progress",
       render: (r) => `Step ${r.currentStep}/${r.totalSteps}`,
     },
-    { key: "apr", label: "APR" },
-    { key: "fee", label: "Fee" },
-    { key: "initialCapital", label: "Amount" },
     {
       key: "status",
       label: "Status",
       render: (r) => (
         <span
-          className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === "Pending"
+          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+            r.status === "Pending"
               ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-              : r.status === "Completed"
-                ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                : "bg-red-500/20 text-red-400 border border-red-500/30"
-            }`}
+              : "bg-green-500/20 text-green-400 border border-green-500/30"
+          }`}
         >
           {r.status}
         </span>
@@ -158,14 +146,6 @@ export const MyActivityTable = () => {
       label: "Action",
       render: (r) => (
         <div className="flex gap-2">
-          {r.status === "Failed" && (
-            <button
-              onClick={() => handleRetry(r.id, r.currentStep)}
-              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 hover:border-primary/50 rounded-lg transition-all font-medium text-xs"
-            >
-              🔁 Retry
-            </button>
-          )}
           {r.status === "Pending" && (
             <button
               onClick={() => handleReExecute(r)}
@@ -187,14 +167,19 @@ export const MyActivityTable = () => {
     },
   ]
 
+  // Expandable row for TX hashes
   const renderExpand = (row: MyActivityRow) => (
     <div className="grid grid-cols-2 gap-8 text-sm text-card-foreground">
       <div>
-        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Tx Hash</div>
+        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">
+          Tx Hash
+        </div>
         {row.txHash?.length ? (
           <TxHashList hashes={row.txHash} />
         ) : (
-          <span className="text-muted-foreground italic text-sm">No transactions</span>
+          <span className="text-muted-foreground italic text-sm">
+            No transactions
+          </span>
         )}
       </div>
     </div>
@@ -221,15 +206,18 @@ export const MyActivityTable = () => {
           open={executionModalOpen}
           onOpenChange={setExecutionModalOpen}
           strategy={simulateResult}
-          strategyId={activities.find(a => a.id === reExecuting)?.strategyId || ""}
+          strategyId={
+            activities.find((a) => a.id === reExecuting)?.strategyId || ""
+          }
           startFromStep={startFromStep}
-          activityId={activities.find(a => a.id === reExecuting)?.id || null}
+          activityId={activities.find((a) => a.id === reExecuting)?.id || null}
         />
       )}
     </>
   )
-
 }
+
+// Reusable Tx hash list
 const TxHashList = ({ hashes }: { hashes: string[] }) => {
   const [showAll, setShowAll] = useState(false)
   const limit = 3

@@ -17,7 +17,9 @@ interface StrategyOverviewProps {
   };
 }
 
+
 export function StrategyOverview({ strategy, simulateData }: StrategyOverviewProps) {
+  
   const safeSteps =
     simulateData?.steps || strategy?.steps || [];
 
@@ -29,6 +31,12 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
   const safeDescription =
     strategy?.description ||
     `Strategy simulation with ${simulateData?.loops || 0} loops, starting from ${simulateData?.initialCapital?.symbol || "N/A"}.`;
+
+  const AGENT_ICONS: Record<string, string> = {
+    HYDRATION:
+      "https://cdn.jsdelivr.net/gh/galacticcouncil/intergalactic-asset-metadata@latest/v2/polkadot/2034/assets/0/icon.svg",
+  };
+  const uniqueAgents = Array.from(new Set(safeAgents));
 
   return (
     <div className="space-y-6">
@@ -60,22 +68,34 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {safeAgents.map((agent, idx) => (
-                <div
-                  key={`${agent}-${idx}`}
-                  className="
-                    group px-4 py-2 rounded-lg 
-                    bg-card/60 border border-border/50
-                    hover:border-accent/50 hover:bg-accent/10
-                    transition-all duration-300
-                    backdrop-blur-sm
-                  "
-                >
-                  <span className="text-sm text-foreground/90 group-hover:text-accent-light transition-colors">
-                    {agent}
-                  </span>
-                </div>
-              ))}
+              {uniqueAgents.map((agent, idx) => {
+                const iconUrl = AGENT_ICONS[agent] || null;
+                return (
+                  <div
+                    key={`${agent}-${idx}`}
+                    className="
+                      group px-4 py-2 rounded-lg 
+                      bg-card/60 border border-border/50
+                      hover:border-accent/50 hover:bg-accent/10
+                      transition-all duration-300
+                      backdrop-blur-sm flex items-center justify-center
+                    "
+                  >
+                    {iconUrl ? (
+                      <img
+                        src={iconUrl}
+                        alt={agent}
+                        className="w-8 h-8 rounded-full object-contain transition-transform duration-300 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-accent" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
             </div>
           </div>
         )}

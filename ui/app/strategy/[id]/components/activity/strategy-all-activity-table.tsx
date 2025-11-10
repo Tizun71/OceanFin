@@ -22,7 +22,7 @@ export type AllActivityRow = {
   apr: string
   fee: string
   initialCapital: string
-  status: "Pending" | "Completed" | "Failed"
+  status: "Pending" | "Completed"
   txHash?: string[]
 }
 
@@ -37,12 +37,10 @@ function mapActivityToRow(a: ActivityResponse): AllActivityRow {
     apr: a.metadata?.APR ?? "-",
     fee: a.metadata?.fee ?? "-",
     initialCapital: a.metadata?.initial_capital
-      ? `$${a.metadata.initial_capital}`
+      ? `${a.metadata.initial_capital}`
       : "-",
     status:
-      a.status === "FAILED"
-        ? "Failed"
-        : a.status === "COMPLETED"
+      a.status === "COMPLETED"
         ? "Completed"
         : "Pending",
     txHash: a.txHash || [],
@@ -73,6 +71,7 @@ export const AllActivityTable: React.FC = () => {
       setLoading(false)
       return
     }
+
     setLoading(true)
     setError(null)
 
@@ -102,24 +101,29 @@ export const AllActivityTable: React.FC = () => {
 
   const columns: TableColumn<AllActivityRow>[] = useMemo(
     () => [
-      { key: "date", label: "Date", className: "col-span-1" },
-      { key: "user", label: "User Address", className: "col-span-2 truncate" },
-      { key: "step", label: "Progress", className: "col-span-2" },
-      { key: "apr", label: "APR", className: "col-span-1" },
-      { key: "fee", label: "Fee", className: "col-span-1" },
-      { key: "initialCapital", label: "Amount", className: "col-span-1" },
+      { key: "date", label: "Date", className: "text-left" },
+      {
+      key: "user",
+      label: "User Address",
+      className: "text-left",
+      render: (row) =>
+        row.user.length > 14
+          ? `${row.user.slice(0, 8)}...${row.user.slice(-6)}`
+          : row.user,
+    },
+
+      { key: "initialCapital", label: "Amount", className: "text-left" },   
+      { key: "step", label: "Progress", className: "text-left" },
       {
         key: "status",
         label: "Status",
-        className: "col-span-1 text-center",
+        className: "text-center",
         render: (row) => (
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-medium ${
               row.status === "Pending"
                 ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                : row.status === "Completed"
-                ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                : "bg-red-500/20 text-red-400 border border-red-500/30"
+                : "bg-green-500/20 text-green-400 border border-green-500/30"
             }`}
           >
             {row.status}
@@ -168,7 +172,7 @@ export const AllActivityTable: React.FC = () => {
         expandable={renderExpand}
         loading={loading}
         error={error}
-        gridCols="grid-cols-9"
+        gridCols="grid-cols-5"
       />
       {!loading && !error && rows.length === 0 && (
         <div className="text-center text-muted-foreground py-6 text-sm italic">
