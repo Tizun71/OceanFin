@@ -62,14 +62,11 @@ export class ActivityService {
       activity.status = 'PENDING';
     }
     if (dto.txHash) {
-      // Chuyển đổi txHash thành array nếu là string, hoặc giữ nguyên nếu đã là array
       const txHashArray = Array.isArray(dto.txHash) ? dto.txHash : [dto.txHash];
-      // Lọc bỏ các giá trị rỗng và chuyển đổi thành string
       const validTxHashes = txHashArray
         .map(hash => String(hash).trim())
         .filter(hash => hash.length > 0);
       if (validTxHashes.length > 0) {
-        // Thêm các txHash mới vào array hiện tại
         activity.txHash = [...(activity.txHash || []), ...validTxHashes];
       }
     }
