@@ -166,7 +166,7 @@ export function StrategyFlow({
                   sub: "Base asset",
                 },
                 { icon: "🔁", label: "Loops", value: loops ?? "N/A", sub: "Total cycle count" },
-                { icon: "💸", label: "Fee", value: `${fee ?? 0}%`, sub: "Execution fee" },
+                { icon: "💸", label: "Fee", value: `${fee ?? 0}`, sub: "Execution fee" },
                 { icon: "📈", label: "Total Supply", value: totalSupply ?? 0, sub: "Supplied amount" },
                 { icon: "📉", label: "Total Borrow", value: totalBorrow ?? 0, sub: "Borrowed amount" },
               ].map((info, i) => (

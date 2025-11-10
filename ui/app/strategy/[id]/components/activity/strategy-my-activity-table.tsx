@@ -1,23 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
-import { getActivities } from "@/services/activity-service"
-import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { AnimatePresence, motion } from "framer-motion"
 import { displayToast } from "@/components/shared/toast-manager"
 import { ActivityResponse } from "@/types/activity.interface"
 import { useLuno } from "@/app/contexts/luno-context"
+import { useActivities } from "@/hooks/use-activity-service"
+import { CommonTable, TableColumn } from "@/app/common/common-table"
 
-const ExecutionModal = dynamic(
-  () =>
-    import("@/components/shared/execution-modal").then(
-      (m) => m.ExecutionModal
-    ),
-  { ssr: false }
-)
+const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
+  ssr: false,
+})
 
 export type MyActivityRow = {
   id: string
@@ -29,82 +25,73 @@ export type MyActivityRow = {
   apr: string
   fee: string
   initialCapital: string
-  status: "Pending" | "Completed"
+  status: "Pending" | "Completed" | "Failed"
   txHash?: string[]
   userAddress?: string
 }
 
 export const MyActivityTable = () => {
-  const [activities, setActivities] = useState<MyActivityRow[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { address } = useLuno()
+  
+  const { data: activitiesData, isLoading: loading, error: queryError } = useActivities({ 
+    userAddress: address 
+  })
+
   const [reExecuting, setReExecuting] = useState<string | null>(null)
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
-  const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(
-    null
-  )
+  const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
+  const [simulateError, setSimulateError] = useState<string | null>(null)
   const [startFromStep, setStartFromStep] = useState<number>(0)
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string>("")
 
-  const { address } = useLuno()
+  const activities = useMemo(() => {
+    const list = Array.isArray(activitiesData) ? activitiesData : activitiesData ? [activitiesData] : []
+    return list.map((a): MyActivityRow => ({
+      id: a.id ?? "-",
+      date: a.createdAt?.slice(0, 10) ?? "-",
+      strategy: a.strategyId ?? "-",
+      strategyId: a.strategyId ?? "-",
+      currentStep: a.currentStep ?? 0,
+      totalSteps: a.totalSteps ?? 0,
+      apr: a.metadata?.APR ?? "-",
+      fee: a.metadata?.fee ?? "-",
+      initialCapital: a.metadata?.initial_capital ?? "-",
+      status: a.status === "COMPLETED" ? "Completed" : "Pending",
+      txHash: a.txHash ?? [],
+      userAddress: a.userAddress ?? "-",
+    }))
+  }, [activitiesData])
 
-  const fetchActivities = async () => {
-    setLoading(true)
-    try {
-      const filter: ActivityResponse = { userAddress: address }
-      const res = await getActivities(filter)
-      const list = Array.isArray(res) ? res : res ? [res] : []
+  const error = queryError ? "Failed to load activities." : null
 
-      const formatted = list.map((a): MyActivityRow => ({
-        id: a.id ?? "-",
-        date: a.createdAt?.slice(0, 10) ?? "-",
-        strategy: a.strategyId ?? "-",
-        strategyId: a.strategyId ?? "-",
-        currentStep: a.currentStep ?? 0,
-        totalSteps: a.totalSteps ?? 0,
-        apr: a.metadata?.APR ?? "-",
-        fee: a.metadata?.fee ?? "-",
-        initialCapital: a.metadata?.initial_capital ?? "-",
-        status:
-          a.status === "COMPLETED"
-            ? "Completed"
-            : "Pending",
-        txHash: a.txHash ?? [],
-        userAddress: a.userAddress ?? "-",
-      }))
-
-      setActivities(formatted)
-    } catch (err) {
-      console.error(err)
-      setError("Failed to load activities.")
-      displayToast("error", "Failed to load activities.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchActivities()
-  }, [address])
-
-  // Handle re-execution
   const handleReExecute = async (row: MyActivityRow) => {
     setReExecuting(row.id)
+    setSimulateError(null)
+
     try {
       const amount = Number(row.initialCapital.toString().replace(/,/g, ""))
-      if (!amount || amount <= 0)
+      if (!amount || amount <= 0) {
         throw new Error("Invalid initial capital amount")
+      }
 
       const strategyData = { id: row.strategyId }
+
       const simulationResult = await simulateStrategy(strategyData, amount)
 
-      if (!simulationResult?.steps?.length)
+      if (!simulationResult?.steps?.length) {
         throw new Error("No steps in simulation result")
+      }
 
       const resumeFromStep = Math.max(0, row.currentStep - 1)
+
       setStartFromStep(resumeFromStep)
       setSimulateResult(simulationResult)
+      setSelectedActivityId(row.id)
+      setSelectedStrategyId(row.strategyId)
       setExecutionModalOpen(true)
       displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
+
     } catch (error: any) {
       displayToast("error", error?.message || "Re-execution failed.")
     } finally {
@@ -112,12 +99,14 @@ export const MyActivityTable = () => {
     }
   }
 
-  // Close modal cleanup
   useEffect(() => {
-    if (!executionModalOpen) setSimulateResult(null)
+    if (!executionModalOpen) {
+      setSimulateResult(null)
+      setSelectedActivityId(null)
+      setSelectedStrategyId("")
+    }
   }, [executionModalOpen])
 
-  // Table Columns
   const columns: TableColumn<MyActivityRow>[] = [
     { key: "date", label: "Date" },
     { key: "initialCapital", label: "Amount" },
@@ -126,6 +115,7 @@ export const MyActivityTable = () => {
       label: "Progress",
       render: (r) => `Step ${r.currentStep}/${r.totalSteps}`,
     },
+    
     {
       key: "status",
       label: "Status",
@@ -167,19 +157,14 @@ export const MyActivityTable = () => {
     },
   ]
 
-  // Expandable row for TX hashes
   const renderExpand = (row: MyActivityRow) => (
     <div className="grid grid-cols-2 gap-8 text-sm text-card-foreground">
       <div>
-        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">
-          Tx Hash
-        </div>
+        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Tx Hash</div>
         {row.txHash?.length ? (
           <TxHashList hashes={row.txHash} />
         ) : (
-          <span className="text-muted-foreground italic text-sm">
-            No transactions
-          </span>
+          <span className="text-muted-foreground italic text-sm">No transactions</span>
         )}
       </div>
     </div>
@@ -206,18 +191,15 @@ export const MyActivityTable = () => {
           open={executionModalOpen}
           onOpenChange={setExecutionModalOpen}
           strategy={simulateResult}
-          strategyId={
-            activities.find((a) => a.id === reExecuting)?.strategyId || ""
-          }
+          strategyId={selectedStrategyId}
           startFromStep={startFromStep}
-          activityId={activities.find((a) => a.id === reExecuting)?.id || null}
+          activityId={selectedActivityId}
         />
       )}
     </>
   )
-}
 
-// Reusable Tx hash list
+}
 const TxHashList = ({ hashes }: { hashes: string[] }) => {
   const [showAll, setShowAll] = useState(false)
   const limit = 3

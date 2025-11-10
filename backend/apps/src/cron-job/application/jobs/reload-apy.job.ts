@@ -4,13 +4,13 @@ import { StrategyService } from 'src/strategies/application/strategy.service';
 
 @Injectable()
 export class apyJob implements OnModuleInit {
-  constructor(private readonly strategyService: StrategyService) {}
+  constructor(private readonly strategyService: StrategyService) { }
 
   async onModuleInit() {
     await this.strategyService.reloadAllAPY();
 
-    cron.schedule('*/30 * * * * *', async () => {
-      console.log('Reload APY every 30s');
+    cron.schedule('0 0 0 * * *', async () => {
+      console.log('Reload APY once per day');
       await this.strategyService.reloadAllAPY();
     });
   }
