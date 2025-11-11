@@ -14,12 +14,13 @@ import { ExecutionStep } from "./types";
 interface StepStackProps {
   steps: ExecutionStep[];
   currentStep: number;
+  allStepsCompleted: boolean;
 }
 
 export const CARD_HEIGHT = 50;
 export const CARD_OFFSET = 100;
 
-export default function StepStack({ steps, currentStep }: StepStackProps) {
+export default function StepStack({ steps, currentStep, allStepsCompleted }: StepStackProps) {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,7 +74,7 @@ export default function StepStack({ steps, currentStep }: StepStackProps) {
         >
           <AnimatePresence>
             {steps.map((step, index) => {
-              const isActive = index === currentStep;
+              const isActive = index === currentStep && !allStepsCompleted;
               const isCompleted = index < currentStep;
               const isPending = index > currentStep;
 
