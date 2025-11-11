@@ -61,18 +61,26 @@ export class ActivityService {
     } else {
       activity.status = 'PENDING';
     }
+
     if (dto.txHash) {
-      const txHashArray = Array.isArray(dto.txHash) ? dto.txHash : [dto.txHash];
-      const validTxHashes = txHashArray
-        .map(hash => String(hash).trim())
-        .filter(hash => hash.length > 0);
-      if (validTxHashes.length > 0) {
-        activity.txHash = [...(activity.txHash || []), ...validTxHashes];
-      }
+      const txArray = Array.isArray(dto.txHash) ? dto.txHash : [dto.txHash];
+
+      const cleanHashes = Array.from(
+        new Set(
+          txArray
+            .map((hash) => String(hash).trim())
+            .filter((hash) => hash.length > 0)
+        )
+      );
+
+      const existingTx = Array.isArray(activity.txHash) ? activity.txHash : [];
+      activity.txHash = Array.from(new Set([...existingTx, ...cleanHashes]));
     }
+
     await this.activityRepo.save(activity);
     return activity;
   }
+
 
 
   async resumeActivity(activityId: string): Promise<Activity> {
