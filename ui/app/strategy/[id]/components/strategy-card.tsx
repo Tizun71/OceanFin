@@ -38,7 +38,7 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
   const isActive = "Active";
 
   return (
-    <Link href={`/strategy/${strategy.id}`}>
+    
       <Card
         className="group p-4 cursor-pointer hover:-translate-y-1"
       >
@@ -174,20 +174,17 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
                   {strategy.apy.toFixed(2)}%
                 </p>
               </div>
-              <button 
-                className="px-4 py-2 bg-primary hover:bg-accent-light text-primary-foreground text-sm font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 group/btn flex items-center gap-2 whitespace-nowrap"
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Handle try now action
-                }}
-              >
-                Try Now
-                <span className="inline-block group-hover/btn:translate-x-1 transition-transform">→</span>
-              </button>
+              <Link href={`/strategy/${strategy.id}`}>
+                <button 
+                  className="px-4 py-2 bg-primary hover:bg-accent-light text-primary-foreground text-sm font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 group/btn flex items-center gap-2 whitespace-nowrap"  
+                >
+                  Try Now
+                  <span className="inline-block group-hover/btn:translate-x-1 transition-transform">→</span>
+                </button>
+              </Link>
             </div>
           </div>
         </div>
       </Card>
-    </Link>
   );
 }
