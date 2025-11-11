@@ -58,7 +58,7 @@ export const MyActivityTable = () => {
       apr: a.metadata?.APR ?? "-",
       fee: a.metadata?.fee ?? "-",
       initialCapital: a.metadata?.initial_capital ?? "-",
-      status: a.status === "COMPLETED" ? "Completed" : "Pending",
+      status: a.status === "SUCCESS" ? "Completed" : "Pending",
       txHash: a.txHash ?? [],
       userAddress: a.userAddress ?? "-",
     }))
