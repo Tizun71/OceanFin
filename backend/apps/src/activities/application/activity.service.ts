@@ -26,6 +26,20 @@ export class ActivityService {
     return this.activityRepo.findById(id);
   }
 
+  async findWithPagination(
+    strategyId?: string,
+    userAddress?: string,
+    page = 1,
+    limit = 10,
+  ): Promise<{ data: Activity[]; meta: any }> {
+    const offset = (page - 1) * limit;
+    const { data, total } = await this.activityRepo.findPaginated({ strategyId, userAddress, offset, limit });
+    const totalPages = Math.ceil(total / limit);
+
+    return { data, meta: { page, limit, total, totalPages } };
+  }
+
+
 
   async create(dto: CreateActivityDto): Promise<Activity> {
   const id = crypto.randomUUID(); 

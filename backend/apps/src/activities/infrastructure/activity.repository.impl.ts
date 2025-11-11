@@ -66,6 +66,27 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     }
   }
 
+  async findPaginated(filters: { strategyId?: string; userAddress?: string; offset: number; limit: number }) {
+    let query = this.supabase
+      .getClient()
+      .from('activities')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(filters.offset, filters.offset + filters.limit - 1);
+
+    if (filters.strategyId) query = query.eq('strategy_id', filters.strategyId);
+    if (filters.userAddress) query = query.eq('user_address', filters.userAddress);
+
+    const { data, error, count } = await query;
+    if (error) throw new Error(`Failed to fetch paginated activities: ${error.message}`);
+
+    return {
+      data: (data || []).map((row) => this.mapRowToEntity(row)),
+      total: count || 0,
+    };
+  }
+
+
   async save(activity: Activity): Promise<void> {
     const payload: any = {
       id: activity.id,

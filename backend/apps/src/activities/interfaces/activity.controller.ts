@@ -24,26 +24,29 @@ export class ActivityController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get activities (filter by strategyId or userAddress)' })
+  @ApiOperation({ summary: 'Get activities with filters and pagination' })
   @ApiQuery({ name: 'strategyId', required: false, description: 'Strategy ID' })
   @ApiQuery({ name: 'userAddress', required: false, description: 'Wallet address of user' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number (default = 1)' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page (default = 10)' })
   async find(
     @Query('strategyId') strategyId?: string,
     @Query('userAddress') userAddress?: string,
-  ): Promise<ActivityResponseDto[]> {
-    const activities = await this.activityService.find(strategyId, userAddress);
-    return ActivityMapper.toResponseList(activities);
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ): Promise<{ data: ActivityResponseDto[]; meta: any }> {
+    const { data, meta } = await this.activityService.findWithPagination(strategyId, userAddress, page, limit);
+    return { data: ActivityMapper.toResponseList(data), meta };
   }
 
 
-
- @Post()
-@ApiOperation({ summary: 'Create new activity' })
-@ApiResponse({ status: 201, description: 'Activity created', type: ActivityResponseDto })
-async createActivity(@Body() dto: CreateActivityDto): Promise<ActivityResponseDto> {
-  const activity = await this.activityService.create(dto);
-  return ActivityMapper.toResponse(activity);
-}
+  @Post()
+  @ApiOperation({ summary: 'Create new activity' })
+  @ApiResponse({ status: 201, description: 'Activity created', type: ActivityResponseDto })
+  async createActivity(@Body() dto: CreateActivityDto): Promise<ActivityResponseDto> {
+    const activity = await this.activityService.create(dto);
+    return ActivityMapper.toResponse(activity);
+  }
 
 
   @Put('progress/:id')
