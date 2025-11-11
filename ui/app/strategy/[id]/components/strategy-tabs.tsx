@@ -6,8 +6,7 @@ import { StrategyFlow } from "./strategy-flow";
 import StrategyPromptDetails from "./strategy-prompt-details";
 import { MyActivityTable } from "./activity/strategy-my-activity-table";
 import { AllActivityTable } from "./activity/strategy-all-activity-table";
-import { Shield, Workflow, FileText, Activity, Users } from "lucide-react"; 
-import { useEffect, useState } from "react";
+import { Shield, Workflow, FileText, Activity, Users, ExternalLink } from "lucide-react"; // icon set
 
 interface StrategyTabsProps {
   strategy: any;
@@ -15,12 +14,6 @@ interface StrategyTabsProps {
 }
 
 export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
-  const [activeTab, setActiveTab] = useState("overview");
-  useEffect(() => {
-    if (simulateData) {
-      setActiveTab("flow"); 
-    }
-  }, [simulateData]);
   const tabs = [
     { value: "overview", label: "Overview", icon: Shield },
     { value: "flow", label: "Strategy Flow", icon: Workflow },
@@ -30,7 +23,7 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
   ];
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <Tabs defaultValue="overview" className="w-full">
       <TabsList
         className="
           flex flex-wrap gap-3 bg-transparent border-none justify-start 
@@ -64,15 +57,14 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
 
       {/* === Tab Contents === */}
       <TabsContent value="overview">
-        <StrategyOverview strategy={strategy} simulateData={simulateData}
-         />
+        <StrategyOverview strategy={strategy} simulateData={simulateData} />
       </TabsContent>
 
       <TabsContent value="flow">
         <div className="glass rounded-lg p-6">
           {simulateData ? (
             <StrategyFlow
-              key={JSON.stringify(simulateData)}
+              key={simulateData ? JSON.stringify(simulateData) : "empty"}
               steps={Array.isArray(simulateData.steps) ? simulateData.steps : []}
               initialCapital={simulateData.initialCapital}
               loops={simulateData.loops}
@@ -96,6 +88,19 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
 
       <TabsContent value="activities">
         <div className="glass rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-lg font-semibold">My Activities</div>
+            <a
+              href="https://app.hydration.net/borrow/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-sm hover:underline"
+            >
+              <span>See My Position on Hydration</span>
+              <ExternalLink size={16} className="opacity-80" />
+            </a>
+          </div>
+
           <MyActivityTable />
         </div>
       </TabsContent>
