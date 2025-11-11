@@ -41,7 +41,7 @@ function mapActivityToRow(a: ActivityResponse): AllActivityRow {
       ? `${a.metadata.initial_capital}`
       : "-",
     status:
-      a.status === "COMPLETED"
+      a.status === "SUCCESS"
         ? "Completed"
         : "Pending",
     txHash: a.txHash || [],

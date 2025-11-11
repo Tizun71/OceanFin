@@ -145,15 +145,20 @@ export function ExecutionModal({
     )
   }
 
-  const syncActivityProgress = async (activityId: string, stepIndex: number, status: 'completed' | 'failed' | 'pending', txHash?: string) => {
+  const syncActivityProgress = async (activityId: string, stepIndex: number, status: 'completed' | 'failed' | 'pending', txHash?: string | string[]) => {
     try {
+      const txHashArray = txHash
+      ? Array.isArray(txHash) ? txHash : [txHash]
+      : undefined
+
       const payload: UpdateActivityPayload = {
         activityId,
         step: stepIndex,
         status: mapStatusToBackend(status),
         message: txHash 
           ? `Step ${stepIndex} ${status} with txHash: ${txHash}` 
-          : `Step ${stepIndex} ${status}`
+          : `Step ${stepIndex} ${status}`,
+          ...(txHashArray && { txHash: txHashArray })
       }
       
       await updateActivityMutation.mutateAsync({ activityId, payload })
