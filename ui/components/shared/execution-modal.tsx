@@ -221,6 +221,17 @@ export function ExecutionModal({
           if (isLastStep) {
             setAllStepsCompleted(true)
             displayToast("success", "🎉 All steps completed successfully!")
+            if (currentActivityId) {
+              await updateActivityMutation.mutateAsync({
+                activityId: currentActivityId,
+                payload: {
+                  activityId: currentActivityId,
+                  step: strategy.steps.length,
+                  status: "SUCCESS",
+                  message: `All ${strategy.steps.length} steps completed successfully.`,
+                },
+              })
+            }
           } else {
             await new Promise((resolve) => setTimeout(resolve, 2000))
           }
