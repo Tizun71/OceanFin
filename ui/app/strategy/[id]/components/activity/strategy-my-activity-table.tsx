@@ -10,6 +10,7 @@ import { ActivityResponse } from "@/types/activity.interface"
 import { useLuno } from "@/app/contexts/luno-context"
 import { useActivities } from "@/hooks/use-activity-service"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
+import { TableWithShowMore } from "@/app/common/table-with-showmore"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -172,14 +173,13 @@ export const MyActivityTable = () => {
 
   return (
     <>
-      <CommonTable
+      <TableWithShowMore
         data={activities}
         columns={columns}
         expandable={renderExpand}
         loading={loading}
         error={error}
       />
-
       {!loading && !error && activities.length === 0 && (
         <div className="text-center text-muted-foreground py-6 text-sm italic">
           No activity records found.

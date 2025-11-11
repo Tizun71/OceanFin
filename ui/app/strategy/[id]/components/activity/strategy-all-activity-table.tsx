@@ -11,6 +11,7 @@ import { useParams } from "next/navigation"
 import { getActivities } from "@/services/activity-service"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { ActivityResponse } from "@/types/activity.interface"
+import { TableWithShowMore } from "@/app/common/table-with-showmore"
 
 const ETHERSCAN_TX_BASE = "https://hydration.subscan.io/extrinsic/"
 
@@ -166,13 +167,13 @@ export const AllActivityTable: React.FC = () => {
 
   return (
     <div className="p-4">
-      <CommonTable
-        columns={columns}
-        data={rows}
-        expandable={renderExpand}
-        loading={loading}
-        error={error}
-        gridCols="grid-cols-5"
+      <TableWithShowMore
+      columns={columns}
+      data={rows}
+      expandable={renderExpand}
+      loading={loading}
+      error={error}
+      gridCols="grid-cols-5"
       />
       {!loading && !error && rows.length === 0 && (
         <div className="text-center text-muted-foreground py-6 text-sm italic">

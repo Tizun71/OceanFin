@@ -69,7 +69,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   const networkCost = strategy.networkCost || "-"
   const slippage = strategy.slippage || "-"
 
-    const params = useParams<{ id: string | string[] }>()
+  const params = useParams<{ id: string | string[] }>()
   const rawId = params?.id
     const strategyId = useMemo(() => {
       const val = Array.isArray(rawId) ? rawId[0] : (rawId || "")
@@ -112,6 +112,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     } catch (error: any) {
       const errorMsg = error?.message || "Simulation failed"
       setSimulateError(errorMsg)
+      displayToast("error", errorMsg)
     } finally {
       setLoadingSimulate(false)
     }
@@ -251,12 +252,6 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             />
           )}
         </div>
-
-        {simulateError && (
-          <div className="mt-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
-            {simulateError}
-          </div>
-        )}
       </div>
 
       {simulateResult && isAccountBound && (
