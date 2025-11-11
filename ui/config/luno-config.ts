@@ -5,6 +5,6 @@ import { hydration } from './chains/hydration'
 
 export const config = createConfig({
   appName: 'OceanFin App',
-  chains: [hydration, polkadot, polkadotAssetHub],
+  chains: [hydration],
   connectors: [subwalletConnector()],
 })
