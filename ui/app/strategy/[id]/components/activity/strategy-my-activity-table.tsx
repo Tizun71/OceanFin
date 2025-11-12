@@ -163,15 +163,15 @@ const totalPages = total && total > 0 ? Math.ceil(total / limit) : 1;;
   ]
 
   const renderExpand = (row: MyActivityRow) => (
-    <div className="grid grid-cols-2 gap-8 text-sm text-card-foreground">
-      <div>
-        <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">Tx Hash</div>
-        {row.txHash?.length ? (
-          <TxHashList hashes={row.txHash} />
-        ) : (
-          <span className="text-muted-foreground italic text-sm">No transactions</span>
-        )}
+    <div className="space-y-3 text-sm text-card-foreground">
+      <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">
+        Transaction Hash
       </div>
+      {row.txHash?.length ? (
+        <TxHashList hashes={row.txHash} />
+      ) : (
+        <span className="text-muted-foreground italic text-sm">No transactions</span>
+      )}
     </div>
   )
 

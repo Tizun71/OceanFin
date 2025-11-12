@@ -5,6 +5,7 @@ import { useLuno } from "@/app/contexts/luno-context"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities"
 import Pagination from "@/components/shared/pagination"
+import { AnimatePresence, motion } from "framer-motion"
 
 const ETHERSCAN_TX_BASE = "https://hydration.subscan.io/extrinsic/"
 
@@ -127,6 +128,48 @@ export const AllActivityTable: React.FC = () => {
         totalPages={Math.max(1, totalPages)}
         onPageChange={(newPage) => setPage(newPage)} 
       />
+    </div>
+  )
+}
+const TxHashList = ({ hashes }: { hashes: string[] }) => {
+  const [showAll, setShowAll] = useState(false)
+  const limit = 3
+  const sorted = [...hashes].reverse()
+  const visible = showAll ? sorted : sorted.slice(0, limit)
+
+  return (
+    <div>
+      <AnimatePresence>
+        <motion.div
+          layout
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-1 overflow-hidden"
+        >
+          {visible.map((hash) => (
+            <a
+              key={hash}
+              href={`https://etherscan.io/tx/${hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 truncate"
+            >
+              {hash.slice(0, 8)}...{hash.slice(-6)} ↗
+            </a>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+
+      {hashes.length > limit && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-2 text-xs text-blue-500 hover:underline font-medium"
+        >
+          {showAll ? "Show less" : `Show ${hashes.length - limit} more`}
+        </button>
+      )}
     </div>
   )
 }
