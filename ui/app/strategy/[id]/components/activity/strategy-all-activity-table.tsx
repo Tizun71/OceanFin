@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react"
 import { useLuno } from "@/app/contexts/luno-context"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
-import { TableWithShowMore } from "@/app/common/table-with-showmore"
 import { usePaginatedActivities } from "@/hooks/use-paginated-activities"
 import Pagination from "@/components/shared/pagination"
 
@@ -123,7 +122,11 @@ export const AllActivityTable: React.FC = () => {
         </div>
       )}
 
-      <Pagination page={page} totalPages={Math.max(1, totalPages)} onPageChange={setPage} className="mt-6" />
+      <Pagination
+        page={page}
+        totalPages={Math.max(1, totalPages)}
+        onPageChange={(newPage) => setPage(newPage)} 
+      />
     </div>
   )
 }
