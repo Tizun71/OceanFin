@@ -26,6 +26,20 @@ export class ActivityService {
     return this.activityRepo.findById(id);
   }
 
+  async findWithPagination(
+    strategyId?: string,
+    userAddress?: string,
+    page = 1,
+    limit = 10,
+  ): Promise<{ data: Activity[]; meta: any }> {
+    const offset = (page - 1) * limit;
+    const { data, total } = await this.activityRepo.findPaginated({ strategyId, userAddress, offset, limit });
+    const totalPages = Math.ceil(total / limit);
+
+    return { data, meta: { page, limit, total, totalPages } };
+  }
+
+
 
   async create(dto: CreateActivityDto): Promise<Activity> {
   const id = crypto.randomUUID(); 
@@ -61,18 +75,26 @@ export class ActivityService {
     } else {
       activity.status = 'PENDING';
     }
+
     if (dto.txHash) {
-      const txHashArray = Array.isArray(dto.txHash) ? dto.txHash : [dto.txHash];
-      const validTxHashes = txHashArray
-        .map(hash => String(hash).trim())
-        .filter(hash => hash.length > 0);
-      if (validTxHashes.length > 0) {
-        activity.txHash = [...(activity.txHash || []), ...validTxHashes];
-      }
+      const txArray = Array.isArray(dto.txHash) ? dto.txHash : [dto.txHash];
+
+      const cleanHashes = Array.from(
+        new Set(
+          txArray
+            .map((hash) => String(hash).trim())
+            .filter((hash) => hash.length > 0)
+        )
+      );
+
+      const existingTx = Array.isArray(activity.txHash) ? activity.txHash : [];
+      activity.txHash = Array.from(new Set([...existingTx, ...cleanHashes]));
     }
+
     await this.activityRepo.save(activity);
     return activity;
   }
+
 
 
   async resumeActivity(activityId: string): Promise<Activity> {
