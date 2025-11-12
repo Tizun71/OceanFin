@@ -39,24 +39,28 @@ export function FeaturedStrategies() {
       title: "Yield Boost",
       description: "Maximize APY with AI-optimized compounding",
       tooltip: "AI automatically compounds your rewards to maximize returns over time",
+      comingSoon: false,
     },
     {
       icon: Droplets,
       title: "Liquidity Farming",
       description: "Provide liquidity across multiple chains",
       tooltip: "Earn fees by providing liquidity to decentralized exchanges",
+      comingSoon: true,
     },
     {
       icon: Target,
       title: "Point Campaigns",
       description: "Farm ecosystem points automatically",
       tooltip: "Participate in protocol incentive programs to earn points and rewards",
+      comingSoon: true,
     },
     {
       icon: ArrowLeftRight,
       title: "Cross-Chain Arbitrage",
       description: "Capture opportunities across ecosystems",
       tooltip: "Automatically find and execute profitable trades across different blockchains",
+      comingSoon: true,
     },
   ]
 
@@ -103,10 +107,27 @@ export function FeaturedStrategies() {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Card className="p-4 cursor-pointer h-full group transition-all duration-300 hover:shadow-lg hover:border-primary/30">
+                    <Card
+                      className={`relative p-4 cursor-pointer h-full group transition-all duration-300 hover:shadow-lg hover:border-primary/30 
+                        ${card.comingSoon ? "opacity-60 cursor-not-allowed" : ""}
+                      `}
+                    >
+                      {card.comingSoon && (
+                        <div
+                          className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent backdrop-blur-sm 
+                                      flex items-center justify-center rounded-lg 
+                                      opacity-0 group-hover:opacity-100 transition-all duration-300"
+                        >
+                          <span className="text-white/90 text-lg font-semibold uppercase tracking-[0.2em] drop-shadow-md">
+                            Coming Soon
+                          </span>
+                        </div>
+                      )}
+
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
-                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center 
+                                          group-hover:bg-primary/20 group-hover:scale-110 transition-all">
                             <card.icon className="w-5 h-5 text-primary" />
                           </div>
                           <Info className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -119,6 +140,7 @@ export function FeaturedStrategies() {
                         </p>
                       </div>
                     </Card>
+
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="max-w-xs">
                     <p>{card.tooltip}</p>
