@@ -35,7 +35,7 @@ export class ActivityController {
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ): Promise<{ data: ActivityResponseDto[]; meta: any }> {
-    const { data, meta } = await this.activityService.findWithPagination(strategyId, userAddress, page, limit);
+    const { data, meta } = await this.activityService.findWithPagination(strategyId, userAddress, Number(page), Number(limit));
     return { data: ActivityMapper.toResponseList(data), meta };
   }
 
