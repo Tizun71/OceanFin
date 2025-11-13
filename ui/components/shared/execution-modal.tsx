@@ -22,6 +22,7 @@ interface ExecutionModalProps {
   strategyId: string
   startFromStep?: number
   activityId?: string | null
+  onStatusChange?: (status: "cancelled" | "completed") => void
 }
 
 const formatAmt = (v?: number) => (typeof v === "number" ? Number(v.toFixed(6)) : "-")
@@ -98,7 +99,8 @@ export function ExecutionModal({
   strategy, 
   strategyId, 
   startFromStep = 0,
-  activityId: initialActivityId = null 
+  activityId: initialActivityId = null,
+  onStatusChange,
 }: ExecutionModalProps) {
   const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
@@ -112,20 +114,25 @@ export function ExecutionModal({
   const updateActivityMutation = useUpdateActivity()
 
   useEffect(() => {
-    if (open && strategy) {
-      const steps = buildExecutionSteps(strategy)
-      const stepsWithStatus = steps.map((step, idx) => ({
-        ...step,
-        status: (idx < startFromStep ? "completed" : "pending") as ExecutionStatus
-      }))
-      
-      setExecutionSteps(stepsWithStatus)
-      setIsExecuting(false)
-      setCurrentStepIndex(startFromStep)
-      setAllStepsCompleted(false)
-      setActivityId(initialActivityId)
-    }
-  }, [open, strategy, startFromStep, initialActivityId])
+  if (!open) {
+    setExecutionSteps([])
+    setAllStepsCompleted(false)
+    setCurrentStepIndex(0)
+    return
+  }
+
+  const steps = buildExecutionSteps(strategy)
+  const stepsWithStatus = steps.map((step, idx) => ({
+    ...step,
+    status: idx < startFromStep ? "completed" : "pending" as ExecutionStatus
+  }))
+  setExecutionSteps(stepsWithStatus)
+  setIsExecuting(false)
+  setAllStepsCompleted(false)
+  setActivityId(initialActivityId)
+  setCurrentStepIndex(startFromStep)
+}, [open])
+
 
   const subtitle = useMemo(() => {
     const resumeText = startFromStep > 0 ? ` • Resuming from step ${startFromStep + 1}` : ""
@@ -183,9 +190,11 @@ export function ExecutionModal({
     if (result?.status === "failed" || result?.errorMessage) throw new Error(result?.errorMessage || "Transaction failed")
     if (!result?.transactionHash) throw new Error("No transaction hash returned")
 
+    if (result.status === "success") {
     updateStepStatus(stepIndex, "completed", result.transactionHash)
     displayToast("success", `Step ${stepIndex + 1} completed successfully.`)
-    return { success: true, txHash: result.transactionHash, skipDelay: stepIndex >= strategy.steps.length - 1 }
+    }
+    return { success: result.status === "success", txHash: result.transactionHash, skipDelay: stepIndex >= strategy.steps.length - 1 }
   }
 
   const startExecution = async () => {
@@ -213,7 +222,8 @@ export function ExecutionModal({
         setActivityId(currentActivityId)
       }
 
-      for (let i = startFromStep; i < strategy.steps.length; i++) {
+      const fromStep = currentStepIndex
+      for (let i = currentStepIndex; i < strategy.steps.length; i++) {
         if (abortRef.current) break
 
         setCurrentStepIndex(i)
@@ -227,6 +237,7 @@ export function ExecutionModal({
           if (isLastStep) {
             setCurrentStepIndex(i + 1)
             setAllStepsCompleted(true)
+            onStatusChange?.("completed")
             displayToast("success", "🎉 All steps completed successfully!")
             if (currentActivityId) {
               await updateActivityMutation.mutateAsync({
@@ -259,6 +270,22 @@ export function ExecutionModal({
   const handleCancel = () => {
     abortRef.current = true
     setIsExecuting(false)
+    displayToast("info", `Execution cancelled at step ${currentStepIndex + 1}.`)
+    onStatusChange?.("cancelled")
+  }
+
+  const handleClose = async () => {
+    if (isExecuting || (currentStepIndex < executionSteps.length && !allStepsCompleted)) {
+      abortRef.current = true
+      setIsExecuting(false)
+      updateStepStatus(currentStepIndex, "failed")
+      if (activityId) {
+        await syncActivityProgress(activityId, currentStepIndex + 1, 'failed')
+      }
+      displayToast("info", `Execution cancelled at step ${currentStepIndex + 1}.`)
+      onStatusChange?.("cancelled")
+    }
+    onOpenChange(false)
   }
 
   return (
@@ -322,7 +349,7 @@ export function ExecutionModal({
             </Button>
           ) : (
             <>
-              <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" className="flex-1" onClick={handleClose}>
                 Close
               </Button>
               {!allStepsCompleted && (
