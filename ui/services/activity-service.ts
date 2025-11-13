@@ -24,6 +24,30 @@ export async function getActivities(filter?: ActivityFilter, options?: { signal?
   }
 }
 
+export async function getActivitiesWithPagination(params?: {
+  strategyId?: string
+  userAddress?: string
+  page?: number
+  limit?: number
+  signal?: AbortSignal
+}) {
+  try {
+    const res = await api.get(API_ENDPOINTS.ACTIVITIES.LIST(), {
+      params: {
+        strategyId: params?.strategyId,
+        userAddress: params?.userAddress,
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 10,
+      },
+      signal: params?.signal,
+    })
+
+    return res.data
+  } catch (err) {
+    throwFormatted(err, "Failed to fetch paginated activities")
+  }
+}
+
 export async function getActivityById(id: string) {
   try {
     const res = await api.get(API_ENDPOINTS.ACTIVITIES.GET(id))

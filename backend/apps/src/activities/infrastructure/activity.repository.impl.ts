@@ -66,26 +66,47 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     }
   }
 
-  async findPaginated(filters: { strategyId?: string; userAddress?: string; offset: number; limit: number }) {
-    let query = this.supabase
-      .getClient()
-      .from('activities')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(filters.offset, filters.offset + filters.limit - 1);
+  async findPaginated({
+    strategyId,
+    userAddress,
+    offset,
+    limit,
+  }: {
+    strategyId?: string;
+    userAddress?: string;
+    offset: number;
+    limit: number;
+  }): Promise<{ data: Activity[]; total: number }> {
+    try {
+      let query = this.supabase
+        .getClient()
+        .from('activities')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-    if (filters.strategyId) query = query.eq('strategy_id', filters.strategyId);
-    if (filters.userAddress) query = query.eq('user_address', filters.userAddress);
+      if (strategyId) {
+        query = query.eq('strategy_id', strategyId);
+      }
 
-    const { data, error, count } = await query;
-    if (error) throw new Error(`Failed to fetch paginated activities: ${error.message}`);
+      if (userAddress) {
+        query = query.eq('user_address', userAddress);
+      }
 
-    return {
-      data: (data || []).map((row) => this.mapRowToEntity(row)),
-      total: count || 0,
-    };
+      const { data, count, error } = await query;
+
+      if (error) {
+        return { data: [], total: 0 };
+      }
+
+      return {
+        data: (data ?? []).map((row) => this.mapRowToEntity(row)),
+        total: count ?? 0,
+      };
+    } catch {
+      return { data: [], total: 0 };
+    }
   }
-
 
   async save(activity: Activity): Promise<void> {
     const payload: any = {

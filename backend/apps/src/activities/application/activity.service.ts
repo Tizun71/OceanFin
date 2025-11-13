@@ -36,10 +36,27 @@ export class ActivityService {
     const { data, total } = await this.activityRepo.findPaginated({ strategyId, userAddress, offset, limit });
     const totalPages = Math.ceil(total / limit);
 
-    return { data, meta: { page, limit, total, totalPages } };
+  if (totalPages > 0 && page > totalPages) {
+    return {
+      data: [],
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
-
-
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
 
   async create(dto: CreateActivityDto): Promise<Activity> {
   const id = crypto.randomUUID(); 

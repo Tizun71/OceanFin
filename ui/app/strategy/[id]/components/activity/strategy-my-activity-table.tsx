@@ -8,9 +8,10 @@ import { AnimatePresence, motion } from "framer-motion"
 import { displayToast } from "@/components/shared/toast-manager"
 import { ActivityResponse } from "@/types/activity.interface"
 import { useLuno } from "@/app/contexts/luno-context"
-import { useActivities } from "@/hooks/use-activity-service"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
-import { TableWithShowMore } from "@/app/common/table-with-showmore"
+import { usePaginatedActivities } from "@/hooks/use-paginated-activities"
+import Pagination from "@/components/shared/pagination"
+
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
   ssr: false,
@@ -33,10 +34,16 @@ export type MyActivityRow = {
 
 export const MyActivityTable = () => {
   const { address } = useLuno()
-  
-  const { data: activitiesData, isLoading: loading, error: queryError } = useActivities({ 
-    userAddress: address 
-  })
+  const [page, setPage] = useState<number>(1);
+  const limit = 10 ;
+
+  const { activities: activitiesData, total, loading, error } = usePaginatedActivities({
+    page,
+    limit,
+    userAddress: address,
+  });
+
+const totalPages = total && total > 0 ? Math.ceil(total / limit) : 1;;
 
   const [reExecuting, setReExecuting] = useState<string | null>(null)
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
@@ -47,8 +54,7 @@ export const MyActivityTable = () => {
   const [selectedStrategyId, setSelectedStrategyId] = useState<string>("")
 
   const activities = useMemo(() => {
-    const list = Array.isArray(activitiesData) ? activitiesData : activitiesData ? [activitiesData] : []
-    return list.map((a): MyActivityRow => ({
+     return (activitiesData || []).map((a): MyActivityRow => ({
       id: a.id ?? "-",
       date: a.createdAt?.slice(0, 10) ?? "-",
       strategy: a.strategyId ?? "-",
@@ -63,8 +69,6 @@ export const MyActivityTable = () => {
       userAddress: a.userAddress ?? "-",
     }))
   }, [activitiesData])
-
-  const error = queryError ? "Failed to load activities." : null
 
   const handleReExecute = async (row: MyActivityRow) => {
     setReExecuting(row.id)
@@ -173,7 +177,7 @@ export const MyActivityTable = () => {
 
   return (
     <>
-      <TableWithShowMore
+      <CommonTable
         data={activities}
         columns={columns}
         expandable={renderExpand}
@@ -186,6 +190,12 @@ export const MyActivityTable = () => {
         </div>
       )}
 
+      <Pagination
+        page={page}           
+        totalPages={Math.max(1, totalPages)}  
+        onPageChange={setPage}  
+      />
+      
       {simulateResult && (
         <ExecutionModal
           open={executionModalOpen}
