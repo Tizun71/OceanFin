@@ -261,6 +261,14 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           strategy={simulateResult}
           strategyId={strategyId}
           startFromStep={0}
+          onStatusChange={(status) => {
+            if (status === "completed") {
+              displayToast("success", "Strategy executed successfully.")
+            }
+            if (status === "cancelled") {
+              displayToast("info", "Strategy execution cancelled.")
+            }
+          }}
         />
       )}
 
