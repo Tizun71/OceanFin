@@ -6,6 +6,7 @@ import { STRATEGY_LIST } from './strategy-list';
 import { RewardsService } from './rewards.service';
 import { HydrationStrategyService } from './hydration-strategy.service';
 import { StrategySimulationService } from './strategy-simulation.service';
+import { StrategyMapper } from './mappers/strategy.mapper';
 
 @Injectable()
 export class StrategyService {
@@ -49,6 +50,29 @@ export class StrategyService {
   async findAll(sortBy?: string, order: 'asc' | 'desc' = 'desc', limit?: number): Promise<Strategy[]> {
   return this.strategiesRepo.findAll(sortBy, order, limit);
 }
+
+async findAllWithFilters(params: {
+    keyword?: string;
+    tags?: string[];
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    limit?: number;
+  }) {
+    const { data, total } = await this.strategiesRepo.findAllWithFilters(params);
+
+    const filters: any = {};
+    if (params.keyword) filters.keyword = params.keyword;
+    if (params.tags?.length) filters.tags = params.tags;
+
+    return {
+      filters,
+      activeFiltersCount: Object.keys(filters).length,
+      data: data.map(s => StrategyMapper.toResponse(s)),
+      meta: { total, limit: params.limit },
+    };
+  }
+
+
 
 
   async update(

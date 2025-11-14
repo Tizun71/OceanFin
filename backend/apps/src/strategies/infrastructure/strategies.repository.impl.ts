@@ -38,6 +38,53 @@ export class StrategiesRepositoryImplement implements StrategiesRepository {
   return (data ?? []).map((r) => this.mapRowToEntity(r));
 }
 
+async findAllWithFilters({
+    keyword,
+    tags = [],
+    sortBy,
+    order,
+    limit,
+  }: {
+    keyword?: string;
+    tags?: string[];
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    limit?: number;
+  }): Promise<{ data: Strategy[]; total: number }> {
+
+    let query = this.supabase
+      .getClient()
+      .from('strategies')
+      .select('*', { count: 'exact' });
+
+    if (keyword) {
+      query = query.or(
+        `strategist_name.ilike.%${keyword}%,strategist_handle.ilike.%${keyword}%`
+      );
+    }
+
+    if (tags.length > 0) {
+      tags.forEach(tag => {
+        query = query.contains('tags', [tag]); // supabase array search
+      });
+    }
+
+    if (sortBy) query = query.order(sortBy, { ascending: order === 'asc' });
+    if (limit) query = query.limit(limit);
+
+    const { data, count, error } = await query;
+
+    if (error) {
+      console.error(error);
+      return { data: [], total: 0 };
+    }
+
+    return {
+      data: (data ?? []).map(row => this.mapRowToEntity(row)),
+      total: count ?? 0,
+    };
+  }
+
 
   async save(strategy: Strategy): Promise<void> {
     const { error } = await this.supabase.getClient().from('strategies').upsert({
