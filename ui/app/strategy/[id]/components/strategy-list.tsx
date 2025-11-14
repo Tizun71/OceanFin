@@ -19,7 +19,8 @@ export function StrategyList() {
     const loadStrategies = async () => {
       try {
         const data = await fetchStrategies()
-        setStrategies(data)
+        console.log("DATA RETURNED: ", data)
+        setStrategies(Array.isArray(data) ? data : data?.data ?? [])
       } catch (err: any) {
         setError(err.message)
       } finally {
