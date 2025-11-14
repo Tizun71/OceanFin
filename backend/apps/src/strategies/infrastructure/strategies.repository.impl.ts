@@ -38,52 +38,43 @@ export class StrategiesRepositoryImplement implements StrategiesRepository {
   return (data ?? []).map((r) => this.mapRowToEntity(r));
 }
 
-async findAllWithFilters({
-    keyword,
-    tags = [],
-    sortBy,
-    order,
-    limit,
-  }: {
+async findAllWithFilters(params: {
     keyword?: string;
     tags?: string[];
     sortBy?: string;
     order?: 'asc' | 'desc';
     limit?: number;
   }): Promise<{ data: Strategy[]; total: number }> {
+    const { keyword, tags, sortBy, order = 'desc', limit } = params;
 
     let query = this.supabase
       .getClient()
       .from('strategies')
       .select('*', { count: 'exact' });
-
     if (keyword) {
-      query = query.or(
-        `strategist_name.ilike.%${keyword}%,strategist_handle.ilike.%${keyword}%`
-      );
+      query = query.ilike('strategist_name', `%${keyword}%`);
     }
-
-    if (tags.length > 0) {
+    if (tags && tags.length > 0) {
       tags.forEach(tag => {
-        query = query.contains('tags', [tag]); // supabase array search
+        query = query.contains('tags', [tag]);
       });
     }
-
-    if (sortBy) query = query.order(sortBy, { ascending: order === 'asc' });
-    if (limit) query = query.limit(limit);
-
-    const { data, count, error } = await query;
-
-    if (error) {
-      console.error(error);
-      return { data: [], total: 0 };
+    if (sortBy) {
+      query = query.order(sortBy, { ascending: order === 'asc' });
     }
-
+    if (limit) {
+      query = query.limit(limit);
+    }
+    const { data, count, error } = await query;
+    if (error) {
+      throw new Error(`Failed to fetch with filters: ${error.message}`);
+    }
     return {
-      data: (data ?? []).map(row => this.mapRowToEntity(row)),
+      data: (data ?? []).map(r => this.mapRowToEntity(r)),
       total: count ?? 0,
     };
   }
+
 
 
   async save(strategy: Strategy): Promise<void> {
