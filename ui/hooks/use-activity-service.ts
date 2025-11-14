@@ -12,6 +12,36 @@ export function useActivities(filter?: ActivityFilter) {
   })
 }
 
+interface UsePaginatedActivitiesParams {
+  page: number
+  limit: number
+  userAddress?: string
+}
+
+export function usePaginatedActivities({
+  page = 1,
+  limit = 10,
+  userAddress,
+}: UsePaginatedActivitiesParams) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [...ACTIVITIES_QUERY_KEY, "paginated", userAddress, page, limit],
+    queryFn: () => getActivities({ userAddress, page, limit }),
+    enabled: !!userAddress,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  })
+
+  const activities = Array.isArray(data) ? data : data?.data || []
+  const total = Array.isArray(data) ? data.length : data?.total || 0
+
+  return {
+    activities,
+    total,
+    loading: isLoading,
+    error: error ? "Failed to load activities" : null,
+  }
+}
+
 export function useCreateActivity() {
   const queryClient = useQueryClient()
 

@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from "react"
 import { useLuno } from "@/app/contexts/luno-context"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
-import { usePaginatedActivities } from "@/hooks/use-paginated-activities"
 import Pagination from "@/components/shared/pagination"
 import { AnimatePresence, motion } from "framer-motion"
+import { usePaginatedActivities } from "@/hooks/use-activity-service"
 
 const ETHERSCAN_TX_BASE = "https://hydration.subscan.io/extrinsic/"
 
