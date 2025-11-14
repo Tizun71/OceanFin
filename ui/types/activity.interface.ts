@@ -16,12 +16,15 @@ export interface UpdateActivityPayload {
 export type ActivityFilter = {
   userAddress?: string;
   strategyId?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface ActivityResponse {
   id?: string
   createdAt?: string
   userAddress?: string
+  strategyId?: string
   currentStep?: number
   totalSteps?: number
   metadata?: {

@@ -63,7 +63,11 @@ export default function StepStack({ steps, currentStep, allStepsCompleted }: Ste
   return (
     <div
       ref={containerRef}
-      className="relative flex items-center justify-center pb-2 h-full overflow-y-auto px-4 -mx-4 py-2 -my-2"
+      className="
+        custom-scroll
+        relative flex items-center justify-center pb-2 h-full overflow-y-auto
+        px-4 -mx-4 py-2 -my-2
+      "
     >
       <div className="relative w-full max-w-md h-[30vh]">
         <div

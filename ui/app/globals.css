@@ -133,3 +133,21 @@
 .float-delay-1 { animation-delay: 1s; }
 .float-delay-2 { animation-delay: 2s; }
 .float-delay-3 { animation-delay: 3s; }
+
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.3s ease;
+}
+
+.custom-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(120, 120, 120, 0.35);
+}
+
+.dark .custom-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(160, 160, 160, 0.4);
+}

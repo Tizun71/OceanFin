@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from "react"
 import { useLuno } from "@/app/contexts/luno-context"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
-import { usePaginatedActivities } from "@/hooks/use-paginated-activities"
 import Pagination from "@/components/shared/pagination"
 import { AnimatePresence, motion } from "framer-motion"
+import { usePaginatedActivities } from "@/hooks/use-activity-service"
 
 const ETHERSCAN_TX_BASE = "https://hydration.subscan.io/extrinsic/"
 
@@ -83,24 +83,12 @@ export const AllActivityTable: React.FC = () => {
   )
 
   const renderExpand = (row: AllActivityRow) => (
-    <div className="space-y-3">
-      <div className="text-muted-foreground text-xs uppercase tracking-wide mb-2 font-semibold">
+    <div className="space-y-3 text-sm text-card-foreground">
+      <div className="text-muted-foreground text-xs uppercase mb-2 font-semibold">
         Transaction Hash
       </div>
-      {row.txHash && row.txHash.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {row.txHash.map((hash) => (
-            <a
-              key={hash}
-              href={`${ETHERSCAN_TX_BASE}/${hash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 truncate"
-            >
-              {hash.slice(0, 10)}...{hash.slice(-8)} ↗
-            </a>
-          ))}
-        </div>
+      {row.txHash?.length ? (
+        <TxHashList hashes={row.txHash} />
       ) : (
         <span className="text-muted-foreground italic text-sm">No transactions</span>
       )}

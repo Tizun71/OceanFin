@@ -6,11 +6,11 @@ import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { AnimatePresence, motion } from "framer-motion"
 import { displayToast } from "@/components/shared/toast-manager"
-import { ActivityResponse } from "@/types/activity.interface"
+import type { ActivityResponse } from "@/types/activity.interface"
 import { useLuno } from "@/app/contexts/luno-context"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
-import { usePaginatedActivities } from "@/hooks/use-paginated-activities"
 import Pagination from "@/components/shared/pagination"
+import { usePaginatedActivities } from "@/hooks/use-activity-service"
 
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
@@ -32,29 +32,27 @@ export type MyActivityRow = {
   userAddress?: string
 }
 
+const ITEMS_PER_PAGE = 10
+
 export const MyActivityTable = () => {
   const { address } = useLuno()
-  const [page, setPage] = useState<number>(1);
-  const limit = 10 ;
+  const [page, setPage] = useState(1)
 
   const { activities: activitiesData, total, loading, error } = usePaginatedActivities({
     page,
-    limit,
+    limit: ITEMS_PER_PAGE,
     userAddress: address,
-  });
-
-const totalPages = total && total > 0 ? Math.ceil(total / limit) : 1;;
+  })
 
   const [reExecuting, setReExecuting] = useState<string | null>(null)
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
   const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
-  const [simulateError, setSimulateError] = useState<string | null>(null)
-  const [startFromStep, setStartFromStep] = useState<number>(0)
+  const [startFromStep, setStartFromStep] = useState(0)
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null)
-  const [selectedStrategyId, setSelectedStrategyId] = useState<string>("")
+  const [selectedStrategyId, setSelectedStrategyId] = useState("")
 
-  const activities = useMemo(() => {
-     return (activitiesData || []).map((a): MyActivityRow => ({
+  const activities = useMemo(() => 
+    (activitiesData || []).map((a: ActivityResponse): MyActivityRow => ({
       id: a.id ?? "-",
       date: a.createdAt?.slice(0, 10) ?? "-",
       strategy: a.strategyId ?? "-",
@@ -63,42 +61,45 @@ const totalPages = total && total > 0 ? Math.ceil(total / limit) : 1;;
       totalSteps: a.totalSteps ?? 0,
       apr: a.metadata?.APR ?? "-",
       fee: a.metadata?.fee ?? "-",
-      initialCapital: a.metadata?.initial_capital ?? "-",
+      initialCapital: String(a.metadata?.initial_capital ?? "-"),
       status: a.status === "SUCCESS" ? "Completed" : "Pending",
       txHash: a.txHash ?? [],
       userAddress: a.userAddress ?? "-",
-    }))
-  }, [activitiesData])
+    })),
+    [activitiesData]
+  )
+
+  const totalPages = useMemo(
+    () => (total > 0 ? Math.ceil(total / ITEMS_PER_PAGE) : 1),
+    [total]
+  )
 
   const handleReExecute = async (row: MyActivityRow) => {
     setReExecuting(row.id)
-    setSimulateError(null)
 
     try {
       const amount = Number(row.initialCapital.toString().replace(/,/g, ""))
+      
       if (!amount || amount <= 0) {
         throw new Error("Invalid initial capital amount")
       }
 
-      const strategyData = { id: row.strategyId }
-
-      const simulationResult = await simulateStrategy(strategyData, amount)
+      const simulationResult = await simulateStrategy({ id: row.strategyId }, amount)
 
       if (!simulationResult?.steps?.length) {
         throw new Error("No steps in simulation result")
       }
 
-      const resumeFromStep = Math.max(0, row.currentStep - 1)
-
-      setStartFromStep(resumeFromStep)
+      setStartFromStep(Math.max(0, row.currentStep - 1))
       setSimulateResult(simulationResult)
       setSelectedActivityId(row.id)
       setSelectedStrategyId(row.strategyId)
       setExecutionModalOpen(true)
+      
       displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
-
-    } catch (error: any) {
-      displayToast("error", error?.message || "Re-execution failed.")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Re-execution failed"
+      displayToast("error", message)
     } finally {
       setReExecuting(null)
     }
@@ -190,11 +191,13 @@ const totalPages = total && total > 0 ? Math.ceil(total / limit) : 1;;
         </div>
       )}
 
-      <Pagination
-        page={page}           
-        totalPages={Math.max(1, totalPages)}  
-        onPageChange={setPage}  
-      />
+      {totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
       
       {simulateResult && (
         <ExecutionModal
