@@ -163,7 +163,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
             </p>
             <div className="relative">
               <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              <div className="absolute right-0 top-6 w-48 p-2 bg-foreground text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-lg z-10">
+              <div className="absolute right-0 top-6 w-48 p-2 bg-background text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-lg z-10">
                 Maximum price deviation allowed during execution
               </div>
             </div>

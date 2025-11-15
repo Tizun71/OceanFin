@@ -57,7 +57,7 @@ export function StrategyHeader({ strategy }: StrategyHeaderProps) {
         <div className="flex items-center gap-2 text-sm">
           <div className="w-4 h-4 rounded-full bg-primary/20" />
           <span className="text-muted-foreground">
-            POLKADOT is not holding custody over users' assets. Users' funds are under their control.
+            OceanFin is not holding custody over users' assets. Users' funds are under their control.
           </span>
         </div>
       </div>

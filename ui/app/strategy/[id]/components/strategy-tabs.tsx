@@ -6,7 +6,7 @@ import { StrategyFlow } from "./strategy-flow";
 import StrategyPromptDetails from "./strategy-prompt-details";
 import { MyActivityTable } from "./activity/strategy-my-activity-table";
 import { AllActivityTable } from "./activity/strategy-all-activity-table";
-import { Shield, Workflow, FileText, Activity, Users, ExternalLink } from "lucide-react"; 
+import { Shield, Workflow, FileText, Activity, Users, ExternalLink, Bot } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface StrategyTabsProps {
@@ -18,7 +18,7 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
   const [activeTab, setActiveTab] = useState("overview");
   useEffect(() => {
     if (simulateData) {
-      setActiveTab("flow"); 
+      setActiveTab("flow");
     }
   }, [simulateData]);
   const tabs = [
@@ -65,7 +65,7 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
       {/* === Tab Contents === */}
       <TabsContent value="overview">
         <StrategyOverview strategy={strategy} simulateData={simulateData}
-         />
+        />
       </TabsContent>
 
       <TabsContent value="flow">
@@ -77,13 +77,16 @@ export function StrategyTabs({ strategy, simulateData }: StrategyTabsProps) {
               initialCapital={simulateData.initialCapital}
               loops={simulateData.loops}
               fee={simulateData.fee}
-              totalSupply={simulateData.totalSupply}
-              totalBorrow={simulateData.totalBorrow}
             />
           ) : (
-            <p className="text-muted-foreground text-sm">
-              Run a simulation first to see the flow here.
-            </p>
+            <div className="flex flex-col items-center justify-center px-4">
+              <div className="w-10 h-10 mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+                <Bot className="w-10 h-10 text-accent/50" />
+              </div>
+              <p className="text-muted-foreground text-center max-w-md text-sm">
+                Please run a simulation first to see the strategy details and expected results.
+              </p>
+            </div>
           )}
         </div>
       </TabsContent>

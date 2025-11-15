@@ -1,6 +1,7 @@
 "use client"
 
-import { Search, SlidersHorizontal } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, SlidersHorizontal, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,13 +40,36 @@ export function SearchBar({
   statusFilter,
   onStatusChange,
 }: SearchBarProps) {
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localSearchQuery)
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [localSearchQuery, onSearchChange])
+
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery)
+  }, [searchQuery])
+
   const toggleTag = (value: string) => {
-  if (selectedTags.includes(value)) {
-    onTagsChange(selectedTags.filter((t) => t !== value))
-  } else {
-    onTagsChange([...selectedTags, value])
+    if (selectedTags.includes(value)) {
+      onTagsChange(selectedTags.filter((t) => t !== value))
+    } else {
+      onTagsChange([...selectedTags, value])
+    }
   }
-}
+
+  const clearAll = () => {
+    setLocalSearchQuery("")
+    onSearchChange("")
+    onTagsChange([])
+    onStatusChange("All")
+  }
+
+  const hasActiveFilters = searchQuery || selectedTags.length > 0 || statusFilter !== "All"
 
   return (
     <div className="space-y-4">
@@ -56,8 +80,8 @@ export function SearchBar({
           <Input
             placeholder="Search title, asset, agent or chain"
             className="pl-10 bg-card border-border"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={localSearchQuery}
+            onChange={(e) => setLocalSearchQuery(e.target.value)}
           />
         </div>
 
@@ -96,44 +120,30 @@ export function SearchBar({
               <>
                 <DropdownMenuSeparator />
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   className="w-full"
                   onClick={() => onTagsChange([])}
                 >
-                  Clear All
+                  Clear
                 </Button>
               </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Status filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">{statusFilter}</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuCheckboxItem
-              checked={statusFilter === "All"}
-              onCheckedChange={() => onStatusChange("All")}
-            >
-              All
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={statusFilter === "Active"}
-              onCheckedChange={() => onStatusChange("Active")}
-            >
-              Active
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={statusFilter === "Inactive"}
-              onCheckedChange={() => onStatusChange("Inactive")}
-            >
-              Inactive
-            </DropdownMenuCheckboxItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Clear all filters button */}
+        {hasActiveFilters && (
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={clearAll}
+            className="gap-2 mt-0.5  hover:bg-destructive/10 hover:text-destructive border-border"
+          >
+            Clear
+          </Button>
+        )}
+       
       </div>
 
       {/* Tags badges */}
