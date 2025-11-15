@@ -4,7 +4,7 @@ import { fetchStrategiesWithFilters } from "@/services/strategy-service";
 import { SearchBar } from "@/components/shared/search-bar";
 import { StrategyCard } from "./strategy-card";
 
-export default function StrategiesList() {
+export function StrategyList() {
   const [strategies, setStrategies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
