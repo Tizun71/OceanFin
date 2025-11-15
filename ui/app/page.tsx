@@ -4,14 +4,19 @@ import { StrategyList } from "./strategy/[id]/components/strategy-list"
 import { FeaturedStrategies } from "./strategy/[id]/components/strategy-featured"
 import { useEffect, useState } from "react"
 import { Preloader } from "@/components/preloader"
+import { usePreloader } from "@/providers/preloader-provider"
 
 export default function Home() {
   const [mounted, setMounted] = useState(false)
+  const preloader = usePreloader();
   useEffect(() => {
+    if (mounted) {
+      preloader.hide()
+    }
+    preloader.show()
     setMounted(true)
-  }, [])
+  }, [mounted])
 
-  if (!mounted) return null
   return (
     <>
       <Preloader />
