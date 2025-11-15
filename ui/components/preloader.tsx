@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
+import Image from 'next/image';
 
 export function Preloader() {
   const [isLoading, setIsLoading] = useState(true);
@@ -13,7 +14,7 @@ export function Preloader() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const tl = gsap.timeline({ 
+    const tl = gsap.timeline({
       repeat: 0,
       onComplete: () => {
         gsap.to(containerRef.current, {
@@ -75,14 +76,16 @@ export function Preloader() {
         ref={containerRef}
         className="relative w-48 h-48 flex items-center justify-center"
       >
-        {/* Ocean Fin Logo */}
-        <img 
-          ref={logoRef}
-          src="/logo-ocean-fin.svg" 
-          alt="Ocean Fin" 
-          className="w-full h-full object-contain drop-shadow-2xl"
-        />
-        
+
+        <div className="relative w-32 h-32">
+          <Image
+            src="/logo-ocean-fin.svg"
+            alt="Ocean Fin"
+            fill
+            className="object-contain drop-shadow-2xl"
+          />
+        </div>
+
         {/* Glow effect */}
         <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full -z-10"></div>
       </div>
@@ -91,16 +94,10 @@ export function Preloader() {
       <div className="mt-12 w-64 space-y-3">
         <div className="h-1.5 bg-border/30 rounded-full overflow-hidden backdrop-blur-sm">
           <div className="h-full bg-gradient-to-r from-accent via-accent-light to-secondary rounded-full shadow-[0_0_20px_rgba(0,194,203,0.5)]"
-               style={{ width: '0%' }} 
-               ref={progressBarRef}></div>
+            style={{ width: '0%' }}
+            ref={progressBarRef}></div>
         </div>
-        
-        {/* Percentage */}
-        <div className="text-center">
-          <span ref={percentageRef} className="text-sm font-medium text-accent-light">
-            0%
-          </span>
-        </div>
+
       </div>
 
       {/* Loading Text */}
