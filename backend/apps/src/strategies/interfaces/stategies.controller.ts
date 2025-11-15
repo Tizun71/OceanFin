@@ -32,19 +32,31 @@ export class StrategiesController {
   }
 
   @Get()
-@ApiOperation({ summary: 'List all strategies with optional filter/sort/limit' })
-@ApiQuery({ name: 'sortBy', required: false, example: 'apy' })
-@ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'], example: 'desc' })
-@ApiQuery({ name: 'limit', required: false, example: 5 })
-async findAll(
-  @Query('sortBy') sortBy?: string,
-  @Query('order') order: 'asc' | 'desc' = 'desc',
-  @Query('limit') limit?: number,
-): Promise<StrategyResponseDto[]> {
-  const list = await this.strategyService.findAll(sortBy, order, limit ? Number(limit) : undefined);
-  return StrategyMapper.toResponseList(list);
-}
+  @ApiOperation({ summary: 'List strategies with filters, search, tags, sort, limit' })
+  @ApiQuery({ name: 'keyword', required: false })
+  @ApiQuery({ name: 'tags', required: false})
+  @ApiQuery({ name: 'sortBy', required: false })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'limit', required: false })
+  async find(
+    @Query('keyword') keyword?: string,
+    @Query('tags') tags?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('order') order: 'asc' | 'desc' = 'desc',
+    @Query('limit') limit?: number,
+  ) {
+    const tagList = tags
+      ? tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+      : undefined;
 
+    return this.strategyService.findAllWithFilters({
+      keyword,
+      tags: tagList,
+      sortBy,
+      order,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a strategy by ID' })

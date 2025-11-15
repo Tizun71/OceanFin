@@ -40,7 +40,7 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
   return (
     
       <Card
-        className="group p-4 cursor-pointer hover:-translate-y-1"
+        className="group p-4 cursor-default hover:-translate-y-1"
       >
         {/* Hover Glow */}
         <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
@@ -176,7 +176,7 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               </div>
               <Link href={`/strategy/${strategy.id}`}>
                 <button 
-                  className="px-4 py-2 bg-primary hover:bg-accent-light text-primary-foreground text-sm font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 group/btn flex items-center gap-2 whitespace-nowrap"  
+                  className="px-4 py-2 bg-primary hover:bg-accent-light text-primary-foreground text-sm font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 group/btn flex items-center gap-2 whitespace-nowrap cursor-pointer"  
                 >
                   Try Now
                   <span className="inline-block group-hover/btn:translate-x-1 transition-transform">→</span>

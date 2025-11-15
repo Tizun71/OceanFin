@@ -19,7 +19,7 @@ interface StrategyOverviewProps {
 
 
 export function StrategyOverview({ strategy, simulateData }: StrategyOverviewProps) {
-  
+
   const safeSteps =
     simulateData?.steps || strategy?.steps || [];
 
@@ -30,7 +30,7 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
 
   const safeDescription =
     strategy?.description ||
-    `Strategy simulation with ${simulateData?.loops || 0} loops, starting from ${simulateData?.initialCapital?.symbol || "N/A"}.`;
+    `Strategy simulation with ${simulateData?.loops || 0} loops, starting from ${simulateData?.initialCapital?.symbol || "DOT"}.`;
 
   const AGENT_ICONS: Record<string, string> = {
     HYDRATION:
@@ -40,23 +40,33 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
 
   return (
     <div className="space-y-6">
-    
+
       {/* === STRATEGY HEADER === */}
       <StrategyHeader strategy={strategy as any} simulateData={simulateData} />
 
       {/* === DESCRIPTION SECTION === */}
       <div className="glass rounded-lg p-6 space-y-5">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ">
           <div className="h-1 w-1 rounded-full bg-accent"></div>
           <h3 className="text-xl font-semibold text-foreground">
             Strategy Description
           </h3>
         </div>
 
-        {/* Description text */}
-        <p className="text-foreground/80 leading-relaxed text-[15px]">
-          {safeDescription}
-        </p>
+        {simulateData ? (
+          <p className="text-foreground/80 leading-relaxed text-[15px]">
+            {safeDescription}
+          </p>
+        ) : (
+          <div className="flex flex-col items-center justify-center px-4">
+            <div className="w-10 h-10 mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+              <Bot className="w-10 h-10 text-accent/50" />
+            </div>
+            <p className="text-muted-foreground text-center max-w-md text-sm">
+              Please run a simulation first to see the strategy details and expected results.
+            </p>
+          </div>
+        )}
 
         {/* Agents */}
         {safeAgents.length > 0 && (

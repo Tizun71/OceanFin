@@ -28,12 +28,14 @@ export const simulateStrategy = async (strategy: any, amount: number) => {
 export const fetchStrategies = async () => {
   try {
     const res = await api.get(API_ENDPOINTS.STRATEGIES.LIST());
-    return res.data;
+    return res.data?.data ?? [];
   } catch (e: any) {
     const msg = e?.response?.data || e?.message || 'Failed to fetch strategies';
     throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 };
+
+
 
 // Fetch single strategy by ID
 export const getStrategy = async (id: string) => {
@@ -45,3 +47,18 @@ export const getStrategy = async (id: string) => {
     throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 };
+
+// Fetch strategies with filters
+export const fetchStrategiesWithFilters = async (filters: {
+  keyword?: string;
+  tags?: string[];
+}) => {
+  const params: any = {};
+  if (filters.keyword) params.keyword = filters.keyword;
+  if (filters.tags?.length) params.tags = filters.tags.join(",");
+
+  const res = await api.get(API_ENDPOINTS.STRATEGIES.LIST(), { params });
+  return res.data?.data ?? [];
+};
+
+
