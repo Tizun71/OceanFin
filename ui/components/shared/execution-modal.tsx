@@ -270,8 +270,8 @@ export function ExecutionModal({
   const handleCancel = () => {
     abortRef.current = true
     setIsExecuting(false)
-    displayToast("info", `Execution cancelled at step ${currentStepIndex + 1}.`)
     onStatusChange?.("cancelled")
+    onOpenChange(false)
   }
 
   const handleClose = async () => {
@@ -282,7 +282,6 @@ export function ExecutionModal({
       if (activityId) {
         await syncActivityProgress(activityId, currentStepIndex + 1, 'failed')
       }
-      displayToast("info", `Execution cancelled at step ${currentStepIndex + 1}.`)
       onStatusChange?.("cancelled")
     }
     onOpenChange(false)
@@ -349,7 +348,7 @@ export function ExecutionModal({
             </Button>
           ) : (
             <>
-              <Button variant="outline" className="flex-1" onClick={handleClose}>
+              <Button variant="secondary" className="flex-1" onClick={handleClose}>
                 Close
               </Button>
               {!allStepsCompleted && (

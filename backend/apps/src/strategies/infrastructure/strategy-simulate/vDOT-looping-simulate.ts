@@ -38,12 +38,12 @@ async function simulateVDOTStrategy(
       tokenOut: {
         assetId: ASSET_ID.VDOT,
         symbol: ASSET_SYMBOL.VDOT,
-        amount: Number((iterationAmount * dotToVdotPrice).toFixed(3)),
+        amount: Number((iterationAmount * dotToVdotPrice).toFixed(5)),
       }
     });
 
     const vDotSwapOut =
-      Number((iterationAmount * dotToVdotPrice).toFixed(3)) *
+      Number((iterationAmount * dotToVdotPrice).toFixed(5)) *
       (1 - SLIPPAGE_TOLERANCE);
 
     // SUPPLY
@@ -54,7 +54,7 @@ async function simulateVDOTStrategy(
       tokenIn: {
         assetId: ASSET_ID.VDOT,
         symbol: ASSET_SYMBOL.VDOT,
-        amount: iterationAmount,
+        amount: Number(Number(iterationAmount).toFixed(5)),
       },
     });
 
@@ -68,7 +68,7 @@ async function simulateVDOTStrategy(
       tokenOut: {
         assetId: ASSET_ID.DOT,
         symbol: ASSET_SYMBOL.DOT,
-        amount: borrowMaxAmount,
+        amount: Number(Number(borrowMaxAmount).toFixed(5)),
       },
     });
 

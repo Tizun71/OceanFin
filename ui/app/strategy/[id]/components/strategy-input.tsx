@@ -4,14 +4,14 @@ import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Info } from "lucide-react"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
 import { useLuno } from "@/app/contexts/luno-context"
 import { ConnectButton } from "@luno-kit/ui"
 import { displayToast } from "@/components/shared/toast-manager"
-import { isEvmAccountBound } from "@/services/user-service"
+import { isEvmAccountBound, getTokenBalance } from "@/services/user-service"
 import { useParams } from "next/navigation"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then(m => m.ExecutionModal), { ssr: false })
@@ -35,7 +35,6 @@ interface StrategyInputProps {
 export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProps) {
   const [amount, setAmount] = useState("")
   const [executionModalOpen, setExecutionModalOpen] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
   const [loadingSimulate, setLoadingSimulate] = useState(false)
   const [simulateResult, setSimulateResult] = useState<StrategySimulate | null>(null)
   const [simulateError, setSimulateError] = useState<string | null>(null)
@@ -43,6 +42,9 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   const [checkingBind, setCheckingBind] = useState(false)
   const [isAccountBound, setIsAccountBound] = useState<boolean | null>(null)
   const [bindModalOpen, setBindModalOpen] = useState(false)
+
+  const [balance, setBalance] = useState<string | null>(null)
+  const [loadingBalance, setLoadingBalance] = useState(false)
 
   const { isConnected, address } = useLuno()
 
@@ -52,6 +54,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         setIsAccountBound(null)
         return
       }
+
       setCheckingBind(true)
       try {
         const res = await isEvmAccountBound(address)
@@ -62,23 +65,43 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         setCheckingBind(false)
       }
     }
+
     check()
   }, [isConnected, address])
 
-  const inputAsset = strategy.inputAsset || "-"
-  const networkCost = strategy.networkCost || "-"
-  const slippage = strategy.slippage || "-"
+  const fetchBalance = async (silent = false) => {
+    try {
+      if (!silent) setLoadingBalance(true)
+      if (!isConnected || !address || !isAccountBound) return null
+
+      const bal = await getTokenBalance(address, "5")
+      setBalance(bal || "0")
+      return bal ? Number(bal) : 0
+    } catch (e) {
+      console.error("fetch balance failed:", e)
+      return null
+    } finally {
+      if (!silent) setLoadingBalance(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!isConnected || !address || isAccountBound !== true) return
+
+    fetchBalance()
+    const interval = setInterval(() => fetchBalance(true), 600000)
+    return () => clearInterval(interval)
+  }, [isConnected, address, isAccountBound])
 
   const params = useParams<{ id: string | string[] }>()
-  const rawId = params?.id
-    const strategyId = useMemo(() => {
-      const val = Array.isArray(rawId) ? rawId[0] : (rawId || "")
-      try {
-        return decodeURIComponent(val)
-      } catch {
-        return val
-      }
-    }, [rawId])
+  const strategyId = useMemo(() => {
+    const raw = Array.isArray(params?.id) ? params.id[0] : (params?.id || "")
+    try {
+      return decodeURIComponent(raw)
+    } catch {
+      return raw
+    }
+  }, [params])
 
   const asset = {
     symbol: "DOT",
@@ -86,18 +109,11 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   }
 
   const handleSimulate = async () => {
-    if (!amount || Number(amount) <= 0) {
-      displayToast("warning", "Please enter a valid amount.")
-      return
+    if (!amount || Number(amount) < 0.01) {
+      return displayToast("error", "Please enter a amount greater than or equal to 0.01.")
     }
-    if (!isConnected) {
-      displayToast("error", "Please connect your wallet first.")
-      return
-    }
-    if (isAccountBound === false) {
-      displayToast("error", "Bind EVM account first.")
-      return
-    }
+    if (!isConnected) return displayToast("error", "Please connect your wallet.")
+    if (isAccountBound === false) return displayToast("error", "Bind EVM account first.")
 
     setLoadingSimulate(true)
     setSimulateResult(null)
@@ -105,32 +121,37 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
     try {
       const data = await simulateStrategy(strategy, Number(amount))
-      if (!data?.steps?.length) console.warn("No steps in simulation result")
       setSimulateResult(data)
       onSimulateSuccess?.(data)
       displayToast("success", "Simulation completed successfully.")
     } catch (error: any) {
-      const errorMsg = error?.message || "Simulation failed"
-      setSimulateError(errorMsg)
-      displayToast("error", errorMsg)
+      const msg = error?.message || "Simulation failed"
+      setSimulateError(msg)
+      displayToast("error", msg)
     } finally {
       setLoadingSimulate(false)
     }
   }
 
-  const handleExecute = () => {
-    if (!isConnected) {
-      displayToast("error", "Please connect wallet.")
-      return
+  const handleExecute = async () => {
+    if (!isConnected) return displayToast("error", "Please connect wallet.")
+    if (isAccountBound === false) return setBindModalOpen(true)
+    if (!simulateResult) return displayToast("warning", "Simulate strategy first.")
+
+    const freshBalance = await fetchBalance()
+    const inputAmount = Number(amount)
+
+    if (freshBalance === null) {
+      return displayToast("error", "Unable to fetch balance.")
     }
-    if (isAccountBound === false) {
-      setBindModalOpen(true)
-      return
+
+    if (freshBalance < inputAmount) {
+      return displayToast(
+        "error",
+        `Insufficient balance. Required ${inputAmount}, but you only have ${freshBalance}.`
+      )
     }
-    if (!simulateResult) {
-      displayToast("warning", "Simulate strategy first.")
-      return
-    }
+
     setExecutionModalOpen(true)
   }
 
@@ -150,26 +171,20 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
   return (
     <>
-      <div className="rounded-2xl p-8 border border-border bg-card backdrop-blur-xl shadow-lg transition-all duration-500 hover:shadow-xl hover:border-accent/50">
-        <div className="mb-7">
-          <h3 className="text-2xl font-extrabold text-primary mb-2">Strategy Input</h3>
-          <p className="text-sm font-normal text-muted-foreground">Enter the amount you want to simulate</p>
-        </div>
+      <div className="rounded-2xl p-8 border border-border bg-card backdrop-blur-xl shadow-lg">
+
+        <h3 className="text-2xl font-extrabold text-primary mb-2">Strategy Input</h3>
+        <p className="text-sm text-muted-foreground mb-6">Enter the amount you want to simulate</p>
 
         <div className="space-y-4 mb-5">
-          <div className="flex items-center justify-end gap-1.5 group">
+
+          <div className="flex items-center justify-end">
             <p className="text-sm text-muted-foreground">
               Est. Slippage: <span className="font-semibold text-foreground">1%</span>
             </p>
-            <div className="relative">
-              <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-              <div className="absolute right-0 top-6 w-48 p-2 bg-background text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 shadow-lg z-10">
-                Maximum price deviation allowed during execution
-              </div>
-            </div>
           </div>
 
-            <div className="flex items-center gap-3">
+           <div className="flex items-center gap-3">
               <InputGroup className="flex-1 h-10 bg-input hover:bg-input/80 border-border focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20 transition-all duration-300 shadow-sm">
                 <InputGroupInput
                   type="number"
@@ -193,17 +208,35 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
                 <span className="font-bold text-accent text-sm tracking-wide">{asset.symbol}</span>
               </div>
             </div>
+
+          {/* BALANCE */}
+          {isConnected && (
+            <div className="w-full flex justify-end">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                <span>Balance:</span>
+
+                {loadingBalance ? (
+                  <div className="relative h-4 w-20 rounded-md overflow-hidden bg-accent/20">
+                    <div className="absolute inset-0 animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
+                  </div>
+                ) : (
+                  <span className="font-semibold text-primary">{balance ?? "--"}</span>
+                )}
+                
+              </div>
+            </div>
+          )}
+
         </div>
 
         <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/30 mb-5">
-          <div className="flex-shrink-0 w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center mt-0.5">
-            <Info className="w-3 h-3 text-accent" />
-          </div>
+          <Info className="w-3 h-3 text-accent" />
           <p className="text-xs text-card-foreground leading-relaxed">
             Market conditions and price impact may affect the final execution.
           </p>
         </div>
 
+        {/* BUTTONS */}
         <div className="space-y-3">
           {isConnected ? (
             <>
@@ -215,13 +248,13 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
                 {checkingBind
                   ? "Checking binding..."
                   : loadingSimulate
-                  ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
-                      <span className="animate-pulse">Simulating...</span>
-                    </span>
-                  )
-                  : "Simulate Strategy"}
+                    ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+                        <span className="animate-pulse">Simulating...</span>
+                      </span>
+                    )
+                    : "Simulate Strategy"}
               </Button>
 
               {isAccountBound === false ? (
@@ -254,6 +287,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         </div>
       </div>
 
+      {/* EXECUTION MODAL */}
       {simulateResult && isAccountBound && (
         <ExecutionModal
           open={executionModalOpen}
@@ -262,21 +296,14 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
           strategyId={strategyId}
           startFromStep={0}
           onStatusChange={(status) => {
-            if (status === "completed") {
-              displayToast("success", "Strategy executed successfully.")
-            }
-            if (status === "cancelled") {
-              displayToast("info", "Strategy execution cancelled.")
-            }
+            if (status === "completed") displayToast("success", "Strategy executed successfully.")
+            if (status === "cancelled") displayToast("info", "Strategy execution cancelled.")
           }}
         />
       )}
 
-      <BindAccountModal
-        open={bindModalOpen}
-        onOpenChange={setBindModalOpen}
-        onBindSuccess={onBindSuccess}
-      />
+      {/* BIND MODAL */}
+      <BindAccountModal open={bindModalOpen} onOpenChange={setBindModalOpen} onBindSuccess={onBindSuccess} />
     </>
   )
 }

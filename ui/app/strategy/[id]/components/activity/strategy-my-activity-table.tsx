@@ -233,7 +233,7 @@ const TxHashList = ({ hashes }: { hashes: string[] }) => {
           {visible.map((hash) => (
             <a
               key={hash}
-              href={`https://etherscan.io/tx/${hash}`}
+              href={`https://hydration.subscan.io/block/${hash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block text-primary hover:text-accent transition-colors text-sm font-medium bg-primary/10 px-3 py-2 rounded border border-primary/20 hover:border-primary/40 truncate"

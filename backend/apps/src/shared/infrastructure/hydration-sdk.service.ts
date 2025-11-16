@@ -1,7 +1,8 @@
+import { BalanceClient } from '@galacticcouncil/sdk';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { H160, createSdkContext } from '@galacticcouncil/sdk';
-
+import { ethers } from 'ethers';
 const DEFAULT_RPC_ENDPOINT = 'wss://rpc.hydradx.cloud';
 
 @Injectable()
@@ -15,7 +16,7 @@ export class HydrationSdkService implements OnModuleDestroy {
     if (this.api) {
       try {
         await this.api.disconnect();
-      } catch {}
+      } catch { }
       this.api = null;
       this.sdkContext = null;
     }
@@ -60,5 +61,16 @@ export class HydrationSdkService implements OnModuleDestroy {
     const human = extension.toHuman();
     const isBound = human != null && human !== '';
     return { isBound, evmAddress };
+  }
+
+  async getTokenBalance(account: string, tokenId: string): Promise<number> {
+     const api = await this.getApi();
+    const balanceClient = new BalanceClient(api);
+    const res = await balanceClient.getTokenBalanceData(account.toString(), tokenId.toString());
+
+    const freeValue = res.get('free');
+    const free = freeValue !== undefined ? BigInt(freeValue.toString()) : BigInt(0);
+    const freeHuman = ethers.utils.formatUnits(free.toString(), 10); // DOT
+    return Number(Number(freeHuman).toFixed(3));
   }
 }
