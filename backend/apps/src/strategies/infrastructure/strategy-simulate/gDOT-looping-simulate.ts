@@ -26,7 +26,7 @@ async function simulateGDOTStrategy(
   // LOOPING
   for (let i = 0; i < iterations; i++) {
     const gDotSwapOut =
-      Number((iterationAmount * dotToGdotPrice).toFixed(3)) *
+      Number((iterationAmount * dotToGdotPrice).toFixed(5)) *
       (1 - SLIPPAGE_TOLERANCE);
 
     // JOIN STRATEGY
@@ -37,12 +37,12 @@ async function simulateGDOTStrategy(
       tokenIn: {
         assetId: ASSET_ID.DOT,
         symbol: ASSET_SYMBOL.DOT,
-        amount: iterationAmount,
+        amount: Number(Number(iterationAmount).toFixed(5)),
       },
       tokenOut: {
         assetId: ASSET_ID.GDOT,
         symbol: ASSET_SYMBOL.GDOT,
-        amount: gDotSwapOut,
+        amount: Number(Number(gDotSwapOut).toFixed(5)),
       },
     });
 
@@ -55,7 +55,7 @@ async function simulateGDOTStrategy(
       tokenOut: {
         assetId: ASSET_ID.DOT,
         symbol: ASSET_SYMBOL.DOT,
-        amount: borrowMaxAmount,
+        amount: Number(Number(borrowMaxAmount).toFixed(5)),
       },
     });
 

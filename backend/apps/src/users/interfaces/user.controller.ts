@@ -7,8 +7,9 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { UserService } from '../application/user.service';
 import { UserResponseDto } from './dtos/user-response.dto';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -18,7 +19,7 @@ import { UserMapper } from '../application/mappers/user.mapper';
 @ApiTags('Users')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
@@ -86,5 +87,17 @@ export class UserController {
     @Param('substrateAddress') substrateAddress: string,
   ): Promise<{ isBound: boolean; evmAddress: string }> {
     return this.userService.checkEvmBinding(substrateAddress);
+  }
+
+  @Get('balance/:substrateAddress/:tokenId')
+  @ApiOperation({ summary: 'Get token balance of a Substrate address on Hydration' })
+  @ApiParam({ name: 'substrateAddress', description: 'Substrate (ss58) address' })
+  @ApiParam({ name: 'tokenId', description: 'Token ID to check balance' })
+  @ApiResponse({ status: 200, description: 'Token balance returned' })
+  async getTokenBalance(
+    @Param('substrateAddress') substrateAddress: string,
+    @Param('tokenId') tokenId: string,
+  ): Promise<number> {
+    return this.userService.getUserTokenBalance(substrateAddress, tokenId);
   }
 }

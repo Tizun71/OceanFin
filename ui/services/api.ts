@@ -36,5 +36,6 @@ export const API_ENDPOINTS = {
 
   USERS: {
     EVM_BINDING: (substrateAddress: string) => `/users/evm-binding/${substrateAddress}`,
+    BALANCE: (substrateAddress: string, tokenId: string) => `/users/balance/${substrateAddress}/${tokenId}`,
   }
 };

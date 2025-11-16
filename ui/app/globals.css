@@ -151,3 +151,12 @@
 .dark .custom-scroll:hover::-webkit-scrollbar-thumb {
   background-color: rgba(160, 160, 160, 0.4);
 }
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

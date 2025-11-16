@@ -47,4 +47,8 @@ export class UserService {
   async checkEvmBinding(substrateAddress: string): Promise<{ isBound: boolean; evmAddress: string }> {
     return this.hydrationSdk.checkEvmBinding(substrateAddress);
   }
+
+  async getUserTokenBalance(account: string, tokenId: string): Promise<number> {
+    return this.hydrationSdk.getTokenBalance(account, tokenId);
+  }
 }
