@@ -186,7 +186,6 @@ export function useLunoPapiClient() {
           await web3Enable("OceanFinApp");
 
           const injector = await web3FromAddress(formattedFrom);
-          const txHash = tx.hash.toHex();
 
           const unsub = await tx.signAndSend(
             formattedFrom,
@@ -208,7 +207,7 @@ export function useLunoPapiClient() {
                 console.error("[sendTransaction] ❌ DispatchError:", errorMessage);
                 unsub();
                 resolve({
-                  transactionHash: txHash,
+                  transactionHash: null,
                   status: "failed",
                   errorMessage,
                 });
@@ -219,7 +218,7 @@ export function useLunoPapiClient() {
                 console.log(`[sendTransaction] ✅ Included in block: ${status.asInBlock}`);
                 unsub();
                 resolve({
-                  transactionHash: txHash,
+                  transactionHash: status.asInBlock.toString(),
                   status: "success",
                   errorMessage: null,
                 });
@@ -230,7 +229,7 @@ export function useLunoPapiClient() {
                 console.log(`[sendTransaction] ✅ Finalized at block: ${status.asFinalized}`);
                 unsub();
                 resolve({
-                  transactionHash: txHash,
+                  transactionHash: status.asFinalized.toString(),
                   status: "success",
                   errorMessage: null,
                 });
