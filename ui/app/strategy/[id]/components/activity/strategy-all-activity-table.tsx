@@ -6,6 +6,7 @@ import { CommonTable, TableColumn } from "@/app/common/common-table"
 import Pagination from "@/components/shared/pagination"
 import { AnimatePresence, motion } from "framer-motion"
 import { usePaginatedActivities } from "@/hooks/use-activity-service"
+import { ActivityResponse } from "@/types/activity.interface"
 
 const ETHERSCAN_TX_BASE = "https://hydration.subscan.io/extrinsic/"
 
@@ -21,7 +22,7 @@ export type AllActivityRow = {
   txHash?: string[]
 }
 
-function mapActivityToRow(a: any): AllActivityRow {
+function mapActivityToRow(a:ActivityResponse): AllActivityRow {
   return {
     id: a.id ?? "-",
     date: a.createdAt ? new Date(a.createdAt).toLocaleDateString("en-CA") : "-",
@@ -30,7 +31,7 @@ function mapActivityToRow(a: any): AllActivityRow {
     apr: a.metadata?.APR ?? "-",
     fee: a.metadata?.fee ?? "-",
     initialCapital: a.metadata?.initial_capital ? `${a.metadata.initial_capital}` : "-",
-    status: a.status === "SUCCESS" ? "Completed" : "Pending",
+    status: "Completed",
     txHash: a.txHash || [],
   }
 }
@@ -48,7 +49,13 @@ export const AllActivityTable: React.FC = () => {
 
   const totalPages = total && total > 0 ? Math.ceil(total / limit) : 1
 
-  const rows = useMemo(() => (activitiesData || []).map(mapActivityToRow), [activitiesData])
+  const rows = useMemo(
+    () =>
+      (activitiesData || [])
+        .filter((a: ActivityResponse) => a.status?.toUpperCase() === "SUCCESS")  
+        .map(mapActivityToRow),
+    [activitiesData]
+  )
 
   const columns: TableColumn<AllActivityRow>[] = useMemo(
     () => [

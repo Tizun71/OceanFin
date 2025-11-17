@@ -18,21 +18,20 @@ export function FeaturedStrategies() {
   useEffect(() => {
     const loadTrendingStrategy = async () => {
       try {
-        const data = await fetchStrategies()
-        // Get strategy with highest APY or first active strategy
-        const trending = data
-          .filter((s: any) => s.status === "Active")
-          .sort((a: any, b: any) => b.apy - a.apy)[0]
-        setTrendingStrategy(trending)
-      } catch (err) {
-        displayToast("error", "Failed to load trending strategy.")
-      } finally {
-        setLoading(false)
-      }
-    }
+        const res = await fetchStrategies();
+        const trending = res
+          .sort((a: any, b: any) => (b.apy ?? 0) - (a.apy ?? 0))[0];
 
-    loadTrendingStrategy()
-  }, [])
+        setTrendingStrategy(trending || null);
+      } catch (err) {
+        console.error("Failed to load trending strategy:", err);
+        setTrendingStrategy(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+      loadTrendingStrategy();
+  }, []);
 
   const pathCards = [
     {
@@ -66,7 +65,7 @@ export function FeaturedStrategies() {
   ]
 
   return (
-    <div className="h-full w-full space-y-6">
+    <div className="h-full w-full space-y-6 -mt-4">
       {/* Hero Section */}
       <div className="text-center space-y-3 py-4">
         <motion.h1
@@ -198,39 +197,12 @@ export function FeaturedStrategies() {
               transition: { duration: 0.3 },
             }}
           >
-            <Card className="p-4 cursor-pointer transition-all duration-300 hover:border-primary/30 hover:shadow-lg">
+            <Card className="p-4 cursor-pointer transition-all duration-300 hover:border-primary/30 hover:shadow-lg"
+            onClick={() => window.location.href = `/strategy/${trendingStrategy.id}`}>
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
                 {/* Left section */}
                 <div className="space-y-2.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg md:text-xl font-bold text-foreground">
-                      {trendingStrategy.title}
-                    </h3>
-                    <div className="flex items-center gap-1.5">
-                      {trendingStrategy.agents?.slice(0, 2).map((agent: string, idx: number) => (
-                        <Tooltip key={idx}>
-                          <TooltipTrigger>
-                            <div className="relative w-6 h-6 rounded-full border border-primary/20 overflow-hidden shadow-md hover:scale-125 transition-transform bg-white">
-                              <Image
-                                src={agent}
-                                alt="Agent"
-                                fill
-                                className="object-cover p-0.5"
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-medium">{agent.split('/').pop()?.split('.')[0]}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground leading-[1.6] font-medium">
-                    {trendingStrategy.strategistName} - {trendingStrategy.strategistHandle}
-                  </p>
-
+                  {/* Tags */}
                   <div className="flex items-center gap-2 pt-1 flex-wrap">
                     {trendingStrategy.tags?.slice(0, 3).map((tag: string, idx: number) => (
                       <span
@@ -240,6 +212,79 @@ export function FeaturedStrategies() {
                         {tag}
                       </span>
                     ))}
+                  </div>
+                  
+                  {/* Title & Strategist */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      {trendingStrategy.agents?.slice(0, 2).map((agent: string, idx: number) => (
+                        <Tooltip key={idx}>
+                          <TooltipTrigger>
+                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                              <Image
+                                src="/logo-ocean-fin.svg"
+                                alt="oceanfin logo"
+                                width={20}   
+                                height={20}   
+                              />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium">{agent.split('/').pop()?.split('.')[0]}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-foreground">
+                      {trendingStrategy.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-[1.6] font-medium">
+                    {trendingStrategy.strategistHandle}
+                    </p> 
+                    <p className="text-sm text-muted-foreground leading-[1.6] font-medium">
+                      {trendingStrategy.strategistName}
+                    </p>                             
+                  </div>
+                  {/*  Assets / Agents / Chains --- */}
+                  <div className="flex flex-wrap gap-4 pt-3 border-t border-accent/20">
+                    {/* Assets */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Assets</span>
+                      <div className="flex gap-1.5">
+                        {trendingStrategy.assets?.slice(0, 3).map((asset: string, idx: number) => (
+                          <div key={idx} className="relative w-6 h-6 rounded-full border border-accent/30 overflow-hidden shadow-sm hover:scale-110 transition-transform bg-white">
+                            <Image src={asset} alt="Asset" fill className="object-cover p-0.5" />
+                          </div>
+                        ))}
+                        {trendingStrategy.assets?.length > 3 && (
+                          <span className="w-6 h-6 flex items-center justify-center text-[10px] text-accent font-bold bg-accent/10 border border-accent/30 rounded-full">
+                            +{trendingStrategy.assets.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Agents */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Agents</span>
+                      <div className="flex gap-1.5">
+                        {trendingStrategy.agents?.slice(0, 3).map((agent: string, idx: number) => (
+                          <div key={idx} className="relative w-6 h-6 rounded-full border border-secondary/30 overflow-hidden shadow-sm hover:scale-110 transition-transform bg-white">
+                            <Image src={agent} alt="Agent" fill className="object-cover p-0.5" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Chains */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Chains</span>
+                      <div className="flex gap-1.5">
+                        {trendingStrategy.chains?.slice(0, 3).map((chain: string, idx: number) => (
+                          <div key={idx} className="relative w-6 h-6 rounded-full border border-tertiary/30 overflow-hidden shadow-sm hover:scale-110 transition-transform bg-white">
+                            <Image src={chain} alt="Chain" fill className="object-cover p-0.5" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -255,37 +300,21 @@ export function FeaturedStrategies() {
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover/apy:opacity-100 transition-opacity duration-300" />
                     <div className="relative">
+                      <div className="text-[10px] text-muted-foreground font-bold mt-1.5 tracking-widest uppercase">
+                        APY
+                      </div>
                       <div
                         className="text-4xl font-black bg-gradient-to-br from-primary via-accent to-primary bg-clip-text text-transparent leading-none"
                         style={{ fontFamily: 'var(--font-display, inherit)' }}
                       >
-                        {trendingStrategy.apy.toFixed(1)}%
+                        {trendingStrategy.apy.toFixed(2)}%
                       </div>
-                      <div className="text-[10px] text-muted-foreground font-bold mt-1.5 tracking-widest uppercase">
-                        APY
-                      </div>
+                      
                     </div>
                   </motion.div>
-                  <Button
-                    size="default"
-                    className="bg-primary hover:bg-accent hover:shadow-xl hover:scale-110 transition-all duration-300 text-primary-foreground font-semibold"
-                    onClick={() => window.location.href = `/strategy/${trendingStrategy.id}`}
-                  >
-                    Try Now
-                    <motion.div
-                      className="ml-2 inline-block"
-                      animate={{ x: [0, 4, 0] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      →
-                    </motion.div>
-                  </Button>
+                  
                 </div>
-
+                
                 {/* Mobile */}
                 <div className="md:hidden space-y-3 pt-2">
                   <div className="flex items-center justify-between gap-3">

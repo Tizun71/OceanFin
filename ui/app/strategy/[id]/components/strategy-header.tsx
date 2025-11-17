@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Share2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 interface StrategyHeaderProps {
   strategy: {
@@ -35,9 +36,13 @@ export function StrategyHeader({ strategy }: StrategyHeaderProps) {
               <span>Strategy by</span>
               <div className="flex items-center gap-1">
                 <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-xs text-primary font-bold">P</span>
+                  <Image
+                    src="/logo-ocean-fin.svg"
+                    alt="oceanfin logo"
+                    width={20}    
+                    height={20}   
+                  />
                 </div>
-                <span className="font-semibold text-[#277dd2]">{strategy.strategistName}</span>
                 <span>{strategy.strategistHandle}</span>
               </div>
             </div>
@@ -55,7 +60,6 @@ export function StrategyHeader({ strategy }: StrategyHeaderProps) {
           <span className="text-3xl font-bold text-[#10b981]">{strategy.apy.toFixed(2)}%</span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <div className="w-4 h-4 rounded-full bg-primary/20" />
           <span className="text-muted-foreground">
             OceanFin is not holding custody over users' assets. Users' funds are under their control.
           </span>

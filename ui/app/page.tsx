@@ -28,7 +28,7 @@ export default function Home() {
               <FeaturedStrategies />
             </div>
 
-            <div className="w-full pr-2">
+            <div className="w-full mt-15 pr-2">
               <StrategyList />
             </div>
           </div>
