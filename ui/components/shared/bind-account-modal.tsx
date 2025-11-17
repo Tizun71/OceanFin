@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { bindEvmAccount } from "@/api/hydration/bind-evm-account"
 import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
+import { displayToast } from "./toast-manager"
 
 interface BindAccountModalProps {
   open: boolean
@@ -43,8 +44,7 @@ export function BindAccountModal({ open, onOpenChange, onBindSuccess }: BindAcco
         throw new Error(result?.errorMessage || "Binding failed")
       }
     } catch (error: any) {
-      console.error("Error binding account:", error)
-      alert(error?.message || "Failed to bind account")
+      displayToast("error", "Failed to bind account.")
     } finally {
       setLoadingBind(false)
     }

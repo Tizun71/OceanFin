@@ -23,7 +23,6 @@ export function StrategyList() {
       const data = await fetchStrategiesWithFilters(filters);
       setStrategies(data);
     } catch (err) {
-      console.error(err);
       setStrategies([]);
     } finally {
       setLoading(false);

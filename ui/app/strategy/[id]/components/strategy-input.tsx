@@ -78,7 +78,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       setBalance(bal || "0")
       return bal ? Number(bal) : 0
     } catch (e) {
-      console.error("fetch balance failed:", e)
+      displayToast("error", "Failed to fetch balance.")
       return null
     } finally {
       if (!silent) setLoadingBalance(false)

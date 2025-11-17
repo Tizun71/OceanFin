@@ -88,8 +88,6 @@ async function simulateVDOTStrategy(
     steps,
   };
 
-  console.log('Simulation Result:', result);
-
   return result;
 }
 

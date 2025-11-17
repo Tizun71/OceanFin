@@ -37,8 +37,6 @@ const wallets = [
 
 export function WalletConnectModal({ open, onOpenChange }: WalletConnectModalProps) {
   const handleConnect = (walletName: string) => {
-    console.log(`Connecting to ${walletName}...`)
-    // Wallet connection logic would go here
     onOpenChange(false)
   }
 

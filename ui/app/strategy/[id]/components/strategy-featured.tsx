@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { fetchStrategies } from "@/services/strategy-service"
 import Image from "next/image"
 import { ParticleTextEffect } from "@/components/effect/interactive-text-effect"
+import { displayToast } from "@/components/shared/toast-manager"
 
 export function FeaturedStrategies() {
   const [trendingStrategy, setTrendingStrategy] = useState<any>(null)

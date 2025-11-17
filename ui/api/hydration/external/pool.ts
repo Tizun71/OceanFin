@@ -33,7 +33,6 @@ export async function getPoolData(assetSymbol: string) {
         return foundReserve;
 
     } catch (error) {
-        console.error("Error getting pool data:", error)
         throw error
     }
 }

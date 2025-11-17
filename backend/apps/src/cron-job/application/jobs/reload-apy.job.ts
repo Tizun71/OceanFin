@@ -10,7 +10,6 @@ export class apyJob implements OnModuleInit {
     await this.strategyService.reloadAllAPY();
 
     cron.schedule('0 0 0 * * *', async () => {
-      console.log('Reload APY once per day');
       await this.strategyService.reloadAllAPY();
     });
   }
