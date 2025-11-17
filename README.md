@@ -6,9 +6,9 @@
 
 # About OceanFin
 
-**Autonomous DeFi Navigator for Polkadot**
+**Optimizing Polkadot DeFi Earnings**
 
-OceanFin is a non-custodial, automated platform that simplifies yield generation across Polkadot (Asset Hub + Hydration). No middlemen, no complexity—just smart, data-driven strategies under your full control.
+OceanFin is a non-custodial platform that maximizes your Polkadot DeFi earnings with automated, data-driven strategies—no middlemen, just high-yield opportunities.
 
 ---
 
@@ -40,12 +40,16 @@ OceanFin is a non-custodial, automated platform that simplifies yield generation
 | ✅      | Loop strategies: GDOT & VDOT         |
 | ✅      | Strategy simulation & execution      |
 | ✅      | Activity tracking & progress updates |
-
+| ✅      | Supported DEFI Protocols on Hydration|
 ---
 
 ## Roadmap
 
 * [x] Stable Dapp
+* [x] DEFI Protocols on Hydration
+* [ ] DEFI Protocols on Asset Hub
+* [ ] DEFI Protocols on Bifrost
+* [ ] DEFI Protocols on Moonbeam
 * [ ] Withdraw Strategies
 * [ ] Executing by Agent Wallet (x402 Protocol)
 * [ ] Cross-chain XCM
