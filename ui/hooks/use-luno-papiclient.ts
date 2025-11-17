@@ -7,6 +7,7 @@ import { Chain } from "@luno-kit/core/types";
 import { decodeAddress, encodeAddress, isAddress } from "@polkadot/util-crypto";
 import { web3Enable, web3FromAddress } from "@polkadot/extension-dapp";
 import { hydration } from "@/config/chains/hydration";
+import { displayToast } from "@/components/shared/toast-manager";
 
 export type SendResult = {
   transactionHash: string | null;
@@ -61,9 +62,8 @@ export function useLunoPapiClient() {
     if (clientRef.current) {
       try {
         await disconnectHydrationSDK();
-        console.log("Hydration SDK disconnected");
       } catch (error) {
-        console.warn("Error disconnecting Hydration SDK:", error);
+        throw error;
       }
       clientRef.current = null;
     }
@@ -71,15 +71,12 @@ export function useLunoPapiClient() {
 
   const initializeClient = useCallback(async () => {
     if (isInitializingRef.current) {
-      console.log("Client initialization already in progress");
       return;
     }
 
     isInitializingRef.current = true;
 
     try {
-      console.log("Initializing Hydration SDK...");
-
       updateState({
         isReady: false,
         isConnecting: true,
@@ -102,12 +99,9 @@ export function useLunoPapiClient() {
         isConnecting: false,
         error: null,
       });
-
-      console.log("Hydration SDK initialized successfully");
-
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      console.error("Failed to initialize Hydration SDK:", err);
+      displayToast("error", `Failed to initialize Hydration SDK: ${err.message}`);
 
       updateState({
         error: err,
@@ -124,7 +118,6 @@ export function useLunoPapiClient() {
     const addressToFetch = targetAddress || walletAddress;
 
     if (!addressToFetch || !state.client || !state.isReady) {
-      console.log("Cannot fetch balance: missing requirements");
       return;
     }
 
@@ -151,7 +144,6 @@ export function useLunoPapiClient() {
       });
 
     } catch (error) {
-      console.error("Error fetching balance:", error);
       setBalance({
         total: "0",
         formattedTotal: "0",
@@ -173,7 +165,6 @@ export function useLunoPapiClient() {
             throw new Error("Client not ready");
           }
           const { api } = await getHydrationSDK();
-          console.log("[sendTransaction] Wallet address:", walletAddress);
           const nonce = await api.rpc.system.accountNextIndex(walletAddress as string);
           const blockHash = await api.rpc.chain.getBlockHash();
 
@@ -191,8 +182,6 @@ export function useLunoPapiClient() {
             formattedFrom,
             { signer: injector.signer, nonce, era: 0, blockHash },
             ({ status, dispatchError }: any) => {
-              console.log("[sendTransaction] Status:", status.toHuman());
-
               if (dispatchError) {
                 let errorMessage = dispatchError.toString();
                 if (dispatchError.isModule) {
@@ -201,10 +190,10 @@ export function useLunoPapiClient() {
                     const { section, name, docs } = decoded;
                     errorMessage = `${section}.${name}: ${docs.join(" ")}`;
                   } catch (e) {
-                    console.warn("Could not decode dispatch error:", e);
+                    displayToast("error", `[sendTransaction] ❌ Could not decode dispatch error: ${e instanceof Error ? e.message : String(e)}`);
                   }
                 }
-                console.error("[sendTransaction] ❌ DispatchError:", errorMessage);
+                displayToast("error", `[sendTransaction] ❌ DispatchError: ${errorMessage}`);
                 unsub();
                 resolve({
                   transactionHash: null,
@@ -215,7 +204,6 @@ export function useLunoPapiClient() {
               }
 
               if (status.isInBlock) {
-                console.log(`[sendTransaction] ✅ Included in block: ${status.asInBlock}`);
                 unsub();
                 resolve({
                   transactionHash: status.asInBlock.toString(),
@@ -226,7 +214,6 @@ export function useLunoPapiClient() {
               } 
               
               if (status.isFinalized) {
-                console.log(`[sendTransaction] ✅ Finalized at block: ${status.asFinalized}`);
                 unsub();
                 resolve({
                   transactionHash: status.asFinalized.toString(),
@@ -237,7 +224,7 @@ export function useLunoPapiClient() {
             }
           );
         } catch (err: any) {
-          console.error("[sendTransaction] ❌ Error while sending tx:", err);
+          displayToast("error", `[sendTransaction] ❌ Error: ${err?.message ?? String(err)}`);
           resolve({
             transactionHash: null,
             status: "failed",

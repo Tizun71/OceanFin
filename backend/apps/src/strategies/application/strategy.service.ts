@@ -124,7 +124,6 @@ async findAllWithFilters(params: {
   const result = await this.rewards.calculateAPY(strategy.strategistName);
       strategy.update({ apy: result.apy });
       await this.strategiesRepo.save(strategy);
-      console.log(`Updated APY for ${strategy.strategistName} (ID: ${strategy.id}) = ${result.apy}`);
     } catch (err: any) {
       console.error(`Error updating APY for strategy ID ${strategy.id}:`, err.message);
     }

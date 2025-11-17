@@ -29,7 +29,6 @@ export const TransferButton = () => {
       setTxHash(fakeHash);
 
     } catch (err: any) {
-      console.error(err);
       setError("❌ Transaction failed. Please try again.");
     } finally {
       setLoading(false);

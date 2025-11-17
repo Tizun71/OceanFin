@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { fetchStrategies } from "@/services/strategy-service"
 import Image from "next/image"
 import { ParticleTextEffect } from "@/components/effect/interactive-text-effect"
+import { displayToast } from "@/components/shared/toast-manager"
 
 export function FeaturedStrategies() {
   const [trendingStrategy, setTrendingStrategy] = useState<any>(null)
@@ -24,7 +25,7 @@ export function FeaturedStrategies() {
           .sort((a: any, b: any) => b.apy - a.apy)[0]
         setTrendingStrategy(trending)
       } catch (err) {
-        console.error("Failed to load trending strategy:", err)
+        displayToast("error", "Failed to load trending strategy.")
       } finally {
         setLoading(false)
       }

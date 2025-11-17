@@ -170,7 +170,7 @@ export function ExecutionModal({
       
       await updateActivityMutation.mutateAsync({ activityId, payload })
     } catch (err) {
-      console.error("Error syncing activity progress:", err)
+      displayToast("error", `Failed to sync activity progress: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
