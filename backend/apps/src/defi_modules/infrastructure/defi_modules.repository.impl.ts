@@ -2,22 +2,27 @@ import { Injectable } from '@nestjs/common';
 import { DefiModulesRepository } from '../domain/defi_modules.repository';
 import { DefiModule } from '../domain/defi_modules.entity';
 import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
+import { DefiModuleAction } from '../domain/defi_module_actions.entity';
 
 @Injectable()
 export class DefiModulesRepositoryImplement implements DefiModulesRepository {
   constructor(private readonly supabase: SupabaseService) {}
 
-  async findById(id: string): Promise<DefiModule | null> {
+  async findById(
+    id: string,
+  ): Promise<(DefiModule & { actions: DefiModuleAction[] }) | null> {
     const { error, data } = await this.supabase
       .getClient()
       .from('defi_modules')
-      .select('*')
+      .select('*, defi_module_actions(*)')
       .eq('id', id)
       .single();
 
     if (error || !data) return null;
 
-    return this.mapRowToEntity(data);
+    return this.mapRowToEntity(data) as DefiModule & {
+      actions: DefiModuleAction[];
+    };
   }
 
   async findAll(
@@ -25,11 +30,14 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
     order?: 'asc' | 'desc',
     limit?: number,
     page?: number,
-  ): Promise<{ total: number; data: DefiModule[] }> {
+  ): Promise<{
+    total: number;
+    data: (DefiModule & { actions: DefiModuleAction[] })[];
+  }> {
     let query = this.supabase
       .getClient()
       .from('defi_modules')
-      .select('*', { count: 'exact' });
+      .select('*, defi_module_actions(*)', { count: 'exact' });
 
     if (sortBy) {
       query = query.order(sortBy, { ascending: order === 'asc' });
@@ -45,7 +53,10 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
 
     return {
       total: count ?? 0,
-      data: data.map((row) => this.mapRowToEntity(row)),
+      data: data.map((row) => ({
+        ...this.mapRowToEntity(row),
+        actions: row.defi_module_actions,
+      })),
     };
   }
 

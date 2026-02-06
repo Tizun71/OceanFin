@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DefiModulesRepository } from '../domain/defi_modules.repository';
 import { DefiModule } from '../domain/defi_modules.entity';
 import { randomUUID } from 'crypto';
+import { DefiModuleAction } from '../domain/defi_module_actions.entity';
 
 @Injectable()
 export class DefiModulesService {
@@ -33,7 +34,9 @@ export class DefiModulesService {
     );
   }
 
-  public async getById(id: string): Promise<DefiModule> {
+  public async getById(
+    id: string,
+  ): Promise<DefiModule & { actions: DefiModuleAction[] }> {
     const defiModule = await this.defiModulesRepository.findById(id);
     if (!defiModule) {
       throw new NotFoundException(`DefiModule with id ${id} not found`);
@@ -46,7 +49,10 @@ export class DefiModulesService {
     order?: 'asc' | 'desc',
     limit?: number,
     page?: number,
-  ): Promise<{ total: number; data: DefiModule[] }> {
+  ): Promise<{
+    total: number;
+    data: (DefiModule & { actions: DefiModuleAction[] })[];
+  }> {
     return this.defiModulesRepository.findAll(
       sortBy,
       order,
