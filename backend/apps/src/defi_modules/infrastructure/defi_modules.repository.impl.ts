@@ -25,8 +25,11 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
     order?: 'asc' | 'desc',
     limit?: number,
     page?: number,
-  ): Promise<DefiModule[]> {
-    let query = this.supabase.getClient().from('defi_modules').select('*');
+  ): Promise<{ total: number; data: DefiModule[] }> {
+    let query = this.supabase
+      .getClient()
+      .from('defi_modules')
+      .select('*', { count: 'exact' });
 
     if (sortBy) {
       query = query.order(sortBy, { ascending: order === 'asc' });
@@ -36,11 +39,14 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
       query = query.range((page - 1) * limit, page * limit - 1);
     }
 
-    const { error, data } = await query;
+    const { error, data, count } = await query;
 
     if (error) throw new Error(`Failed to fetch DefiModules: ${error.message}`);
 
-    return (data ?? []).map((r) => this.mapRowToEntity(r));
+    return {
+      total: count ?? 0,
+      data: data.map((row) => this.mapRowToEntity(row)),
+    };
   }
 
   async save(defiModule: DefiModule): Promise<void> {

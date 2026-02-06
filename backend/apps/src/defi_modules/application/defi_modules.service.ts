@@ -46,7 +46,7 @@ export class DefiModulesService {
     order?: 'asc' | 'desc',
     limit?: number,
     page?: number,
-  ): Promise<DefiModule[]> {
+  ): Promise<{ total: number; data: DefiModule[] }> {
     return this.defiModulesRepository.findAll(
       sortBy,
       order,

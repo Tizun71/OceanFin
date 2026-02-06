@@ -8,5 +8,5 @@ export abstract class DefiModulesRepository {
     order?: 'asc' | 'desc',
     limit?: number,
     page?: number,
-  ): Promise<DefiModule[]>;
+  ): Promise<{ total: number; data: DefiModule[] }>;
 }
