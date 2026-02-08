@@ -6,6 +6,7 @@ import { StrategiesModule } from './strategies/stategies.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { CronManagerService } from './cron-job/application/cron-manager.service';
 import { DefiModulesModule } from './defi_modules/defi_modules.module';
+import { DefiUsersModule } from './defi_users/defi_users.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { DefiModulesModule } from './defi_modules/defi_modules.module';
     StrategiesModule,
     ActivitiesModule,
     DefiModulesModule,
+    DefiUsersModule
   ],
   providers: [CronManagerService],
 })
