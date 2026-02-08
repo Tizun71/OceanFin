@@ -9,6 +9,7 @@ import { DefiModuleActionsRepositoryImplement } from './infrastructure/defi_modu
 import { DefiModuleActionsService } from './application/defi_module_actions.service';
 import { DefiModuleActionRisksRepository } from './domain/defi_module_action_risks.repository';
 import { DefiModuleActionRiskRepositoryImplement } from './infrastructure/defi_module_action_risk.repository.impl';
+import { DefiModuleActionRisksService } from './application/defi_module_action_risks.service';
 
 @Module({
   imports: [SupabaseModule],
@@ -27,6 +28,7 @@ import { DefiModuleActionRiskRepositoryImplement } from './infrastructure/defi_m
     },
     DefiModulesService,
     DefiModuleActionsService,
+    DefiModuleActionRisksService
   ],
   controllers: [DefiModulesController],
 })
