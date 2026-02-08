@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { DefiModuleActionsRepository } from '../domain/defi_module_actions.repository';
 import { DefiModuleAction } from '../domain/defi_module_actions.entity';
-import { randomUUID } from 'crypto';
 import { DefiModulesService } from './defi_modules.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DefiModuleActionsService {
   constructor(
     private readonly defiModuleActionsRepository: DefiModuleActionsRepository,
     private readonly defiModulesService: DefiModulesService,
-  ) {}
+  ) { }
 
   async createAction(
     moduleId: string,
@@ -28,7 +28,7 @@ export class DefiModuleActionsService {
 
     return this.defiModuleActionsRepository.save(
       new DefiModuleAction(
-        this.generateId(),
+        uuidv4(),
         moduleId,
         actionData.name,
         actionData.pallet,
@@ -40,9 +40,5 @@ export class DefiModuleActionsService {
         new Date(),
       ),
     );
-  }
-
-  public generateId(): string {
-    return randomUUID();
   }
 }

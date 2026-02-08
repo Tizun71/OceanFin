@@ -5,12 +5,11 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class DefiModuleActionsRepositoryImplement
-  implements DefiModuleActionsRepository
-{
-  constructor(private readonly supabase: SupabaseService) {}
+  implements DefiModuleActionsRepository {
+  constructor(private readonly supabase: SupabaseService) { }
 
-  public async save(defiModuleAction: DefiModuleAction): Promise<void> {
-    const { error } = await this.supabase
+  public async save(defiModuleAction: DefiModuleAction): Promise<DefiModuleAction> {
+    const { data, error } = await this.supabase
       .getClient()
       .from('defi_module_actions')
       .upsert({
@@ -24,52 +23,23 @@ export class DefiModuleActionsRepositoryImplement
         risk_level: defiModuleAction.risk_level,
         is_active: defiModuleAction.is_active,
         created_at: defiModuleAction.created_at,
-      });
+      }).select().single();
 
     if (error) {
       throw new Error(`Failed to save DefiModuleAction: ${error.message}`);
     }
-  }
 
-  public async findById(id: string): Promise<DefiModuleAction | null> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('defi_module_actions')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error || !data) return null;
-
-    return this.mapRowToEntity(data);
-  }
-
-  public async findAllByDefiModuleId(
-    defiModuleId: string,
-  ): Promise<DefiModuleAction[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('defi_module_actions')
-      .select('*')
-      .eq('module_id', defiModuleId);
-
-    if (!data || error) return [];
-
-    return data.map((row) => this.mapRowToEntity(row));
-  }
-
-  private mapRowToEntity(row: any): DefiModuleAction {
     return new DefiModuleAction(
-      row.id,
-      row.module_id,
-      row.name,
-      row.pallet,
-      row.call,
-      row.description,
-      row.param_schema,
-      row.risk_level,
-      row.is_active,
-      new Date(row.created_at),
+      data.id,
+      data.module_id,
+      data.name,
+      data.pallet,
+      data.call,
+      data.description,
+      data.param_schema,
+      data.risk_level,
+      data.is_active,
+      new Date(data.created_at),
     );
   }
 }

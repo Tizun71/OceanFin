@@ -7,7 +7,7 @@ import { DefiModulesService } from './application/defi_modules.service';
 import { DefiModuleActionsRepository } from './domain/defi_module_actions.repository';
 import { DefiModuleActionsRepositoryImplement } from './infrastructure/defi_module_actions.repository.impl';
 import { DefiModuleActionsService } from './application/defi_module_actions.service';
-import { DefiModuleActionRiskRepository } from './domain/defi_module_action_risk.repository';
+import { DefiModuleActionRisksRepository } from './domain/defi_module_action_risks.repository';
 import { DefiModuleActionRiskRepositoryImplement } from './infrastructure/defi_module_action_risk.repository.impl';
 
 @Module({
@@ -22,7 +22,7 @@ import { DefiModuleActionRiskRepositoryImplement } from './infrastructure/defi_m
       useClass: DefiModuleActionsRepositoryImplement,
     },
     {
-      provide: DefiModuleActionRiskRepository,
+      provide: DefiModuleActionRisksRepository,
       useClass: DefiModuleActionRiskRepositoryImplement,
     },
     DefiModulesService,

@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DefiModulesRepository } from '../domain/defi_modules.repository';
 import { DefiModule } from '../domain/defi_modules.entity';
-import { randomUUID } from 'crypto';
 import { DefiModuleAction } from '../domain/defi_module_actions.entity';
+import { v4 as uuidv4 } from 'uuid'
 
 @Injectable()
 export class DefiModulesService {
-  constructor(private readonly defiModulesRepository: DefiModulesRepository) {}
+  constructor(private readonly defiModulesRepository: DefiModulesRepository) { }
 
   public async create(dto: {
     name: string;
@@ -20,7 +20,7 @@ export class DefiModulesService {
   }) {
     return this.defiModulesRepository.save(
       new DefiModule(
-        this.generateId(),
+        uuidv4(),
         dto.name,
         dto.protocol,
         dto.category,
@@ -34,34 +34,13 @@ export class DefiModulesService {
     );
   }
 
-  public async getById(
-    id: string,
-  ): Promise<DefiModule & { actions: DefiModuleAction[] }> {
-    const defiModule = await this.defiModulesRepository.findById(id);
-    if (!defiModule) {
-      throw new NotFoundException(`DefiModule with id ${id} not found`);
-    }
-    return defiModule;
+  public async getAll() {
+    return this.defiModulesRepository.findAll();
   }
 
-  public async getAll(
-    sortBy?: string,
-    order?: 'asc' | 'desc',
-    limit?: number,
-    page?: number,
-  ): Promise<{
-    total: number;
-    data: (DefiModule & { actions: DefiModuleAction[] })[];
-  }> {
-    return this.defiModulesRepository.findAll(
-      sortBy,
-      order,
-      limit || 10,
-      page || 1,
-    );
-  }
-
-  public generateId(): string {
-    return randomUUID();
+  public async getById(id: string) {
+    const module = await this.defiModulesRepository.findById(id);
+    if (!module) throw new NotFoundException('DefiModule not found');
+    return module;
   }
 }

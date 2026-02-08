@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { DefiModulesService } from '../application/defi_modules.service';
 import { CreateDefiModuleDto } from './dtos/create_defi_module.dto';
-import { DefiModulesMapper } from '../application/mappers/defi_modules.mapper';
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CreateDefiModuleActionDto } from './dtos/create_defi_module_action.dto';
 import { DefiModuleActionsService } from '../application/defi_module_actions.service';
@@ -11,23 +10,12 @@ export class DefiModulesController {
   constructor(
     private readonly defiModulesService: DefiModulesService,
     private readonly defiModuleActionsService: DefiModuleActionsService,
-  ) {}
+  ) { }
 
   @ApiOperation({ summary: 'Create a new DeFi module' })
   @Post()
   public async createDefiModule(@Body() body: CreateDefiModuleDto) {
     return this.defiModulesService.create(body);
-  }
-
-  @Get('/:id')
-  @ApiOperation({ summary: 'Get a DeFi module by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'The DeFi module details',
-  })
-  public async getDefiModuleById(@Param('id') id: string) {
-    const defiModule = await this.defiModulesService.getById(id);
-    return DefiModulesMapper.toResponse(defiModule);
   }
 
   @Get()
@@ -38,23 +26,9 @@ export class DefiModulesController {
     status: 200,
     description: 'List of DeFi modules',
   })
-  public async getAllDefiModules(
-    @Query('sortBy') sortBy?: string,
-    @Query('order') order: 'asc' | 'desc' = 'desc',
-    @Query('limit') limit?: number,
-    @Query('page') page?: number,
-  ) {
-    const { total, data: defiModules } = await this.defiModulesService.getAll(
-      sortBy,
-      order,
-      limit,
-      page,
-    );
-
-    return {
-      total: total,
-      data: DefiModulesMapper.toResponseList(defiModules),
-    };
+  public async getAllDefiModules() {
+    const defiModules = await this.defiModulesService.getAll();
+    return defiModules;
   }
 
   @Post('/:id/actions')
