@@ -5,13 +5,21 @@ import { SupabaseService } from '../../shared/infrastructure/supabase.service';
 
 @Injectable()
 export class DefiModulesRepositoryImplement implements DefiModulesRepository {
-  constructor(private readonly supabase: SupabaseService) { }
+  constructor(private readonly supabase: SupabaseService) {}
 
   async findAll() {
-    let { error, data } = await this.supabase
-      .getClient()
-      .from('defi_modules')
-      .select('*, defi_module_actions(*, defi_pairs(*))');
+    let { data, error } = await this.supabase.getClient().from('defi_modules')
+      .select(`
+          *,
+          defi_module_actions (
+          *,
+          defi_pairs (
+            id,
+            token_in:defi_token!defi_pairs_token_in_id_fkey (*),
+            token_out:defi_token!defi_pairs_token_out_id_fkey (*)
+          )
+    )
+  `);
 
     if (error) throw new Error(`Failed to fetch DefiModules: ${error.message}`);
 
@@ -33,7 +41,9 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
         website_url: defiModule.website_url,
         is_active: defiModule.is_active,
         created_at: defiModule.created_at,
-      }).select().single();
+      })
+      .select()
+      .single();
 
     if (error) {
       throw new Error(`Failed to save DefiModule: ${error.message}`);
@@ -57,7 +67,7 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
     let { error, data } = await this.supabase
       .getClient()
       .from('defi_modules')
-      .select('*, defi_module_actions(*, defi_pairs(*))')
+      .select('*, defi_module_actions(*, defi_pairs(id, defi_token(*)))')
       .eq('id', id)
       .single();
 
