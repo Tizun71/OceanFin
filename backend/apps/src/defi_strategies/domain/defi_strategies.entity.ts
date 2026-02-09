@@ -7,7 +7,7 @@ export class DefiStrategy {
     public status: string,
     public is_public: boolean,
     public chain_context: string,
-    public current_version_id: string | null,
+    public current_version_id: string,
     public created_at: Date,
   ) {}
 }
