@@ -12,7 +12,9 @@ export class DefiModuleActionsService {
     private readonly defiModulesService: DefiModulesService,
   ) {}
 
-  async createAction(data: CreateDefiModuleActionDto): Promise<DefiModuleAction> {
+  async createAction(
+    data: CreateDefiModuleActionDto,
+  ): Promise<DefiModuleAction> {
     // Throw 404 if the module does not exist
     await this.defiModulesService.getById(data.module_id);
 

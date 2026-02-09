@@ -8,7 +8,7 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
   constructor(private readonly supabase: SupabaseService) {}
 
   async findAll() {
-    let { data, error } = await this.supabase.getClient().from('defi_modules')
+    const { data, error } = await this.supabase.getClient().from('defi_modules')
       .select(`
           *,
           defi_module_actions (
@@ -64,7 +64,7 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
   }
 
   async findById(id: string) {
-    let { error, data } = await this.supabase
+    const { error, data } = await this.supabase
       .getClient()
       .from('defi_modules')
       .select('*, defi_module_actions(*, defi_pairs(id, defi_token(*)))')

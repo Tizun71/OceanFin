@@ -31,7 +31,10 @@ async function bootstrap() {
   } else if (nodeEnv === 'staging') {
     swaggerConfig.addServer('https://api.test.com', 'Staging server');
   } else {
-    swaggerConfig.addServer('https://oceanfin-production.up.railway.app', 'Production server');
+    swaggerConfig.addServer(
+      'https://oceanfin-production.up.railway.app',
+      'Production server',
+    );
   }
 
   const document = SwaggerModule.createDocument(app, swaggerConfig.build());
