@@ -2,22 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { DefiModulesRepository } from '../domain/defi_modules.repository';
 import { DefiModule } from '../domain/defi_modules.entity';
 import { DefiModuleAction } from '../domain/defi_module_actions.entity';
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4 } from 'uuid';
+import { CreateDefiModuleDto } from '../interfaces/dtos/create_defi_module.dto';
+import { DefiPair } from '../domain/defi_pairs.entity';
 
 @Injectable()
 export class DefiModulesService {
-  constructor(private readonly defiModulesRepository: DefiModulesRepository) { }
+  constructor(private readonly defiModulesRepository: DefiModulesRepository) {}
 
-  public async create(dto: {
-    name: string;
-    protocol: string;
-    category: string;
-    parachain_id: number;
-    icon_url: string;
-    description: string;
-    website_url: string;
-    is_active: boolean;
-  }) {
+  public async create(dto: CreateDefiModuleDto): Promise<DefiModule> {
     return this.defiModulesRepository.save(
       new DefiModule(
         uuidv4(),

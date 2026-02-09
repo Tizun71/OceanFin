@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DefiModulesRepository } from '../domain/defi_modules.repository';
 import { DefiModule } from '../domain/defi_modules.entity';
-import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
+import { SupabaseService } from '../../shared/infrastructure/supabase.service';
 
 @Injectable()
 export class DefiModulesRepositoryImplement implements DefiModulesRepository {
@@ -11,7 +11,7 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
     let { error, data } = await this.supabase
       .getClient()
       .from('defi_modules')
-      .select('*, defi_module_actions(*, defi_module_action_risks(*))');
+      .select('*, defi_module_actions(*, defi_pairs(*))');
 
     if (error) throw new Error(`Failed to fetch DefiModules: ${error.message}`);
 
@@ -57,7 +57,7 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
     let { error, data } = await this.supabase
       .getClient()
       .from('defi_modules')
-      .select('*, defi_module_actions(*, defi_module_action_risks(*))')
+      .select('*, defi_module_actions(*, defi_pairs(*))')
       .eq('id', id)
       .single();
 

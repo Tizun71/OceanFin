@@ -7,12 +7,13 @@ import { DefiModulesService } from './application/defi_modules.service';
 import { DefiModuleActionsRepository } from './domain/defi_module_actions.repository';
 import { DefiModuleActionsRepositoryImplement } from './infrastructure/defi_module_actions.repository.impl';
 import { DefiModuleActionsService } from './application/defi_module_actions.service';
-import { DefiModuleActionRisksRepository } from './domain/defi_module_action_risks.repository';
-import { DefiModuleActionRiskRepositoryImplement } from './infrastructure/defi_module_action_risk.repository.impl';
-import { DefiModuleActionRisksService } from './application/defi_module_action_risks.service';
+import { DefiPairsRepository } from './domain/defi_pairs.repository';
+import { DefiPairsRepositoryImpl } from './infrastructure/defi_pairs.repository.impl';
+import { DefiPairsService } from './application/defi_pairs.service';
+import { DefiTokenModule } from '../defi_token/defi_token.module';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [SupabaseModule, DefiTokenModule],
   providers: [
     {
       provide: DefiModulesRepository,
@@ -23,13 +24,13 @@ import { DefiModuleActionRisksService } from './application/defi_module_action_r
       useClass: DefiModuleActionsRepositoryImplement,
     },
     {
-      provide: DefiModuleActionRisksRepository,
-      useClass: DefiModuleActionRiskRepositoryImplement,
+      provide: DefiPairsRepository,
+      useClass: DefiPairsRepositoryImpl,
     },
     DefiModulesService,
     DefiModuleActionsService,
-    DefiModuleActionRisksService
+    DefiPairsService,
   ],
   controllers: [DefiModulesController],
 })
-export class DefiModulesModule { }
+export class DefiModulesModule {}

@@ -1,14 +1,17 @@
 import { DefiModuleAction } from '../domain/defi_module_actions.entity';
 import { DefiModuleActionsRepository } from '../domain/defi_module_actions.repository';
-import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
+import { SupabaseService } from '../../shared/infrastructure/supabase.service';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class DefiModuleActionsRepositoryImplement
-  implements DefiModuleActionsRepository {
-  constructor(private readonly supabase: SupabaseService) { }
+  implements DefiModuleActionsRepository
+{
+  constructor(private readonly supabase: SupabaseService) {}
 
-  public async save(defiModuleAction: DefiModuleAction): Promise<DefiModuleAction> {
+  public async save(
+    defiModuleAction: DefiModuleAction,
+  ): Promise<DefiModuleAction> {
     const { data, error } = await this.supabase
       .getClient()
       .from('defi_module_actions')
@@ -23,7 +26,9 @@ export class DefiModuleActionsRepositoryImplement
         risk_level: defiModuleAction.risk_level,
         is_active: defiModuleAction.is_active,
         created_at: defiModuleAction.created_at,
-      }).select().single();
+      })
+      .select()
+      .single();
 
     if (error) {
       throw new Error(`Failed to save DefiModuleAction: ${error.message}`);

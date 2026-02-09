@@ -25,4 +25,22 @@ export class DefiTokenRepositoryImpl implements DefiTokenRepository {
 
     return data;
   }
+
+  public async findById(id: string): Promise<DefiToken | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_token')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Not found
+      }
+      throw new Error(`Failed to find DefiToken by id: ${error.message}`);
+    }
+
+    return data;
+  }
 }
