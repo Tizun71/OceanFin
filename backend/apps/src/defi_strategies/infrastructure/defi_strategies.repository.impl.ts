@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DefiStrategiesRepository } from '../domain/defi_strategies.repository';
 import { DefiStrategy } from '../domain/defi_strategies.entity';
 import { SupabaseService } from '../../shared/infrastructure/supabase.service';
+import { DefiStrategyVersion } from '../domain/defi_strategy_version.entity';
 
 @Injectable()
 export class DefiStrategiesRepositoryImplement
@@ -32,5 +33,26 @@ export class DefiStrategiesRepositoryImplement
     }
 
     return data;
+  }
+
+  public async getByOwnerId(
+    owner_id: string,
+  ): Promise<
+    (DefiStrategy & { defi_strategy_versions: DefiStrategyVersion[] })[]
+  > {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_strategies')
+      .select('*, defi_strategy_versions(*)')
+      .eq('owner_id', owner_id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(
+        `Failed to get DefiStrategies by owner: ${error.message}`,
+      );
+    }
+
+    return data || [];
   }
 }

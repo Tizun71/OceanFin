@@ -1,5 +1,5 @@
-import { Controller, Body, Post } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { Controller, Body, Post, Get, Param, Query } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { DefiStrategyVersionService } from '../application/defi_strategy_version.service';
 import { CreateDefiStrategyVersionDto } from './dto/create_defi_strategy_version.dto';
 import { DefiStrategiesService } from '../application/defi_strategies.service';
@@ -24,5 +24,12 @@ export class DefiStrategiesController {
   @Post()
   public async createStrategy(@Body() body: CreateDefiStrategyDto) {
     return this.defiStrategiesService.create(body);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get DeFi strategies by owner' })
+  @ApiQuery({ name: 'owner', required: true, type: String })
+  async getByOwnerId(@Query('owner') owner: string) {
+    return this.defiStrategiesService.getByOwnerId(owner);
   }
 }

@@ -7,9 +7,10 @@ import { DefiStrategiesController } from './interfaces/defi_strategies.controlle
 import { DefiStrategyVersionService } from './application/defi_strategy_version.service';
 import { DefiStrategyVersionRepository } from './domain/defi_strategy_version.repository';
 import { DefiStrategyVersionRepositoryImpl } from './infrastructure/defi_strategy_version.repository.impl';
+import { DefiUsersModule } from 'src/defi_users/defi_users.module';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [SupabaseModule, DefiUsersModule],
   controllers: [DefiStrategiesController],
   providers: [
     DefiStrategiesService,
