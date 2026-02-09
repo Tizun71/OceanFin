@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { DefiStrategyVersion } from '../domain/defi_strategy_version.entity';
 import { CreateDefiStrategyVersionDto } from '../interfaces/dto/create_defi_strategy_version.dto';
+import { UpdateDefiStrategyVersionDto } from '../interfaces/dto/update_defi_strategy_version.dto';
 import { DefiStrategyVersionRepository } from '../domain/defi_strategy_version.repository';
 import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
 
@@ -48,5 +49,25 @@ export class DefiStrategyVersionService {
         new Date(),
       ),
     );
+  }
+
+  public async update(
+    id: string,
+    data: UpdateDefiStrategyVersionDto,
+  ): Promise<DefiStrategyVersion> {
+    return this.defiStrategyVersionRepository.update(id, {
+      workflow_json: data.workflow_json,
+      workflow_hash: data.workflow_hash,
+    });
+  }
+
+  public async delete(id: string): Promise<void> {
+    await this.defiStrategyVersionRepository.delete(id);
+  }
+
+  public async getByStrategyId(
+    strategy_id: string,
+  ): Promise<DefiStrategyVersion[]> {
+    return this.defiStrategyVersionRepository.getByStrategyId(strategy_id);
   }
 }

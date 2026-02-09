@@ -4,6 +4,7 @@ import { DefiStrategiesRepository } from '../domain/defi_strategies.repository';
 import { DefiStrategy } from '../domain/defi_strategies.entity';
 import { DefiStrategyVersionService } from './defi_strategy_version.service';
 import { CreateDefiStrategyDto } from '../interfaces/dto/create_defi_strategy.dto';
+import { UpdateDefiStrategyDto } from '../interfaces/dto/update_defi_strategy.dto';
 import { DefiUsersService } from '../../defi_users/application/defi_users.service';
 
 @Injectable()
@@ -49,5 +50,28 @@ export class DefiStrategiesService {
       await this.defiStrategiesRepository.getByOwnerId(owner_id);
 
     return strategies;
+  }
+
+  public async update(
+    id: string,
+    data: UpdateDefiStrategyDto,
+  ): Promise<DefiStrategy> {
+    const updated = await this.defiStrategiesRepository.update(id, {
+      name: data.name,
+      description: data.description,
+      status: data.status,
+      is_public: data.is_public,
+      chain_context: data.chain_context,
+    });
+
+    if (!updated) {
+      throw new NotFoundException(`DefiStrategy with id ${id} not found`);
+    }
+
+    return updated;
+  }
+
+  public async delete(id: string): Promise<void> {
+    await this.defiStrategiesRepository.delete(id);
   }
 }
