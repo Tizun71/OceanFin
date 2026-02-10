@@ -7,4 +7,8 @@ export abstract class DefiStrategyWorkflowNodeRepository {
   abstract getByStrategyVersion(
     strategy_version_id: string,
   ): Promise<DefiStrategyWorkflowNode[]>;
+  abstract update(
+    id: string,
+    updates: Partial<DefiStrategyWorkflowNode>,
+  ): Promise<DefiStrategyWorkflowNode>;
 }

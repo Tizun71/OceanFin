@@ -35,6 +35,10 @@ export class DefiStrategyWorkflowNodeService {
     return this.repository.save(node);
   }
 
+  async update(id: string, updates: Partial<DefiStrategyWorkflowNode>) {
+    return this.repository.update(id, updates);
+  }
+
   async getByStrategyVersion(strategy_version_id: string) {
     return this.repository.getByStrategyVersion(strategy_version_id);
   }

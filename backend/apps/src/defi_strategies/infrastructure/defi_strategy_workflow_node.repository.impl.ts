@@ -63,4 +63,36 @@ export class DefiStrategyWorkflowNodeRepositoryImpl
         ),
     );
   }
+
+  async update(id: string, updates: Partial<DefiStrategyWorkflowNode>) {
+    const updateData: Record<string, unknown> = {};
+    if (updates.module_action_id !== undefined)
+      updateData.module_action_id = updates.module_action_id;
+    if (updates.node_index !== undefined)
+      updateData.node_index = updates.node_index;
+    if (updates.ui_position !== undefined)
+      updateData.ui_position = updates.ui_position;
+    if (updates.params !== undefined) updateData.params = updates.params;
+
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_strategy_workflow_nodes')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error)
+      throw new Error(`Failed to update workflow node: ${error.message}`);
+
+    return new DefiStrategyWorkflowNode(
+      data.id,
+      data.strategy_version_id,
+      data.module_action_id,
+      data.node_index,
+      data.ui_position,
+      data.params,
+      new Date(data.created_at),
+    );
+  }
 }
