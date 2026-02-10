@@ -20,14 +20,19 @@ import { DefiStrategyExecutionRepository } from './domain/defi_strategy_executio
 import { DefiStrategyExecutionRepositoryImpl } from './infrastructure/defi_strategy_execution.repository.impl';
 import { DefiStrategyExecutionService } from './application/defi_strategy_execution.service';
 import { DefiStrategyExecutionsController } from './interfaces/defi_strategy_executions.controller';
+import { DefiExecutionStepResultRepositoryImpl } from './infrastructure/defi_execution_step_result.repository.impl';
+import { DefiExecutionStepResultRepository } from './domain/defi_execution_step_result.repository';
+import { DefiExecutionStepResultService } from './application/defi_execution_step_result.service';
+import { DefiExecutionStepResultController } from './interfaces/defi_execution_step_result.controller';
 
 @Module({
-  imports: [SupabaseModule, DefiUsersModule],
+  imports: [SupabaseModule, DefiUsersModule, DefiStrategiesModule],
   controllers: [
     DefiStrategiesController,
     DefiStrategySimulationSnapshotsController,
     DefiStrategyWorkflowNodesController,
     DefiStrategyExecutionsController,
+    DefiExecutionStepResultController,
   ],
   providers: [
     DefiStrategiesService,
@@ -35,6 +40,7 @@ import { DefiStrategyExecutionsController } from './interfaces/defi_strategy_exe
     DefiStrategyWorkflowNodeService,
     DefiStrategySimulationSnapshotService,
     DefiStrategyExecutionService,
+    DefiExecutionStepResultService,
     {
       provide: DefiStrategiesRepository,
       useClass: DefiStrategiesRepositoryImplement,
@@ -55,12 +61,17 @@ import { DefiStrategyExecutionsController } from './interfaces/defi_strategy_exe
       provide: DefiStrategyVersionRepository,
       useClass: DefiStrategyVersionRepositoryImpl,
     },
+    {
+      provide: DefiExecutionStepResultRepository,
+      useClass: DefiExecutionStepResultRepositoryImpl,
+    },
   ],
   exports: [
     DefiStrategiesService,
     DefiStrategyVersionService,
     DefiStrategySimulationSnapshotService,
     DefiStrategyWorkflowNodeService,
+    DefiExecutionStepResultService,
   ],
 })
 export class DefiStrategiesModule {}

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../../shared/infrastructure/supabase.service';
 import { DefiStrategyExecution } from '../domain/defi_strategy_execution.entity';
 import { DefiStrategyExecutionRepository } from '../domain/defi_strategy_execution.repository';
+import { DefiExecutionStepResult } from '../domain/defi_execution_step_result.entity';
 
 @Injectable()
 export class DefiStrategyExecutionRepositoryImpl
@@ -36,27 +37,21 @@ export class DefiStrategyExecutionRepositoryImpl
     );
   }
 
-  async getByStrategyVersion(strategy_version_id: string) {
+  async getByStrategyVersion(strategy_version_id: string): Promise<
+    (DefiStrategyExecution & {
+      defi_execution_step_results: DefiExecutionStepResult[];
+    })[]
+  > {
     const { data, error } = await this.supabase
       .getClient()
       .from('defi_strategy_executions')
-      .select('*')
+      .select('*, defi_execution_step_results(*)')
       .eq('strategy_version_id', strategy_version_id)
       .order('executed_at', { ascending: false });
 
     if (error) throw new Error(`Failed to get executions: ${error.message}`);
 
-    return (data || []).map(
-      (item: any) =>
-        new DefiStrategyExecution(
-          item.id,
-          item.strategy_version_id,
-          item.extrinsic_hash,
-          item.execution_status,
-          item.workflow_hash,
-          new Date(item.executed_at),
-        ),
-    );
+    return data;
   }
 
   async update(id: string, updates: Partial<DefiStrategyExecution>) {
