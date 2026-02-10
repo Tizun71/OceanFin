@@ -16,6 +16,10 @@ import { DefiStrategyWorkflowNodeRepository } from './domain/defi_strategy_workf
 import { DefiStrategyWorkflowNodeRepositoryImpl } from './infrastructure/defi_strategy_workflow_node.repository.impl';
 import { DefiStrategyWorkflowNodeService } from './application/defi_strategy_workflow_node.service';
 import { DefiStrategyWorkflowNodesController } from './interfaces/defi_strategy_workflow_nodes.controller';
+import { DefiStrategyExecutionRepository } from './domain/defi_strategy_execution.repository';
+import { DefiStrategyExecutionRepositoryImpl } from './infrastructure/defi_strategy_execution.repository.impl';
+import { DefiStrategyExecutionService } from './application/defi_strategy_execution.service';
+import { DefiStrategyExecutionsController } from './interfaces/defi_strategy_executions.controller';
 
 @Module({
   imports: [SupabaseModule, DefiUsersModule],
@@ -23,12 +27,14 @@ import { DefiStrategyWorkflowNodesController } from './interfaces/defi_strategy_
     DefiStrategiesController,
     DefiStrategySimulationSnapshotsController,
     DefiStrategyWorkflowNodesController,
+    DefiStrategyExecutionsController,
   ],
   providers: [
     DefiStrategiesService,
     DefiStrategyVersionService,
     DefiStrategyWorkflowNodeService,
     DefiStrategySimulationSnapshotService,
+    DefiStrategyExecutionService,
     {
       provide: DefiStrategiesRepository,
       useClass: DefiStrategiesRepositoryImplement,
@@ -40,6 +46,10 @@ import { DefiStrategyWorkflowNodesController } from './interfaces/defi_strategy_
     {
       provide: DefiStrategyWorkflowNodeRepository,
       useClass: DefiStrategyWorkflowNodeRepositoryImpl,
+    },
+    {
+      provide: DefiStrategyExecutionRepository,
+      useClass: DefiStrategyExecutionRepositoryImpl,
     },
     {
       provide: DefiStrategyVersionRepository,
