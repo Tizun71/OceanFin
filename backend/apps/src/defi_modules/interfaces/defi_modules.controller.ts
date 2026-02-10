@@ -25,7 +25,7 @@ export class DefiModulesController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get all DeFi modules with optional sorting and pagination',
+    summary: 'Get all DeFi modules',
   })
   @ApiResponse({
     status: 200,
