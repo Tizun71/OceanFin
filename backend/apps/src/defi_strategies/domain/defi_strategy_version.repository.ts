@@ -10,4 +10,5 @@ export abstract class DefiStrategyVersionRepository {
   ): Promise<DefiStrategyVersion>;
   abstract delete(id: string): Promise<void>;
   abstract getByStrategyId(strategy_id: string): Promise<DefiStrategyVersion[]>;
+  abstract getById(id: string): Promise<DefiStrategyVersion | null>;
 }

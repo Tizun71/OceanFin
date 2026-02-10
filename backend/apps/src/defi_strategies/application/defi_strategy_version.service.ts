@@ -70,4 +70,8 @@ export class DefiStrategyVersionService {
   ): Promise<DefiStrategyVersion[]> {
     return this.defiStrategyVersionRepository.getByStrategyId(strategy_id);
   }
+
+  public async getById(id: string): Promise<DefiStrategyVersion | null> {
+    return this.defiStrategyVersionRepository.getById(id);
+  }
 }

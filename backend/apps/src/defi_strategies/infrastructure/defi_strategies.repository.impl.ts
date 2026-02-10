@@ -47,6 +47,8 @@ export class DefiStrategiesRepositoryImplement
 
     if (owner_id) {
       query = query.eq('owner_id', owner_id);
+    } else {
+      query = query.eq('is_public', true);
     }
 
     query = query.order('created_at', { ascending: false });

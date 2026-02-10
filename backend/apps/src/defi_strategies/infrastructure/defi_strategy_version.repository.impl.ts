@@ -115,4 +115,28 @@ export class DefiStrategyVersionRepositoryImpl
         ),
     );
   }
+
+  public async getById(id: string): Promise<DefiStrategyVersion | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_strategy_versions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw new Error(`Failed to get DefiStrategyVersion: ${error.message}`);
+    }
+
+    if (!data) return null;
+
+    return new DefiStrategyVersion(
+      data.id,
+      data.strategy_id,
+      data.version,
+      data.workflow_json,
+      data.workflow_hash,
+      new Date(data.created_at),
+    );
+  }
 }
