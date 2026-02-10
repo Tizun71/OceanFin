@@ -47,6 +47,7 @@ export class DefiStrategyVersionService {
         data.workflow_json,
         data.workflow_hash,
         new Date(),
+        data.workflow_graph,
       ),
     );
   }
@@ -58,6 +59,7 @@ export class DefiStrategyVersionService {
     return this.defiStrategyVersionRepository.update(id, {
       workflow_json: data.workflow_json,
       workflow_hash: data.workflow_hash,
+      workflow_graph: data.workflow_graph,
     });
   }
 

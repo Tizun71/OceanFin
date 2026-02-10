@@ -22,4 +22,10 @@ export class CreateDefiStrategyVersionDto {
   })
   @IsString()
   workflow_hash: string;
+
+  @ApiProperty({
+    description: 'The state from react-flow to restore the graph UI',
+  })
+  @IsObject()
+  workflow_graph: object;
 }

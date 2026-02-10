@@ -19,4 +19,12 @@ export class UpdateDefiStrategyVersionDto {
   @IsString()
   @IsOptional()
   workflow_hash?: string;
+
+  @ApiProperty({
+    description: 'The state from react-flow to restore the graph UI',
+    required: false,
+  })
+  @IsObject()
+  @IsOptional()
+  workflow_graph?: object;
 }

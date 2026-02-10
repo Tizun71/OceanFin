@@ -39,4 +39,8 @@ export class CreateDefiStrategyDto {
   @ApiProperty({ description: 'Workflow hash', example: 'hash-string' })
   @IsString()
   workflow_hash: string;
+
+  @ApiProperty({ description: 'Workflow graph object' })
+  @IsObject()
+  workflow_graph: object;
 }

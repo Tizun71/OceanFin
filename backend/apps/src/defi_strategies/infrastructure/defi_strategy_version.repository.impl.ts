@@ -21,6 +21,7 @@ export class DefiStrategyVersionRepositoryImpl
         version: defiStrategyVersion.version,
         workflow_json: defiStrategyVersion.workflow_json,
         workflow_hash: defiStrategyVersion.workflow_hash,
+        workflow_graph: defiStrategyVersion.workflow_graph,
         created_at: defiStrategyVersion.created_at,
       })
       .select()
@@ -30,14 +31,7 @@ export class DefiStrategyVersionRepositoryImpl
       throw new Error(`Failed to save DefiStrategyVersion: ${error.message}`);
     }
 
-    return new DefiStrategyVersion(
-      data.id,
-      data.strategy_id,
-      data.version,
-      data.workflow_json,
-      data.workflow_hash,
-      new Date(data.created_at),
-    );
+    return data;
   }
 
   public async update(
@@ -50,6 +44,8 @@ export class DefiStrategyVersionRepositoryImpl
       updateData.workflow_json = updates.workflow_json;
     if (updates.workflow_hash !== undefined)
       updateData.workflow_hash = updates.workflow_hash;
+    if (updates.workflow_graph !== undefined)
+      updateData.workflow_graph = updates.workflow_graph;
 
     const { data, error } = await this.supabase
       .getClient()
@@ -67,14 +63,7 @@ export class DefiStrategyVersionRepositoryImpl
       throw new Error(`DefiStrategyVersion with id ${id} not found`);
     }
 
-    return new DefiStrategyVersion(
-      data.id,
-      data.strategy_id,
-      data.version,
-      data.workflow_json,
-      data.workflow_hash,
-      new Date(data.created_at),
-    );
+    return data;
   }
 
   public async delete(id: string): Promise<void> {
@@ -103,17 +92,7 @@ export class DefiStrategyVersionRepositoryImpl
       throw new Error(`Failed to get DefiStrategyVersions: ${error.message}`);
     }
 
-    return (data || []).map(
-      (item) =>
-        new DefiStrategyVersion(
-          item.id,
-          item.strategy_id,
-          item.version,
-          item.workflow_json,
-          item.workflow_hash,
-          new Date(item.created_at),
-        ),
-    );
+    return data;
   }
 
   public async getById(id: string): Promise<DefiStrategyVersion | null> {
@@ -130,13 +109,6 @@ export class DefiStrategyVersionRepositoryImpl
 
     if (!data) return null;
 
-    return new DefiStrategyVersion(
-      data.id,
-      data.strategy_id,
-      data.version,
-      data.workflow_json,
-      data.workflow_hash,
-      new Date(data.created_at),
-    );
+    return data;
   }
 }

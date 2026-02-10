@@ -12,10 +12,6 @@ import { DefiStrategySimulationSnapshotsController } from './interfaces/defi_str
 import { DefiStrategySimulationSnapshotService } from './application/defi_strategy_simullation_snapshot.service';
 import { DefiStrategySimulationSnapshotRepositoryImpl } from './infrastructure/defi_strategy_simulation_snapshot.repository.impl';
 import { DefiStrategySimulationSnapshotRepository } from './domain/defi_strategy_simulation_snapshot.repository';
-import { DefiStrategyWorkflowNodeRepository } from './domain/defi_strategy_workflow_node.repository';
-import { DefiStrategyWorkflowNodeRepositoryImpl } from './infrastructure/defi_strategy_workflow_node.repository.impl';
-import { DefiStrategyWorkflowNodeService } from './application/defi_strategy_workflow_node.service';
-import { DefiStrategyWorkflowNodesController } from './interfaces/defi_strategy_workflow_nodes.controller';
 import { DefiStrategyExecutionRepository } from './domain/defi_strategy_execution.repository';
 import { DefiStrategyExecutionRepositoryImpl } from './infrastructure/defi_strategy_execution.repository.impl';
 import { DefiStrategyExecutionService } from './application/defi_strategy_execution.service';
@@ -30,14 +26,12 @@ import { DefiExecutionStepResultController } from './interfaces/defi_execution_s
   controllers: [
     DefiStrategiesController,
     DefiStrategySimulationSnapshotsController,
-    DefiStrategyWorkflowNodesController,
     DefiStrategyExecutionsController,
     DefiExecutionStepResultController,
   ],
   providers: [
     DefiStrategiesService,
     DefiStrategyVersionService,
-    DefiStrategyWorkflowNodeService,
     DefiStrategySimulationSnapshotService,
     DefiStrategyExecutionService,
     DefiExecutionStepResultService,
@@ -48,10 +42,6 @@ import { DefiExecutionStepResultController } from './interfaces/defi_execution_s
     {
       provide: DefiStrategySimulationSnapshotRepository,
       useClass: DefiStrategySimulationSnapshotRepositoryImpl,
-    },
-    {
-      provide: DefiStrategyWorkflowNodeRepository,
-      useClass: DefiStrategyWorkflowNodeRepositoryImpl,
     },
     {
       provide: DefiStrategyExecutionRepository,
@@ -70,7 +60,6 @@ import { DefiExecutionStepResultController } from './interfaces/defi_execution_s
     DefiStrategiesService,
     DefiStrategyVersionService,
     DefiStrategySimulationSnapshotService,
-    DefiStrategyWorkflowNodeService,
     DefiExecutionStepResultService,
   ],
 })

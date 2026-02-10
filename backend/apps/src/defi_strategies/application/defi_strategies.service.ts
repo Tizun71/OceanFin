@@ -37,6 +37,7 @@ export class DefiStrategiesService {
         strategy_id,
         workflow_json: data.workflow_json,
         workflow_hash: data.workflow_hash,
+        workflow_graph: data.workflow_graph,
       });
 
     strategy.current_version_id = strategyVersion.id;
