@@ -44,10 +44,12 @@ export class DefiStrategiesService {
     return this.defiStrategiesRepository.save(strategy);
   }
 
-  public async getByOwnerId(owner_id: string) {
-    await this.defiUsersService.getDefiUserById(owner_id);
-    const strategies =
-      await this.defiStrategiesRepository.getByOwnerId(owner_id);
+  public async getAll(owner_id?: string) {
+    if (owner_id) {
+      await this.defiUsersService.getDefiUserById(owner_id);
+    }
+
+    const strategies = await this.defiStrategiesRepository.getAll(owner_id);
 
     return strategies;
   }

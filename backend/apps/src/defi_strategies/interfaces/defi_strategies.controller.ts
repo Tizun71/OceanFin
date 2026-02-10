@@ -40,10 +40,12 @@ export class DefiStrategiesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get DeFi strategies by owner' })
-  @ApiQuery({ name: 'owner', required: true, type: String })
-  async getByOwnerId(@Query('owner') owner: string) {
-    return this.defiStrategiesService.getByOwnerId(owner);
+  @ApiOperation({
+    summary: 'Get all DeFi strategies, optionally filtered by owner',
+  })
+  @ApiQuery({ name: 'owner', required: false, type: String })
+  async getAll(@Query('owner') owner?: string) {
+    return this.defiStrategiesService.getAll(owner);
   }
 
   @Put(':id')

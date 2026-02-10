@@ -35,17 +35,23 @@ export class DefiStrategiesRepositoryImplement
     return data;
   }
 
-  public async getByOwnerId(
-    owner_id: string,
+  public async getAll(
+    owner_id?: string,
   ): Promise<
     (DefiStrategy & { defi_strategy_versions: DefiStrategyVersion[] })[]
   > {
-    const { data, error } = await this.supabase
+    let query = this.supabase
       .getClient()
       .from('defi_strategies')
-      .select('*, defi_strategy_versions(*)')
-      .eq('owner_id', owner_id)
-      .order('created_at', { ascending: false });
+      .select('*, defi_strategy_versions(*)');
+
+    if (owner_id) {
+      query = query.eq('owner_id', owner_id);
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(
