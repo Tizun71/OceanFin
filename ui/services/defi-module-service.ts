@@ -27,3 +27,20 @@ export const createDefiModule = async (data: any) => {
 
   return res.json();
 };
+
+export const createStrategy = async (data: any) => {
+  const res = await fetch(`${BASE_URL}/strategies`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    throw new Error("Failed to create strategy")
+  }
+
+  return res.json()
+}

@@ -1,37 +1,93 @@
 "use client"
 
 import ReactFlow, {
+  ReactFlowProvider,
   useNodesState,
   useEdgesState,
   addEdge,
+  Connection,
+  Edge,
 } from "reactflow"
 
 import Sidebar from "./Sidebar"
-import { Action, Module } from "@/types/defi"
+import { Action, CreateStrategyPayload, Module } from "@/types/defi"
 import { useDefiModules } from "@/hooks/use-defi-modules"
+import DefiNode from "./DefiNode"
 
-export default function BuilderPage() {
+import { useCallback, useState } from "react"
+import ConfigPanel from "./ConfigPanel"
+import { createStrategy } from "@/services/defi-module-service"
+
+const nodeTypes = {
+  defiNode: DefiNode,
+}
+
+function Builder() {
   const { data: modules = [], isLoading } = useDefiModules()
 
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
-  const handleAddNode = (module: Module, action: Action) => {
-    const newNode = {
-      id: crypto.randomUUID(),
-      type: "default",
-      position: {
-        x: Math.random() * 400,
-        y: Math.random() * 400,
-      },
-      data: {
-        moduleId: module.id,
-        actionId: action.id,
-        label: `${module.name} - ${action.name}`,
-      },
-    }
+  /* Delete node */
+  const handleDeleteNode = useCallback((id: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== id))
+    setEdges((eds) =>
+      eds.filter((edge) => edge.source !== id && edge.target !== id)
+    )
+  }, [])
 
-    setNodes((nds) => [...nds, newNode])
+  /* Add node */
+  const handleAddNode = useCallback(
+    (module: Module, action: Action) => {
+      const id = crypto.randomUUID()
+
+      const newNode = {
+        id,
+        type: "defiNode",
+        position: {
+          x: Math.random() * 400,
+          y: Math.random() * 400,
+        },
+        data: {
+          id,
+          module,
+          action,
+          onDelete: handleDeleteNode,
+        },
+      }
+
+      setNodes((nds) => [...nds, newNode])
+    },
+    [handleDeleteNode]
+  )
+
+  /* Connect nodes */
+  const onConnect = useCallback(
+    (params: Edge | Connection) =>
+      setEdges((eds) => addEdge(params, eds)),
+    []
+  )
+
+  const [selectedNode, setSelectedNode] = useState<any>(null)
+
+  const handleSaveConfig = async (
+    payload: CreateStrategyPayload
+  ) => {
+    try {
+      const data = await createStrategy(payload)
+
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === payload.nodeId
+            ? { ...node, data: { ...node.data, config: data } }
+            : node
+        )
+      )
+
+      setSelectedNode(null)
+    } catch (error) {
+      console.error(error)
+    }
   }
 
   if (isLoading) {
@@ -39,20 +95,38 @@ export default function BuilderPage() {
   }
 
   return (
-    <div className="flex h-full">
-      <Sidebar modules={modules} onSelect={handleAddNode} />
+  <div className="flex h-full">
+    <Sidebar modules={modules} onSelect={handleAddNode} />
 
-      <div className="flex-1">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={(params) =>
-            setEdges((eds) => addEdge(params, eds))
-          }
-        />
-      </div>
+    <div className="flex-1">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={(_, node) => setSelectedNode(node)}
+        fitView
+      />
     </div>
+
+    {selectedNode && (
+      <ConfigPanel
+        node={selectedNode}
+        onClose={() => setSelectedNode(null)}
+        onSave={handleSaveConfig}
+      />
+    )}
+  </div>
+)
+
+}
+
+export default function BuilderPage() {
+  return (
+    <ReactFlowProvider>
+      <Builder />
+    </ReactFlowProvider>
   )
 }

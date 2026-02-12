@@ -51,3 +51,12 @@ export interface ModuleFromBE {
   created_at: string
   defi_module_actions: Action[]
 }
+
+export interface CreateStrategyPayload {
+  nodeId: string
+  moduleId: string
+  actionId: string
+  tokenIn: string
+  tokenOut: string
+  amount: number
+}
