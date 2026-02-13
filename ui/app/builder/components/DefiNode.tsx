@@ -9,11 +9,11 @@ export default function DefiNode({ data }: any) {
 
       {/* Top Handle */}
       <Handle
+        id="top"
         type="target"
         position={Position.Top}
         className="!w-3 !h-3 !bg-blue-500 !border-none"
       />
-
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[#2a2a3d]">
         <div>
@@ -57,6 +57,7 @@ export default function DefiNode({ data }: any) {
 
       {/* Bottom Handle */}
       <Handle
+        id="bottom"
         type="source"
         position={Position.Bottom}
         className="!w-3 !h-3 !bg-green-500 !border-none"
