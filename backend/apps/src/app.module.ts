@@ -5,12 +5,15 @@ import { ConfigModule } from '@nestjs/config';
 import { StrategiesModule } from './strategies/stategies.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { CronManagerService } from './cron-job/application/cron-manager.service';
+import { DefiAgentModule } from './defi_agent/defi_agent.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
+    DefiAgentModule,
     SupabaseModule,
     UsersModule,
     StrategiesModule,
