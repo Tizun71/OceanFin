@@ -109,7 +109,7 @@ export function ExecutionModal({
   const [allStepsCompleted, setAllStepsCompleted] = useState(false)
   const abortRef = useRef(false)
 
-  const { sendTransaction, walletAddress, isWalletConnected } = useLunoPapiClient()
+  const { sendTransaction, walletAddress, isWalletConnected, sendTransactionWithProxy } = useLunoPapiClient()
   const createActivityMutation = useCreateActivity()
   const updateActivityMutation = useUpdateActivity()
 
@@ -178,13 +178,13 @@ export function ExecutionModal({
     updateStepStatus(stepIndex, "processing")
 
     const tx = await buildStepTx(step, walletAddress!)
-    
+    console.log("Built tx for step", stepIndex + 1, tx)
     if (!tx) {
       updateStepStatus(stepIndex, "completed")
       return { success: true, skipDelay: stepIndex >= strategy.steps.length - 1 }
     }
 
-    const result = await sendTransaction(tx)
+    const result = await sendTransactionWithProxy(tx, walletAddress!)
     
     if (abortRef.current) throw new Error("Execution cancelled by user")
     if (result?.status === "failed" || result?.errorMessage) throw new Error(result?.errorMessage || "Transaction failed")

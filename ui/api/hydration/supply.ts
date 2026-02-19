@@ -5,6 +5,7 @@ import { parseUnits } from "ethers/lib/utils";
 import { getHydrationSDK } from "./external/sdkClient";
 import { getGasPrice } from "./get-gas-price";
 import { LPSupplyParamsType } from "@aave/contract-helpers/dist/esm/v3-pool-contract/lendingPoolTypes";
+import { wrapWithProxy } from "../utils/proxy";
 
 export async function supply(
   assetSupply: string,
@@ -31,7 +32,9 @@ export async function supply(
 
     const gasPrice = await getGasPrice();
 
-    const evmTx = api.tx.evm.call(
+    const evmTx = wrapWithProxy(api,
+      userAddress,
+      api.tx.evm.call(
       H160.fromAny(userAddress), // source
       builtTx.to as string, // target
       builtTx.data as string, // input
@@ -41,7 +44,7 @@ export async function supply(
       gasPrice, // max_priority_fee_per_gas
       null, // nonce
       [] // access_list
-    );
+    ));
 
     return evmTx;
   }

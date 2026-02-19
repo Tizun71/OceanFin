@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Layers } from "lucide-react";
+import { Layers, User } from "lucide-react";
 import { WalletButton } from "./shared/wallet-button";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -29,7 +29,10 @@ export function HeroSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navItems = [{ icon: Layers, label: "STRATEGY", href: "/" }];
+  const navItems = [
+    { icon: Layers, label: "Strategy", href: "/" }, 
+    { icon: User, label: "Ocefolio", href: "/ocefolio" }
+  ];
 
   return (
     <motion.header
@@ -39,7 +42,7 @@ export function HeroSection() {
       className="fixed top-4 left-0 w-full flex justify-center z-50"
     >
       <div
-       className="
+        className="
         flex items-center justify-between
         px-8 py-3
         rounded-full
@@ -81,10 +84,9 @@ export function HeroSection() {
                     relative flex items-center gap-2 px-4 py-2 
                     text-[15px] font-medium rounded-lg
                     transition-all duration-300
-                    ${
-                      isActive
-                        ? "text-accent-light bg-white/5"
-                        : "text-foreground/80 hover:text-accent hover:bg-white/5"
+                    ${isActive
+                      ? "text-accent-light bg-white/5"
+                      : "text-foreground/80 hover:text-accent hover:bg-white/5"
                     }
                   `}
                 >

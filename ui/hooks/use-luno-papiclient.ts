@@ -155,6 +155,98 @@ export function useLunoPapiClient() {
     }
   }, [walletAddress, state.client, state.isReady]);
 
+  const sendTransactionWithProxy = useCallback(
+    async (
+      innerTx: any,
+      userAddress: string
+    ): Promise<SendResult> => {
+      return new Promise(async (resolve, reject) => {
+        try {
+          if (!state.isReady || !state.client) {
+            throw new Error("Client not ready");
+          }
+
+          const { api } = await getHydrationSDK();
+          const nonce = await api.rpc.system.accountNextIndex(walletAddress as string);
+          const blockHash = await api.rpc.chain.getBlockHash();
+
+          const ss58Prefix = state.client.registry.chainSS58 ?? 0;
+          let formattedProxyAddress = walletAddress;
+          let formattedUserAddress = userAddress;
+
+          if (!isAddress(formattedProxyAddress)) throw new Error(`Invalid proxy address: ${formattedProxyAddress}`);
+          if (!isAddress(formattedUserAddress)) throw new Error(`Invalid user address: ${formattedUserAddress}`);
+
+          formattedProxyAddress = encodeAddress(decodeAddress(formattedProxyAddress), ss58Prefix);
+          formattedUserAddress = encodeAddress(decodeAddress(formattedUserAddress), ss58Prefix);
+
+          await web3Enable("OceanFinApp");
+
+          const injector = await web3FromAddress(formattedProxyAddress);
+
+          // Wrap the inner transaction with proxy.proxy call
+          const proxyTx = innerTx;
+          console.log("Wrapped proxy tx:", proxyTx);
+          console.log("Proxy address:", formattedProxyAddress);
+          const unsub = await proxyTx.signAndSend(
+            "12VhWmbgraRNcc8xzWXPeLeRBoLQcVetBy883j792X4kPxN4",
+            { signer: formattedProxyAddress, nonce, era: 0, blockHash },
+            ({ status, dispatchError }: any) => {
+              if (dispatchError) {
+                let errorMessage = dispatchError.toString();
+                if (dispatchError.isModule) {
+                  try {
+                    const decoded = api.registry.findMetaError(dispatchError.asModule);
+                    const { section, name, docs } = decoded;
+                    errorMessage = `${section}.${name}: ${docs.join(" ")}`;
+                  } catch (e) {
+                    displayToast("error", `[sendTransactionWithProxy] ❌ Could not decode dispatch error: ${e instanceof Error ? e.message : String(e)}`);
+                  }
+                }
+                displayToast("error", `[sendTransactionWithProxy] ❌ DispatchError: ${errorMessage}`);
+                unsub();
+                resolve({
+                  transactionHash: null,
+                  status: "failed",
+                  errorMessage,
+                });
+                return;
+              }
+
+              if (status.isInBlock) {
+                unsub();
+                resolve({
+                  transactionHash: status.asInBlock.toString(),
+                  status: "success",
+                  errorMessage: null,
+                });
+                return;
+              }
+
+              if (status.isFinalized) {
+                unsub();
+                resolve({
+                  transactionHash: status.asFinalized.toString(),
+                  status: "success",
+                  errorMessage: null,
+                });
+              }
+            }
+          );
+          console.log("Transaction sent with proxy, waiting for confirmation...");
+        } catch (err: any) {
+          displayToast("error", `[sendTransactionWithProxy] ❌ Error: ${err?.message ?? String(err)}`);
+          resolve({
+            transactionHash: null,
+            status: "failed",
+            errorMessage: err?.message ?? String(err),
+          });
+        }
+      });
+    },
+    [state.isReady, state.client, walletAddress]
+  );
+
   const sendTransaction = useCallback(
     async (
       tx: any
@@ -260,6 +352,7 @@ export function useLunoPapiClient() {
     loadingBalance,
     refreshBalance: () => fetchBalance(),
     sendTransaction,
+    sendTransactionWithProxy,
     isWalletConnected: !!papiSigner && !!walletAddress,
     walletAddress: walletAddress,
   };

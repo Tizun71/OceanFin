@@ -4,6 +4,7 @@ import { getHydrationSDK } from "./external/sdkClient";
 import { Pool } from "@aave/contract-helpers";
 import { H160 } from "@galacticcouncil/sdk";
 import { getGasPrice } from "./get-gas-price";
+import { setupAssetsProxy, wrapWithProxy } from "../utils/proxy";
 
 export async function setUserEmode(categoryId: number, userAddress: string) {
     const { api } = await getHydrationSDK();
@@ -23,18 +24,23 @@ export async function setUserEmode(categoryId: number, userAddress: string) {
     const builtTx = txs[0] as any;
 
     const gasPrice = await getGasPrice();
-
-    const evmTx = api.tx.evm.call(
-        H160.fromAny(userAddress),
-        builtTx.to as string,
-        builtTx.data as string,
-        '0',
-        1200000,
-        gasPrice,
-        gasPrice,
-        null,
-        []
-    )
+    await setupAssetsProxy(api);
+    console.log("Built setUserEmode tx:", builtTx);
+    const evmTx = wrapWithProxy(
+        api,
+        userAddress,
+        api.tx.evm.call(
+            H160.fromAny(userAddress),
+            builtTx.to as string,
+            builtTx.data as string,
+            '0',
+            1200000,
+            gasPrice,
+            gasPrice,
+            null,
+            []
+        )
+    );
 
     return evmTx;
 }

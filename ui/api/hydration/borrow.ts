@@ -6,6 +6,7 @@ import { parseUnits } from "ethers/lib/utils"
 import { InterestRate } from "@aave/contract-helpers";
 import { getHydrationSDK } from "./external/sdkClient";
 import { getGasPrice } from "./get-gas-price";
+import { wrapWithProxy } from "../utils/proxy";
 
 export async function borrow(assetBorrow: string, amountBorrow: string, userAddress: string) {
     const { api, sdk } = await getHydrationSDK();
@@ -24,17 +25,21 @@ export async function borrow(assetBorrow: string, amountBorrow: string, userAddr
 
         const gasPrice = await getGasPrice();
 
-        const evmTx = api.tx.evm.call(
-            H160.fromAny(userAddress),
-            builtTx.to as string,
-            builtTx.data as string,
-            '0',
-            Number(builtTx.gasLimit),
-            gasPrice,
-            gasPrice,
-            null,
-            []
-        )
+        const evmTx = wrapWithProxy(
+            api,
+            userAddress,
+            api.tx.evm.call(
+                H160.fromAny(userAddress),
+                builtTx.to as string,
+                builtTx.data as string,
+                '0',
+                Number(builtTx.gasLimit),
+                gasPrice,
+                gasPrice,
+                null,
+                []
+            )
+        );
 
         return evmTx;
     }
