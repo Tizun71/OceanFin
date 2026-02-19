@@ -8,6 +8,8 @@ import { CreateDefiPairsDto } from './dtos/create_defi_pairs.dto';
 import { DefiPairsService } from '../application/defi_pairs.service';
 import { DefiPair } from '../domain/defi_pairs.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { EstimateDefiPairDto } from './dtos/estimate-defi-pair.dto';
+import { EstimateDefiPairResponseDto } from './dtos/estimate-defi-pair-response.dto';
 
 @Controller('defi-modules')
 export class DefiModulesController {
@@ -57,5 +59,20 @@ export class DefiModulesController {
         body.token_out_id,
       ),
     );
+  }
+
+  @ApiOperation({ summary: 'Estimate DeFi operation (SWAP/SUPPLY/BORROW)' })
+  @ApiBody({
+    description: 'Parameters for estimating DeFi operations',
+    type: EstimateDefiPairDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estimate result based on operation type',
+    type: EstimateDefiPairResponseDto,
+  })
+  @Post('/pairs/estimate')
+  async estimateDefiPair(@Body() body: EstimateDefiPairDto) {
+    return this.defiPairsService.estimateDefiPair(body);
   }
 }
