@@ -121,21 +121,30 @@ function Builder() {
   const handleSaveConfig = async (
     payload: CreateStrategyPayload
   ) => {
-    try {
-      const data = await createStrategy(payload)
+    const strategy = await createStrategy(payload)
 
-      setNodes((nds) =>
-        nds.map((node) =>
-          node.id === payload.nodeId
-            ? { ...node, data: { ...node.data, config: data } }
-            : node
-        )
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === payload.nodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+
+                config: strategy,
+
+                tokenInSymbol:
+                  payload.tokenInSymbol,
+
+                tokenOutSymbol:
+                  payload.tokenOutSymbol,
+              },
+            }
+          : node
       )
+    )
 
-      setSelectedNode(null)
-    } catch (error) {
-      console.error(error)
-    }
+    setSelectedNode(null)
   }
 
   if (isLoading) {

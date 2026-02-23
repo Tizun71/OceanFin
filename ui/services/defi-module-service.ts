@@ -1,3 +1,5 @@
+import { CreateStrategyPayload } from "@/types/defi";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export const getDefiModules = async () => {
@@ -28,18 +30,50 @@ export const createDefiModule = async (data: any) => {
   return res.json();
 };
 
-export const createStrategy = async (data: any) => {
+export const createStrategy = async (
+  payload: CreateStrategyPayload
+) => {
   const res = await fetch(`${BASE_URL}/strategies`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      module_id: payload.moduleId,
+      action_id: payload.actionId,
+      token_in_id: payload.tokenInId,
+      token_out_id: payload.tokenOutId,
+      amount_in: payload.amount,
+    }),
   })
 
   if (!res.ok) {
-    throw new Error("Failed to create strategy")
+    const error = await res.text()
+    throw new Error(error)
+  }
+
+  return res.json()
+}
+
+export const estimateSwap = async (data: {
+  token_in_id: string
+  token_out_id: string
+  amount_in: number
+})=>{
+  const res = await fetch(`${BASE_URL}/defi-modules/pairs/estimate`,{
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      operation_type: "SWAP",
+      ...data,
+    }),
+  })
+  if (!res.ok) {
+    throw new Error("Failed to estimate swap")
   }
 
   return res.json()
