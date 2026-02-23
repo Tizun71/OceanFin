@@ -78,3 +78,28 @@ export const estimateSwap = async (data: {
 
   return res.json()
 }
+
+export const createStrategyWorkflow = async (
+  workflow_json: any
+) => {
+  const res = await fetch(`${BASE_URL}/strategies`, {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    credentials: "include",
+
+    body: JSON.stringify({
+      name: "My Strategy",
+      workflow_json,
+    }),
+  })
+
+  if (!res.ok) {
+    throw new Error("Failed to create strategy")
+  }
+
+  return res.json()
+}

@@ -18,9 +18,13 @@ import { Action, CreateStrategyPayload, Module } from "@/types/defi"
 import { useDefiModules } from "@/hooks/use-defi-modules"
 import DefiNode from "./DefiNode"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import ConfigPanel from "./ConfigPanel"
-import { createStrategy } from "@/services/defi-module-service"
+
+import {
+  createStrategy,
+  createStrategyWorkflow,
+} from "@/services/defi-module-service"
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -34,18 +38,119 @@ function Builder() {
 
   const [selectedNode, setSelectedNode] = useState<any>(null)
 
-  /* Delete node */
+  const [loading, setLoading] = useState(false)
+
+  /*
+  BUILD WORKFLOW JSON
+  */
+  const buildWorkflowJson = (nodes: any[]) => {
+
+    let step = 1
+
+    const steps = nodes.map((node) => {
+
+      const config = node.data.config
+
+      return {
+
+        step: step++,
+
+        type:
+          node.data.action.name
+          .toUpperCase()
+          .replace(" ", "_"),
+
+        agent:
+          node.data.module.name
+          .toUpperCase(),
+
+        tokenIn: config?.tokenInId
+          ? {
+              assetId:
+                config.tokenInId,
+
+              symbol:
+                config.tokenInSymbol,
+
+              amount:
+                config.amount,
+            }
+          : undefined,
+
+        tokenOut: config?.tokenOutId
+          ? {
+              assetId:
+                config.tokenOutId,
+
+              symbol:
+                config.tokenOutSymbol,
+
+              amount:
+                config.amountOut,
+            }
+          : undefined,
+
+      }
+
+    })
+
+    return {
+
+      loops: "1",
+
+      fee: 0,
+
+      steps,
+
+    }
+
+  }
+
+  /*
+  CREATE STRATEGY
+  */
+  const handleCreateStrategy = async () => {
+    try {
+      const workflow_json =
+        buildWorkflowJson(nodes)
+
+      console.log(
+        "workflow_json:",
+        workflow_json
+      )
+      await createStrategyWorkflow(
+        workflow_json
+      )
+      alert("Success")
+    }
+    catch (err) {
+      console.error(err)
+    }
+  }
+
+  /*
+  DELETE NODE
+  */
   const handleDeleteNode = useCallback(
     (id: string) => {
-      setNodes((nds) => nds.filter((node) => node.id !== id))
+      setNodes((nds) =>
+        nds.filter((node) => node.id !== id)
+      )
+
       setEdges((eds) =>
-        eds.filter((edge) => edge.source !== id && edge.target !== id)
+        eds.filter(
+          (edge) =>
+            edge.source !== id &&
+            edge.target !== id
+        )
       )
     },
     [setNodes, setEdges]
   )
 
-  /* Add node */
+  /*
+  ADD NODE
+  */
   const handleAddNode = useCallback(
     (module: Module, action: Action) => {
       const id = crypto.randomUUID()
@@ -54,10 +159,12 @@ function Builder() {
         const newNode = {
           id,
           type: "defiNode",
+
           position: {
             x: 250,
             y: nds.length * 180 + 80,
           },
+
           data: {
             id,
             module,
@@ -74,12 +181,16 @@ function Builder() {
               addEdge(
                 {
                   id: `${lastNode.id}-${id}`,
+
                   source: lastNode.id,
                   target: id,
+
                   sourceHandle: "bottom",
                   targetHandle: "top",
+
                   type: "smoothstep",
                   animated: true,
+
                   style: {
                     stroke: "#6366f1",
                     strokeWidth: 2,
@@ -97,15 +208,19 @@ function Builder() {
     [handleDeleteNode, setEdges]
   )
 
-  /* Manual connect */
+  /*
+  CONNECT
+  */
   const onConnect = useCallback(
     (params: Edge | Connection) =>
       setEdges((eds) =>
         addEdge(
           {
             ...params,
+
             type: "smoothstep",
             animated: true,
+
             style: {
               stroke: "#6366f1",
               strokeWidth: 2,
@@ -117,17 +232,21 @@ function Builder() {
     [setEdges]
   )
 
-  /* Save config */
+  /*
+  SAVE CONFIG
+  */
   const handleSaveConfig = async (
     payload: CreateStrategyPayload
   ) => {
-    const strategy = await createStrategy(payload)
+    const strategy =
+      await createStrategy(payload)
 
     setNodes((nds) =>
       nds.map((node) =>
         node.id === payload.nodeId
           ? {
               ...node,
+
               data: {
                 ...node.data,
 
@@ -149,18 +268,21 @@ function Builder() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-950 text-white">
+      <div className="flex items-center justify-center h-screen text-white">
         Loading modules...
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
-      
+    <div className="flex h-screen text-white">
+
       {/* Sidebar */}
-      <div className="w-72 border-r border-slate-800 bg-slate-900/60 backdrop-blur-md">
-        <Sidebar modules={modules} onSelect={handleAddNode} />
+      <div className="w-72 border-r">
+        <Sidebar
+          modules={modules}
+          onSelect={handleAddNode}
+        />
       </div>
 
       {/* Canvas */}
@@ -169,53 +291,60 @@ function Builder() {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+
           onConnect={onConnect}
-          onNodeClick={(_, node) => setSelectedNode(node)}
+
+          onNodeClick={(_, node) =>
+            setSelectedNode(node)
+          }
+
           fitView
-          defaultEdgeOptions={{
-            type: "smoothstep",
-            animated: true,
-            style: {
-              stroke: "#6366f1",
-              strokeWidth: 2,
-            },
-          }}
-          className="bg-slate-950"
         >
-          <MiniMap
-            zoomable
-            pannable
-            className="bg-slate-900 rounded-lg border border-slate-700"
-          />
-
+          {/* CREATE BUTTON */}
+          <button
+            onClick={handleCreateStrategy}
+            disabled={nodes.length === 0 || loading}
+            className="
+              absolute
+              bottom-50
+              right-8
+              px-6
+              py-3
+              bg-indigo-600
+              hover:bg-indigo-500
+              text-white
+              rounded-xl
+              shadow-lg
+              z-10
+            "
+          >
+            {loading ? "Creating..." : "Create Strategy"}
+          </button>
+          <MiniMap />
           <Controls />
-
           <Background
-            variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="#334155"
+            variant={
+              BackgroundVariant.Dots
+            }
           />
         </ReactFlow>
 
-        {/* Empty state */}
-        {nodes.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-slate-500 text-lg">
-              Select a module to start building your strategy 🚀
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Config Drawer */}
+      {/* CONFIG PANEL */}
       {selectedNode && (
+
         <ConfigPanel
           node={selectedNode}
-          onClose={() => setSelectedNode(null)}
-          onSave={handleSaveConfig}
+          onClose={() =>
+            setSelectedNode(null)
+          }
+          onSave={
+            handleSaveConfig
+          }
         />
       )}
     </div>
