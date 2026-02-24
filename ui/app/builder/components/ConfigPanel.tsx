@@ -225,6 +225,29 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
             </p>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="pt-4 border-t border-neutral-800">
+
+          <button
+            onClick={handleSubmit}
+            disabled={!isValid || loading}
+            className="
+              w-full
+              py-3
+              rounded-xl
+              bg-indigo-600
+              hover:bg-indigo-500
+              disabled:bg-neutral-700
+              disabled:cursor-not-allowed
+              text-white
+              font-medium
+            "
+          >
+            {loading ? "Saving..." : "Save"}
+          </button>
+
+        </div>
       </div>
     </div>
   </>

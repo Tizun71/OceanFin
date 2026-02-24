@@ -13,6 +13,7 @@ import ReactFlow, {
   MiniMap,
 } from "reactflow"
 
+
 import Sidebar from "./Sidebar"
 import { Action, CreateStrategyPayload, Module } from "@/types/defi"
 import { useDefiModules } from "@/hooks/use-defi-modules"
@@ -44,67 +45,88 @@ function Builder() {
   BUILD WORKFLOW JSON
   */
   const buildWorkflowJson = (nodes: any[]) => {
+    console.log("FULL NODES:", nodes)
 
-    let step = 1
+  let stepNumber = 1
 
-    const steps = nodes.map((node) => {
+  const steps = nodes.map((node, index) => {
 
-      const config = node.data.config
+    const config = node.data.config
 
-      return {
+    console.log("CONFIG:", config)
+    // tokenIn
+    let tokenIn = undefined
 
-        step: step++,
+    if (index === 0) {
 
-        type:
-          node.data.action.name
-          .toUpperCase()
-          .replace(" ", "_"),
-
-        agent:
-          node.data.module.name
-          .toUpperCase(),
-
-        tokenIn: config?.tokenInId
-          ? {
-              assetId:
-                config.tokenInId,
-
-              symbol:
-                config.tokenInSymbol,
-
-              amount:
-                config.amount,
-            }
-          : undefined,
-
-        tokenOut: config?.tokenOutId
-          ? {
-              assetId:
-                config.tokenOutId,
-
-              symbol:
-                config.tokenOutSymbol,
-
-              amount:
-                config.amountOut,
-            }
-          : undefined,
-
+      // step config
+      if (config?.tokenInId) {
+        tokenIn = {
+          assetId: config.tokenInId,
+          symbol: config.tokenInSymbol,
+          amount: config.amount,
+        }
       }
 
-    })
+    } else {
 
-    return {
+      const prevConfig = nodes[index - 1].data.config
 
-      loops: "1",
-
-      fee: 0,
-
-      steps,
+      if (prevConfig?.tokenOutId) {
+        tokenIn = {
+          assetId: prevConfig.tokenOutId,
+          symbol: prevConfig.tokenOutSymbol,
+          amount: prevConfig.amountOut,
+        }
+      }
 
     }
 
+    // tokenOut
+    let tokenOut = undefined
+
+    if (config?.tokenOutId) {
+
+      tokenOut = {
+        assetId: config.tokenOutId,
+        symbol: config.tokenOutSymbol,
+        amount: config.amountOut,
+      }
+
+    }
+
+    return {
+
+      step: stepNumber++,
+
+      type:
+        node.data.action.name
+          .toUpperCase()
+          .replace(" ", "_"),
+
+      agent:
+        node.data.module.name
+          .toUpperCase(),
+
+      tokenIn,
+
+      tokenOut,
+
+    }
+
+  })
+
+  return {
+
+    loops: "1",
+
+    fee: 0,
+
+    steps,
+
   }
+
+}
 
   /*
   CREATE STRATEGY
@@ -235,37 +257,34 @@ function Builder() {
   /*
   SAVE CONFIG
   */
-  const handleSaveConfig = async (
-    payload: CreateStrategyPayload
-  ) => {
-    const strategy =
-      await createStrategy(payload)
-
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === payload.nodeId
-          ? {
-              ...node,
-
-              data: {
-                ...node.data,
-
-                config: strategy,
-
-                tokenInSymbol:
-                  payload.tokenInSymbol,
-
-                tokenOutSymbol:
-                  payload.tokenOutSymbol,
-              },
-            }
-          : node
-      )
+  const handleSaveConfig = (payload: CreateStrategyPayload) => {
+  setNodes((nds) =>
+    nds.map((node) =>
+      node.id === payload.nodeId
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              config: payload,
+            },
+          }
+        : node
     )
+  )
 
-    setSelectedNode(null)
+  // update selectedNode
+  setSelectedNode((prev: any) =>
+      prev
+        ? {
+            ...prev,
+            data: {
+              ...prev.data,
+              config: payload,
+            },
+          }
+        : prev
+    )
   }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen text-white">
