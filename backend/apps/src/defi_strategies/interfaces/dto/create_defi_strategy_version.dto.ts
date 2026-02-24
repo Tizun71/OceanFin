@@ -9,10 +9,7 @@ export class CreateDefiStrategyVersionDto {
   @IsString()
   strategy_id: string;
 
-  @ApiProperty({
-    description: "Workflow JSON describing the strategy",
-    example: { nodes: [] },
-  })
+  @ApiProperty({ description: "Workflow JSON describing the strategy" })
   @IsObject()
   workflow_json: object;
 
