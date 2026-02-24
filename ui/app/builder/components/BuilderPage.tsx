@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import ReactFlow, {
   ReactFlowProvider,
@@ -11,171 +11,136 @@ import ReactFlow, {
   BackgroundVariant,
   Controls,
   MiniMap,
-} from "reactflow"
+} from "reactflow";
 
+import Sidebar from "./Sidebar";
+import { Action, CreateStrategyPayload, Module } from "@/types/defi";
+import { useDefiModules } from "@/hooks/use-defi-modules";
+import DefiNode from "./DefiNode";
 
-import Sidebar from "./Sidebar"
-import { Action, CreateStrategyPayload, Module } from "@/types/defi"
-import { useDefiModules } from "@/hooks/use-defi-modules"
-import DefiNode from "./DefiNode"
+import { useCallback, useState } from "react";
+import ConfigPanel from "./ConfigPanel";
 
-import { useCallback, useState } from "react"
-import ConfigPanel from "./ConfigPanel"
-
-import {
-  createStrategy,
-  createStrategyWorkflow,
-} from "@/services/defi-module-service"
+import { createStrategyWorkflow } from "@/services/defi-module-service";
 
 const nodeTypes = {
   defiNode: DefiNode,
-}
+};
 
 function Builder() {
-  const { data: modules = [], isLoading } = useDefiModules()
+  const { data: modules = [], isLoading } = useDefiModules();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const [selectedNode, setSelectedNode] = useState<any>(null)
+  const [selectedNode, setSelectedNode] = useState<any>(null);
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   /*
   BUILD WORKFLOW JSON
   */
   const buildWorkflowJson = (nodes: any[]) => {
-    console.log("FULL NODES:", nodes)
+    console.log("FULL NODES:", nodes);
 
-  let stepNumber = 1
+    let stepNumber = 1;
 
-  const steps = nodes.map((node, index) => {
+    const steps = nodes.map((node, index) => {
+      const config = node.data.config;
 
-    const config = node.data.config
+      console.log("CONFIG:", config);
+      // tokenIn
+      let tokenIn = undefined;
 
-    console.log("CONFIG:", config)
-    // tokenIn
-    let tokenIn = undefined
+      if (index === 0) {
+        // step config
+        if (config?.tokenInId) {
+          tokenIn = {
+            assetId: config.tokenInId,
+            symbol: config.tokenInSymbol,
+            amount: config.amount,
+          };
+        }
+      } else {
+        const prevConfig = nodes[index - 1].data.config;
 
-    if (index === 0) {
-
-      // step config
-      if (config?.tokenInId) {
-        tokenIn = {
-          assetId: config.tokenInId,
-          symbol: config.tokenInSymbol,
-          amount: config.amount,
+        if (prevConfig?.tokenOutId) {
+          tokenIn = {
+            assetId: prevConfig.tokenOutId,
+            symbol: prevConfig.tokenOutSymbol,
+            amount: prevConfig.amountOut,
+          };
         }
       }
 
-    } else {
+      // tokenOut
+      let tokenOut = undefined;
 
-      const prevConfig = nodes[index - 1].data.config
-
-      if (prevConfig?.tokenOutId) {
-        tokenIn = {
-          assetId: prevConfig.tokenOutId,
-          symbol: prevConfig.tokenOutSymbol,
-          amount: prevConfig.amountOut,
-        }
+      if (config?.tokenOutId) {
+        tokenOut = {
+          assetId: config.tokenOutId,
+          symbol: config.tokenOutSymbol,
+          amount: config.amountOut,
+        };
       }
 
-    }
+      return {
+        step: stepNumber++,
 
-    // tokenOut
-    let tokenOut = undefined
+        type: node.data.action.name.toUpperCase().replace(" ", "_"),
 
-    if (config?.tokenOutId) {
+        agent: node.data.module.name.toUpperCase(),
 
-      tokenOut = {
-        assetId: config.tokenOutId,
-        symbol: config.tokenOutSymbol,
-        amount: config.amountOut,
-      }
+        tokenIn,
 
-    }
+        tokenOut,
+      };
+    });
 
     return {
+      loops: "1",
 
-      step: stepNumber++,
+      fee: 0,
 
-      type:
-        node.data.action.name
-          .toUpperCase()
-          .replace(" ", "_"),
-
-      agent:
-        node.data.module.name
-          .toUpperCase(),
-
-      tokenIn,
-
-      tokenOut,
-
-    }
-
-  })
-
-  return {
-
-    loops: "1",
-
-    fee: 0,
-
-    steps,
-
-  }
-
-}
+      steps,
+    };
+  };
 
   /*
   CREATE STRATEGY
   */
   const handleCreateStrategy = async () => {
     try {
-      const workflow_json =
-        buildWorkflowJson(nodes)
+      const workflow_json = buildWorkflowJson(nodes);
 
-      console.log(
-        "workflow_json:",
-        workflow_json
-      )
-      await createStrategyWorkflow(
-        workflow_json
-      )
-      alert("Success")
+      console.log("workflow_json:", workflow_json);
+      await createStrategyWorkflow(workflow_json);
+      alert("Success");
+    } catch (err) {
+      console.error(err);
     }
-    catch (err) {
-      console.error(err)
-    }
-  }
+  };
 
   /*
   DELETE NODE
   */
   const handleDeleteNode = useCallback(
     (id: string) => {
-      setNodes((nds) =>
-        nds.filter((node) => node.id !== id)
-      )
+      setNodes((nds) => nds.filter((node) => node.id !== id));
 
       setEdges((eds) =>
-        eds.filter(
-          (edge) =>
-            edge.source !== id &&
-            edge.target !== id
-        )
-      )
+        eds.filter((edge) => edge.source !== id && edge.target !== id),
+      );
     },
-    [setNodes, setEdges]
-  )
+    [setNodes, setEdges],
+  );
 
   /*
   ADD NODE
   */
   const handleAddNode = useCallback(
     (module: Module, action: Action) => {
-      const id = crypto.randomUUID()
+      const id = crypto.randomUUID();
 
       setNodes((nds) => {
         const newNode = {
@@ -193,10 +158,10 @@ function Builder() {
             action,
             onDelete: handleDeleteNode,
           },
-        }
+        };
 
         if (nds.length > 0) {
-          const lastNode = nds[nds.length - 1]
+          const lastNode = nds[nds.length - 1];
 
           setTimeout(() => {
             setEdges((eds) =>
@@ -218,17 +183,17 @@ function Builder() {
                     strokeWidth: 2,
                   },
                 },
-                eds
-              )
-            )
-          }, 0)
+                eds,
+              ),
+            );
+          }, 0);
         }
 
-        return [...nds, newNode]
-      })
+        return [...nds, newNode];
+      });
     },
-    [handleDeleteNode, setEdges]
-  )
+    [handleDeleteNode, setEdges],
+  );
 
   /*
   CONNECT
@@ -248,32 +213,32 @@ function Builder() {
               strokeWidth: 2,
             },
           },
-          eds
-        )
+          eds,
+        ),
       ),
-    [setEdges]
-  )
+    [setEdges],
+  );
 
   /*
   SAVE CONFIG
   */
   const handleSaveConfig = (payload: CreateStrategyPayload) => {
-  setNodes((nds) =>
-    nds.map((node) =>
-      node.id === payload.nodeId
-        ? {
-            ...node,
-            data: {
-              ...node.data,
-              config: payload,
-            },
-          }
-        : node
-    )
-  )
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === payload.nodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                config: payload,
+              },
+            }
+          : node,
+      ),
+    );
 
-  // update selectedNode
-  setSelectedNode((prev: any) =>
+    // update selectedNode
+    setSelectedNode((prev: any) =>
       prev
         ? {
             ...prev,
@@ -282,26 +247,22 @@ function Builder() {
               config: payload,
             },
           }
-        : prev
-    )
-  }
+        : prev,
+    );
+  };
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen text-white">
         Loading modules...
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex h-screen text-white">
-
       {/* Sidebar */}
       <div className="w-72 border-r">
-        <Sidebar
-          modules={modules}
-          onSelect={handleAddNode}
-        />
+        <Sidebar modules={modules} onSelect={handleAddNode} />
       </div>
 
       {/* Canvas */}
@@ -310,16 +271,10 @@ function Builder() {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
-
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-
           onConnect={onConnect}
-
-          onNodeClick={(_, node) =>
-            setSelectedNode(node)
-          }
-
+          onNodeClick={(_, node) => setSelectedNode(node)}
           fitView
         >
           {/* CREATE BUTTON */}
@@ -344,30 +299,20 @@ function Builder() {
           </button>
           <MiniMap />
           <Controls />
-          <Background
-            variant={
-              BackgroundVariant.Dots
-            }
-          />
+          <Background variant={BackgroundVariant.Dots} />
         </ReactFlow>
-
       </div>
 
       {/* CONFIG PANEL */}
       {selectedNode && (
-
         <ConfigPanel
           node={selectedNode}
-          onClose={() =>
-            setSelectedNode(null)
-          }
-          onSave={
-            handleSaveConfig
-          }
+          onClose={() => setSelectedNode(null)}
+          onSave={handleSaveConfig}
         />
       )}
     </div>
-  )
+  );
 }
 
 export default function BuilderPage() {
@@ -375,5 +320,5 @@ export default function BuilderPage() {
     <ReactFlowProvider>
       <Builder />
     </ReactFlowProvider>
-  )
+  );
 }

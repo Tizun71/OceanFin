@@ -1,34 +1,29 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ChevronDown, Search } from "lucide-react"
-import { Action, Module } from "@/types/defi"
+import { useState } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import { Action, Module } from "@/types/defi";
 
 interface SidebarProps {
-  modules: Module[]
-  onSelect: (module: Module, action: Action) => void
+  modules: Module[];
+  onSelect: (module: Module, action: Action) => void;
 }
 
 export default function Sidebar({ modules, onSelect }: SidebarProps) {
-  const [openModules, setOpenModules] = useState<string[]>([])
-  const [search, setSearch] = useState("")
+  const [openModules, setOpenModules] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
 
   const toggleModule = (id: string) => {
     setOpenModules((prev) =>
-      prev.includes(id)
-        ? prev.filter((m) => m !== id)
-        : [...prev, id]
-    )
-  }
+      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
+    );
+  };
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-b from-[#141420] to-[#0e0e18] text-white">
-
       {/* Header */}
       <div className="p-4 mt-16 border-b border-neutral-800">
-        <h2 className="text-lg font-semibold tracking-wide">
-          Module Library
-        </h2>
+        <h2 className="text-lg font-semibold tracking-wide">Module Library</h2>
 
         {/* Search */}
         <div className="mt-3 relative">
@@ -57,15 +52,12 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
       {/* Module List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
         {modules
-          .filter((m) =>
-            m.name.toLowerCase().includes(search.toLowerCase())
-          )
+          .filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
           .map((module) => {
-            const isOpen = openModules.includes(module.id)
+            const isOpen = openModules.includes(module.id);
 
             return (
               <div key={module.id}>
-
                 {/* Module Header */}
                 <button
                   onClick={() => toggleModule(module.id)}
@@ -110,16 +102,14 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
                         </button>
                       ))
                     ) : (
-                      <p className="text-sm text-neutral-600">
-                        No actions
-                      </p>
+                      <p className="text-sm text-neutral-600">No actions</p>
                     )}
                   </div>
                 )}
               </div>
-            )
+            );
           })}
       </div>
     </div>
-  )
+  );
 }
