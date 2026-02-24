@@ -4,7 +4,6 @@ export class DefiStrategyVersion {
     public strategy_id: string,
     public version: number,
     public workflow_json: object,
-    public workflow_hash: string,
     public created_at: Date,
     public workflow_graph: object,
   ) {}

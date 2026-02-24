@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DefiStrategyExecution } from '../domain/defi_strategy_execution.entity';
-import { DefiStrategyExecutionRepository } from '../domain/defi_strategy_execution.repository';
-import { DefiStrategyVersionService } from './defi_strategy_version.service';
-import { v4 as uuidv4 } from 'uuid';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DefiStrategyExecution } from "../domain/defi_strategy_execution.entity";
+import { DefiStrategyExecutionRepository } from "../domain/defi_strategy_execution.repository";
+import { DefiStrategyVersionService } from "./defi_strategy_version.service";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class DefiStrategyExecutionService {
@@ -13,11 +13,9 @@ export class DefiStrategyExecutionService {
 
   async create(data: Partial<DefiStrategyExecution>) {
     // ensure strategy version exists
-    const version = await this.versionService.getById(
-      data.strategy_version_id as string,
-    );
+    const version = await this.versionService.getById(data.strategy_version_id as string);
 
-    if (!version) throw new NotFoundException('Strategy version not found');
+    if (!version) throw new NotFoundException("Strategy version not found");
 
     const id = uuidv4();
     const now = new Date();
@@ -27,7 +25,6 @@ export class DefiStrategyExecutionService {
       data.strategy_version_id as string,
       data.extrinsic_hash as string,
       data.execution_status as string,
-      data.workflow_hash as string,
       now,
     );
 

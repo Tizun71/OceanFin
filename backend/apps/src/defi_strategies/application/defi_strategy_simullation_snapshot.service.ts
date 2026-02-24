@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DefiStrategySimulationSnapshot } from '../domain/defi_strategy_simulation_snapshot.entity';
-import { DefiStrategyVersionService } from './defi_strategy_version.service';
-import { DefiStrategySimulationSnapshotRepository } from '../domain/defi_strategy_simulation_snapshot.repository';
-import { v4 as uuidv4 } from 'uuid';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DefiStrategySimulationSnapshot } from "../domain/defi_strategy_simulation_snapshot.entity";
+import { DefiStrategyVersionService } from "./defi_strategy_version.service";
+import { DefiStrategySimulationSnapshotRepository } from "../domain/defi_strategy_simulation_snapshot.repository";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class DefiStrategySimulationSnapshotService {
@@ -18,7 +18,7 @@ export class DefiStrategySimulationSnapshotService {
     );
 
     if (!version) {
-      throw new NotFoundException('Strategy version not found');
+      throw new NotFoundException("Strategy version not found");
     }
     const id = uuidv4();
     const now = new Date();
@@ -39,8 +39,8 @@ export class DefiStrategySimulationSnapshotService {
     // ensure bigint-like fields returned as strings
     return {
       ...saved,
-      estimated_weight: saved.estimated_weight?.toString?.() ?? '0',
-      estimated_fee: saved.estimated_fee?.toString?.() ?? '0',
+      estimated_weight: saved.estimated_weight?.toString?.() ?? "0",
+      estimated_fee: saved.estimated_fee?.toString?.() ?? "0",
     };
   }
 
