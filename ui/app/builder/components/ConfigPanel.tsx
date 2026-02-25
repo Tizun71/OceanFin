@@ -3,8 +3,17 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { estimateSwap } from "@/services/defi-module-service";
+import { useEdges, Node, Edge  } from "reactflow";
 
-export default function ConfigPanel({ node, onSave, onClose }: any) {
+interface Props {
+  node: Node<any>;
+  nodes: Node<any>[];
+  onSave: (payload: any) => void;
+  onClose: () => void;
+}
+
+export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
+
   const pairs = node.data.action.defi_pairs || [];
   const [tokenIn, setTokenIn] = useState(pairs[0]?.token_in.id || "");
   const [tokenOut, setTokenOut] = useState(pairs[0]?.token_out.id || "");
@@ -13,9 +22,44 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
   const [loading, setLoading] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState("");
+
+  const edges = useEdges();
+  const incomingEdge = edges.find((e) => e.target === node.id);
+  const prevNode = nodes.find((n) => n.id === incomingEdge?.source);
+  const prevConfig = prevNode?.data?.config;
+  const [isAutoFill, setIsAutoFill] = useState(false);
+
+  useEffect(() => {
+    const config = node?.data?.config;
+    if (!config?.tokenInId) return;
+    setTokenIn(config.tokenInId);
+    setTokenOut(config.tokenOutId);
+    setAmount(config.amount?.toString() || "");
+    setEstimate({
+      amount_out: config.amountOut,
+      slippage: config.slippage
+    });
+  }, [node?.data?.config]);
+
+  useEffect(() => {
+    if (!tokenIn) return;
+    const validPair = pairs.find(
+      (p:any) => p.token_in.id === tokenIn && p.token_out.id === tokenOut
+    );
+    if (!validPair) {
+      const firstPair = pairs.find(
+        (p:any) => p.token_in.id === tokenIn
+      );
+      if (firstPair) {
+        setTokenOut(firstPair.token_out.id);
+      }
+    }
+  }, [tokenIn, tokenOut, pairs]);
+
   const selectedPair = pairs.find(
     (p: any) => p.token_in.id === tokenIn && p.token_out.id === tokenOut,
   );
+
   const isValid =
     amount !== "" &&
     Number(amount) > 0 &&
@@ -24,7 +68,6 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
     estimate !== null;
 
   // HANDLE AMOUNT
-
   const handleAmountChange = (value: string) => {
     if (!value) {
       setAmount("");
@@ -43,7 +86,6 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
   };
 
   // ESTIMATE
-
   const handleEstimate = async () => {
     if (!amount || !selectedPair) {
       setEstimate(null);
@@ -56,6 +98,7 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
         token_out_id: tokenOut,
         amount_in: Number(amount),
       });
+      console.log("ESTIMATE RESULT:", res);
       setEstimate(res);
     } catch (err) {
       console.error(err);
@@ -64,18 +107,30 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
       setEstimating(false);
     }
   };
-  useEffect(() => {
-    setEstimate(null);
-    if (!amount || !selectedPair) return;
-    const timeout = setTimeout(() => {
-      handleEstimate();
-    }, 400);
 
-    return () => clearTimeout(timeout);
+  useEffect(() => {
+  if (node?.data?.config?.tokenInId) return;
+  if (!prevConfig?.tokenOutId) return;
+  if (!pairs || pairs.length === 0) return;
+  let pair = pairs.find(
+    (p:any) => p.token_in.id === prevConfig.tokenOutId
+  );
+  if (!pair) {
+    console.warn("No pair match → fallback first pair");
+    pair = pairs[0];
+  }
+  setIsAutoFill(true);
+  setTokenIn(pair.token_in.id);
+  setTokenOut(pair.token_out.id);
+  setAmount(prevConfig.amountOut?.toString() || "");
+  }, [prevConfig, pairs]);
+
+  useEffect(() => {
+    if (!amount || !selectedPair) return;
+      handleEstimate();
   }, [amount, tokenIn, tokenOut]);
 
   // SUBMIT
-
   const handleSubmit = async () => {
     if (!isValid || !selectedPair) return;
     const payload = {
@@ -148,6 +203,7 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
 
             <select
               value={tokenIn}
+              disabled={!!incomingEdge}
               onChange={(e) => setTokenIn(e.target.value)}
               className="w-full mt-2 p-3 rounded-xl bg-[#1b1b2c]"
             >
@@ -163,6 +219,7 @@ export default function ConfigPanel({ node, onSave, onClose }: any) {
               min="0"
               step="any"
               value={amount}
+              disabled={!!incomingEdge}
               placeholder="Enter amount"
               onChange={(e) => handleAmountChange(e.target.value)}
               className="

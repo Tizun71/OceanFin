@@ -61,7 +61,7 @@ export interface CreateStrategyPayload{
   tokenOutSymbol:string
   amount:number
   amountOut:number
-  slippage?:number
+  slippage:number
 }
 export interface CreateStrategyRequest {
   owner_id: string

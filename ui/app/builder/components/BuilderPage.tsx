@@ -112,7 +112,7 @@ function Builder() {
   const handleCreateStrategy = async () => {
     try {
       const workflow_json = buildWorkflowJson(nodes);
-
+    
       console.log("workflow_json:", workflow_json);
       await createStrategyWorkflow(workflow_json);
       alert("Success");
@@ -307,6 +307,7 @@ function Builder() {
       {selectedNode && (
         <ConfigPanel
           node={selectedNode}
+          nodes={nodes}
           onClose={() => setSelectedNode(null)}
           onSave={handleSaveConfig}
         />
