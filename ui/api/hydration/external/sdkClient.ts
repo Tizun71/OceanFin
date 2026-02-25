@@ -1,8 +1,8 @@
 // sdkClient.ts
-import { createSdkContext } from '@galacticcouncil/sdk';
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { createSdkContext, SdkCtx } from "@galacticcouncil/sdk";
+import { ApiPromise, WsProvider } from "@polkadot/api";
 
-const HYDRATION_RPC_ENDPOINT = 'wss://rpc.hydradx.cloud';
+const HYDRATION_RPC_ENDPOINT = "wss://rpc.hydradx.cloud";
 
 let apiInstance: ApiPromise | null = null;
 let sdkInstance: any | null = null;
@@ -14,7 +14,7 @@ async function createCtx() {
   await api.isReady;
   const sdk = await createSdkContext(api);
 
-  api.on('disconnected', () => {
+  api.on("disconnected", () => {
     apiInstance = null;
     sdkInstance = null;
     creatingPromise = null;
@@ -25,9 +25,9 @@ async function createCtx() {
   return { api, sdk };
 }
 
-export async function getHydrationSDK() {
+export async function getHydrationSDK(): Promise<{ api: ApiPromise; sdk: SdkCtx }> {
   if (apiInstance && apiInstance.isConnected) {
-    return { api: apiInstance, sdk: sdkInstance! };
+    return { api: apiInstance, sdk: sdkInstance };
   }
   if (creatingPromise) {
     return creatingPromise;
