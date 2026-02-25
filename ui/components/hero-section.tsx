@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Layers } from "lucide-react";
+import { Layers, Workflow } from "lucide-react";
 import { WalletButton } from "./shared/wallet-button";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -29,7 +29,10 @@ export function HeroSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navItems = [{ icon: Layers, label: "STRATEGY", href: "/" }];
+  const navItems = [
+    { icon: Layers, label: "STRATEGY", href: "/" },
+    { icon: Workflow, label: "BUILDER", href: "/builder" },
+  ];
 
   return (
     <motion.header

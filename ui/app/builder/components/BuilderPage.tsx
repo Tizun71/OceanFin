@@ -22,6 +22,7 @@ import { useCallback, useState } from "react";
 import ConfigPanel from "./ConfigPanel";
 
 import { createStrategyWorkflow } from "@/services/defi-module-service";
+import { displayToast } from "@/components/shared/toast-manager";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -34,24 +35,17 @@ function Builder() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const [selectedNode, setSelectedNode] = useState<any>(null);
-
   const [loading, setLoading] = useState(false);
 
   /*
   BUILD WORKFLOW JSON
   */
   const buildWorkflowJson = (nodes: any[]) => {
-    console.log("FULL NODES:", nodes);
-
     let stepNumber = 1;
-
     const steps = nodes.map((node, index) => {
       const config = node.data.config;
-
-      console.log("CONFIG:", config);
       // tokenIn
       let tokenIn = undefined;
-
       if (index === 0) {
         // step config
         if (config?.tokenInId) {
@@ -63,7 +57,6 @@ function Builder() {
         }
       } else {
         const prevConfig = nodes[index - 1].data.config;
-
         if (prevConfig?.tokenOutId) {
           tokenIn = {
             assetId: prevConfig.tokenOutId,
@@ -72,10 +65,8 @@ function Builder() {
           };
         }
       }
-
       // tokenOut
       let tokenOut = undefined;
-
       if (config?.tokenOutId) {
         tokenOut = {
           assetId: config.tokenOutId,
@@ -83,25 +74,17 @@ function Builder() {
           amount: config.amountOut,
         };
       }
-
       return {
         step: stepNumber++,
-
         type: node.data.action.name.toUpperCase().replace(" ", "_"),
-
         agent: node.data.module.name.toUpperCase(),
-
         tokenIn,
-
         tokenOut,
       };
     });
-
     return {
       loops: "1",
-
       fee: 0,
-
       steps,
     };
   };
@@ -112,10 +95,8 @@ function Builder() {
   const handleCreateStrategy = async () => {
     try {
       const workflow_json = buildWorkflowJson(nodes);
-    
-      console.log("workflow_json:", workflow_json);
       await createStrategyWorkflow(workflow_json);
-      alert("Success");
+      displayToast("success", "Create Strategy successfully!")
     } catch (err) {
       console.error(err);
     }
@@ -127,7 +108,6 @@ function Builder() {
   const handleDeleteNode = useCallback(
     (id: string) => {
       setNodes((nds) => nds.filter((node) => node.id !== id));
-
       setEdges((eds) =>
         eds.filter((edge) => edge.source !== id && edge.target !== id),
       );
@@ -141,17 +121,14 @@ function Builder() {
   const handleAddNode = useCallback(
     (module: Module, action: Action) => {
       const id = crypto.randomUUID();
-
       setNodes((nds) => {
         const newNode = {
           id,
           type: "defiNode",
-
           position: {
             x: 250,
             y: nds.length * 180 + 80,
           },
-
           data: {
             id,
             module,
@@ -159,25 +136,19 @@ function Builder() {
             onDelete: handleDeleteNode,
           },
         };
-
         if (nds.length > 0) {
           const lastNode = nds[nds.length - 1];
-
           setTimeout(() => {
             setEdges((eds) =>
               addEdge(
                 {
                   id: `${lastNode.id}-${id}`,
-
                   source: lastNode.id,
                   target: id,
-
                   sourceHandle: "bottom",
                   targetHandle: "top",
-
                   type: "smoothstep",
                   animated: true,
-
                   style: {
                     stroke: "#6366f1",
                     strokeWidth: 2,
@@ -188,7 +159,6 @@ function Builder() {
             );
           }, 0);
         }
-
         return [...nds, newNode];
       });
     },
@@ -204,10 +174,8 @@ function Builder() {
         addEdge(
           {
             ...params,
-
             type: "smoothstep",
             animated: true,
-
             style: {
               stroke: "#6366f1",
               strokeWidth: 2,

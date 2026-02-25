@@ -98,7 +98,6 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
         token_out_id: tokenOut,
         amount_in: Number(amount),
       });
-      console.log("ESTIMATE RESULT:", res);
       setEstimate(res);
     } catch (err) {
       console.error(err);
