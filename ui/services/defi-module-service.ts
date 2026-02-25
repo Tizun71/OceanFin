@@ -30,9 +30,7 @@ export const createDefiModule = async (data: any) => {
   return res.json();
 };
 
-export const createStrategy = async (
-  payload: CreateStrategyPayload
-) => {
+export const createStrategy = async (payload: CreateStrategyPayload) => {
   const res = await fetch(`${BASE_URL}/strategies`, {
     method: "POST",
     headers: {
@@ -46,22 +44,22 @@ export const createStrategy = async (
       token_out_id: payload.tokenOutId,
       amount_in: payload.amount,
     }),
-  })
+  });
 
   if (!res.ok) {
-    const error = await res.text()
-    throw new Error(error)
+    const error = await res.text();
+    throw new Error(error);
   }
 
-  return res.json()
-}
+  return res.json();
+};
 
 export const estimateSwap = async (data: {
-  token_in_id: string
-  token_out_id: string
-  amount_in: number
-})=>{
-  const res = await fetch(`${BASE_URL}/defi-modules/pairs/estimate`,{
+  token_in_id: string;
+  token_out_id: string;
+  amount_in: number;
+}) => {
+  const res = await fetch(`${BASE_URL}/defi-modules/pairs/estimate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -71,35 +69,39 @@ export const estimateSwap = async (data: {
       operation_type: "SWAP",
       ...data,
     }),
-  })
+  });
   if (!res.ok) {
-    throw new Error("Failed to estimate swap")
+    throw new Error("Failed to estimate swap");
   }
 
-  return res.json()
-}
+  return res.json();
+};
 
 export const createStrategyWorkflow = async (
-  workflow_json: any
+  workflow_json: any,
+  workflow_graph: any = {},
 ) => {
-  const res = await fetch(`${BASE_URL}/strategies`, {
+  const res = await fetch(`${BASE_URL}/defi-strategies`, {
     method: "POST",
-
     headers: {
       "Content-Type": "application/json",
     },
-
     credentials: "include",
-
     body: JSON.stringify({
+      owner_id: "f705f5d2-59f6-4433-8c6d-ed0ebe565d4b",
       name: "My Strategy",
+      description: "Created from Builder",
+      is_public: true,
+      chain_context: "hydration",
+      status: "draft",
       workflow_json,
+      workflow_graph,
     }),
-  })
-
+  });
   if (!res.ok) {
-    throw new Error("Failed to create strategy")
+    const error = await res.text();
+    console.error(error);
+    throw new Error(error);
   }
-
-  return res.json()
-}
+  return res.json();
+};

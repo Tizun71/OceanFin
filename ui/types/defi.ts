@@ -51,13 +51,25 @@ export interface ModuleFromBE {
   created_at: string
   defi_module_actions: Action[]
 }
-export interface CreateStrategyPayload {
-  nodeId: string
-  moduleId: string
-  actionId: string
-  tokenInId: string
-  tokenOutId: string
-  tokenInSymbol: string
-  tokenOutSymbol: string
-  amount: number
+export interface CreateStrategyPayload{
+  nodeId:string
+  moduleId:string
+  actionId:string
+  tokenInId:string
+  tokenOutId:string
+  tokenInSymbol:string
+  tokenOutSymbol:string
+  amount:number
+  amountOut:number
+  slippage?:number
+}
+export interface CreateStrategyRequest {
+  owner_id: string
+  name: string
+  description: string
+  is_public: boolean
+  chain_context: string
+  status: string
+  workflow_json: any
+  workflow_graph: any
 }
