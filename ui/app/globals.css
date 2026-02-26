@@ -160,3 +160,162 @@
     transform: translateX(100%);
   }
 }
+
+/* Wrapper glass */
+.defi-minimap {
+
+  background: rgba(15,15,26,0.55) !important;
+
+  backdrop-filter: blur(16px);
+
+  border-radius: 14px;
+
+  border: 1px solid rgba(255,255,255,0.06);
+
+  padding: 6px;
+
+  box-shadow:
+    0 4px 20px rgba(0,0,0,0.4),
+    inset 0 0 20px rgba(255,255,255,0.02);
+
+}
+
+.defi-minimap .react-flow__minimap {
+
+  background: transparent !important;
+
+}
+
+.defi-minimap .react-flow__minimap-mask {
+
+  fill: transparent !important;
+
+}
+
+/* viewport rectangle */
+.defi-minimap .react-flow__minimap-viewport {
+
+  fill: rgba(99,102,241,0.15) !important;
+
+  stroke: #6366f1 !important;
+
+  stroke-width: 1.5px !important;
+
+  rx: 6;
+
+}
+
+.defi-minimap .react-flow__minimap-node rect {
+
+  fill: rgba(255,255,255,0.35) !important;
+
+  stroke: rgba(255,255,255,0.6) !important;
+
+  stroke-width: 1px !important;
+
+}
+
+/* optional: node hover */
+.defi-minimap .react-flow__minimap-node:hover rect {
+
+  fill: rgba(255,255,255,0.6) !important;
+
+}
+
+.react-flow__attribution {
+
+  display: none !important;
+
+}
+
+.defi-minimap svg {
+
+  border-radius: 10px;
+
+}
+
+.react-flow__attribution {
+
+  display: none !important;
+
+}
+
+/* =========================
+   BASE STYLE 
+========================= */
+
+.defi-btn-glass {
+
+  padding: 12px 0;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  color: #c7d2fe;
+
+  background: rgba(99,102,241,0.12);
+
+  backdrop-filter: blur(16px);
+
+  border-radius: 10px;
+
+  border: 1px solid rgba(99,102,241,0.25);
+
+  box-shadow:
+    0 4px 15px rgba(0,0,0,0.35),
+    inset 0 0 10px rgba(255,255,255,0.05);
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+
+}
+
+
+/* hover */
+
+.defi-btn-glass:hover {
+
+  color: white;
+
+  background: rgba(99,102,241,0.25);
+
+  border: 1px solid rgba(129,140,248,0.5);
+
+  box-shadow:
+    0 6px 20px rgba(99,102,241,0.35);
+
+}
+
+
+/* disabled */
+
+.defi-btn-glass:disabled {
+
+  opacity: 0.4;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+
+}
+
+
+/* =========================
+   FLOATING BUTTON ONLY
+========================= */
+
+.defi-create-btn {
+
+  position: absolute;
+
+  right: 24px;
+
+  bottom: 110px;
+
+  width: 132px;
+
+  z-index: 20;
+
+}

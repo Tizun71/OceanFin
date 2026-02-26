@@ -20,9 +20,19 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#141420] to-[#0e0e18] text-white">
+    <div
+      className="
+        h-full flex flex-col
+        bg-white/5
+        backdrop-blur-xl
+        border border-white/10
+        rounded-2xl
+        shadow-[0_0_20px_rgba(0,0,0,0.3)]
+        text-white
+      "
+    >
       {/* Header */}
-      <div className="p-4 mt-16 border-b border-neutral-800">
+      <div className="p-4 border-b border-white/10">
         <h2 className="text-lg font-semibold tracking-wide">Module Library</h2>
 
         {/* Search */}
@@ -90,11 +100,12 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
                           className="
                             w-full text-left
                             px-3 py-2 rounded-xl
-                            bg-[#1a1a2a]
-                            border border-neutral-800
+                            bg-white/5
+                            border border-white/10
+                            backdrop-blur-md
                             text-sm
-                            hover:border-indigo-500/60
-                            hover:bg-indigo-500/5
+                            hover:bg-indigo-500/10
+                            hover:border-indigo-400/40
                             transition-all duration-200
                           "
                         >

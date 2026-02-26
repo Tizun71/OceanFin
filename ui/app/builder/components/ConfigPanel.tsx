@@ -157,135 +157,227 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
   };
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-      />
+  <>
+    {/* Overlay */}
+    <div
+      onClick={onClose}
+      className="
+      fixed inset-0
+      bg-black/60
+      backdrop-blur-sm
+      z-40
+    "
+    />
 
-      {/* Panel */}
-      <div
-        className="
-      fixed right-0 top-0 h-full w-[380px]
-      bg-gradient-to-b from-[#141420] to-[#0f0f1a]
-      border-l border-neutral-800
-      shadow-2xl
-      p-6
+    {/* Panel */}
+    <div
+      className="
+      fixed right-6 top-6 bottom-6
+      w-[400px]
+      rounded-2xl
+      bg-gradient-to-br from-[#18182a] to-[#0f0f1a]
+      border border-white/10
+      shadow-[0_0_40px_rgba(0,0,0,0.6)]
       z-50
       flex flex-col
+      overflow-hidden
     "
+    >
+      {/* Header */}
+      <div
+        className="
+        px-6 py-5
+        border-b border-white/10
+        flex justify-between items-start
+      "
       >
-        {/* Header */}
-        <div className="flex justify-between mb-6">
-          <div>
-            <p className="text-xs text-neutral-500 uppercase">
-              {node.data.module.name}
-            </p>
-            <h2 className="text-lg font-semibold text-white">
-              {node.data.action.name}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-neutral-400 hover:text-white"
-          >
-            <X size={18} />
-          </button>
+        <div>
+          <p className="text-xs text-neutral-500 uppercase">
+            {node.data.module.name}
+          </p>
+
+          <h2 className="text-lg font-semibold text-white mt-1">
+            {node.data.action.name}
+          </h2>
         </div>
 
-        {/* Form */}
-        <div className="flex-1 space-y-6">
-          {/* Token In */}
-          <div>
-            <label className="text-xs text-neutral-400">Token In</label>
-
-            <select
-              value={tokenIn}
-              disabled={!!incomingEdge}
-              onChange={(e) => setTokenIn(e.target.value)}
-              className="w-full mt-2 p-3 rounded-xl bg-[#1b1b2c]"
-            >
-              {pairs.map((p: any) => (
-                <option key={p.id} value={p.token_in.id}>
-                  {p.token_in.name}
-                </option>
-              ))}
-            </select>
-            {/* Amount */}
-            <input
-              type="number"
-              min="0"
-              step="any"
-              value={amount}
-              disabled={!!incomingEdge}
-              placeholder="Enter amount"
-              onChange={(e) => handleAmountChange(e.target.value)}
-              className="
-              w-full mt-3 p-3 rounded-xl
-              bg-[#1b1b2c]
-              border border-neutral-800
-              focus:outline-none focus:ring-2 focus:ring-indigo-500
-            "
-            />
-            {/* Error */}
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
-          </div>
-          {/* Token Out */}
-          <div>
-            <label className="text-xs text-neutral-400">Token Out</label>
-            <select
-              value={tokenOut}
-              onChange={(e) => setTokenOut(e.target.value)}
-              className="w-full mt-2 p-3 rounded-xl bg-[#1b1b2c]"
-            >
-              {pairs.map((p: any) => (
-                <option key={p.id} value={p.token_out.id}>
-                  {p.token_out.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Estimating */}
-          {estimating && (
-            <p className="text-sm text-neutral-500">Estimating...</p>
-          )}
-          {/* Result */}
-          {estimate && selectedPair && (
-            <div className="bg-[#1b1b2c] p-4 rounded-xl">
-              <p className="text-xs text-neutral-400">Estimated Output</p>
-              <p className="text-xl font-semibold text-white mt-1">
-                {Number(estimate.amount_out).toFixed(6)}{" "}
-                {selectedPair.token_out.name}
-              </p>
-              <p className="text-xs text-neutral-500 mt-1">
-                Slippage: {(estimate.slippage * 100).toFixed(2)}%
-              </p>
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="pt-4 border-t border-neutral-800">
-            <button
-              onClick={handleSubmit}
-              disabled={!isValid || loading}
-              className="
-              w-full
-              py-3
-              rounded-xl
-              bg-indigo-600
-              hover:bg-indigo-500
-              disabled:bg-neutral-700
-              disabled:cursor-not-allowed
-              text-white
-              font-medium
-            "
-            >
-              {loading ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={onClose}
+          className="
+          text-neutral-400
+          hover:text-white
+          transition
+        "
+        >
+          <X size={18} />
+        </button>
       </div>
-    </>
-  );
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+
+        {/* Token In */}
+        <div className="space-y-3">
+
+          <label className="text-xs text-neutral-400">
+            Token In
+          </label>
+
+          <select
+            value={tokenIn}
+            disabled={!!incomingEdge}
+            onChange={(e) => setTokenIn(e.target.value)}
+            className="
+            w-full
+            px-4 py-3
+            rounded-xl
+            bg-[#141420]
+            border border-white/10
+            focus:outline-none
+            focus:ring-2 focus:ring-indigo-500
+          "
+          >
+            {pairs.map((p: any) => (
+              <option key={p.id} value={p.token_in.id}>
+                {p.token_in.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="number"
+            value={amount}
+            disabled={!!incomingEdge}
+            placeholder="Enter amount"
+            onChange={(e) =>
+              handleAmountChange(e.target.value)
+            }
+            className="
+            w-full
+            px-4 py-3
+            rounded-xl
+            bg-[#141420]
+            border border-white/10
+            focus:outline-none
+            focus:ring-2 focus:ring-indigo-500
+          "
+          />
+
+          {error && (
+            <p className="text-red-400 text-xs">
+              {error}
+            </p>
+          )}
+        </div>
+
+        {/* Token Out */}
+        <div className="space-y-3">
+
+          <label className="text-xs text-neutral-400">
+            Token Out
+          </label>
+
+          <select
+            value={tokenOut}
+            onChange={(e) => setTokenOut(e.target.value)}
+            className="
+            w-full
+            px-4 py-3
+            rounded-xl
+            bg-[#141420]
+            border border-white/10
+            focus:outline-none
+            focus:ring-2 focus:ring-indigo-500
+          "
+          >
+            {pairs.map((p: any) => (
+              <option key={p.id} value={p.token_out.id}>
+                {p.token_out.name}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
+        {/* Estimating */}
+        {estimating && (
+
+          <div className="
+          text-sm text-neutral-500
+          bg-[#141420]
+          p-4
+          rounded-xl
+          border border-white/10
+          ">
+            Estimating...
+          </div>
+
+        )}
+
+        {/* Result */}
+        {estimate && selectedPair && (
+
+          <div
+            className="
+            bg-gradient-to-br
+            from-indigo-500/10
+            to-pink-500/10
+            border border-indigo-500/20
+            p-5
+            rounded-xl
+          "
+          >
+
+            <p className="text-xs text-neutral-400">
+              Estimated Output
+            </p>
+
+            <p className="
+            text-2xl
+            font-bold
+            text-white
+            mt-1
+            ">
+              {Number(
+                estimate.amount_out
+              ).toFixed(6)}{" "}
+              {selectedPair.token_out.name}
+            </p>
+
+            <p className="
+            text-xs
+            text-neutral-500
+            mt-1
+            ">
+              Slippage:{" "}
+              {(estimate.slippage * 100).toFixed(2)}%
+            </p>
+
+          </div>
+
+        )}
+
+      </div>
+
+      {/* Footer */}
+      <div
+        className="
+        p-6
+        border-t border-white/10
+      "
+      >
+
+        <button
+          onClick={handleSubmit}
+          disabled={!isValid || loading}
+          className="defi-btn-glass w-full"
+        >
+          Save Strategy
+        </button>
+
+      </div>
+
+    </div>
+  </>
+);
 }

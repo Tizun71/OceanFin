@@ -227,14 +227,24 @@ function Builder() {
   }
 
   return (
-    <div className="flex h-screen text-white">
+    <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
       {/* Sidebar */}
-      <div className="w-72 border-r">
+      <div className="w-72 border-r border-white/10">
         <Sidebar modules={modules} onSelect={handleAddNode} />
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 relative">
+      <div
+        className="
+        flex-1
+        relative
+        bg-white/5
+        backdrop-blur-xl
+        border border-white/10
+        rounded-2xl
+        overflow-hidden
+      "
+      >
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -249,25 +259,24 @@ function Builder() {
           <button
             onClick={handleCreateStrategy}
             disabled={nodes.length === 0 || loading}
-            className="
-              absolute
-              bottom-50
-              right-8
-              px-6
-              py-3
-              bg-indigo-600
-              hover:bg-indigo-500
-              text-white
-              rounded-xl
-              shadow-lg
-              z-10
-            "
+            className="defi-btn-glass defi-create-btn"
           >
-            {loading ? "Creating..." : "Create Strategy"}
+            Create Strategy
           </button>
-          <MiniMap />
+          <MiniMap
+            className="defi-minimap"
+            style={{
+              width: 140,
+              height: 90,
+            }}
+          />
           <Controls />
-          <Background variant={BackgroundVariant.Dots} />
+          <Background
+            variant={BackgroundVariant.Dots}
+            gap={20}
+            size={1}
+            color="rgba(255,255,255,0.1)"
+          />
         </ReactFlow>
       </div>
 
