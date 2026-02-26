@@ -24,6 +24,7 @@ import ConfigPanel from "./ConfigPanel";
 import { createStrategyWorkflow } from "@/services/defi-module-service";
 import { displayToast } from "@/components/shared/toast-manager";
 import CreateStrategyModal from "./CreateStrategyModal";
+import { useUser } from "@/app/contexts/user-context";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -218,30 +219,42 @@ function Builder() {
       </div>
     );
   }
-
+  const { user } = useUser();
   const handleCreate = async (name: string) => {
 
   try {
 
-    setCreating(true);
-
     const workflow_json = buildWorkflowJson(nodes);
 
-    await createStrategyWorkflow(name, workflow_json);
+    const payload = {
 
-    displayToast("success", "Create strategy successfully");
+      owner_id: "f705f5d2-59f6-4433-8c6d-ed0ebe565d4b",
 
-    setShowModal(false);
+      name: name,
+
+      description: "Strategy description",
+
+      is_public: true,
+
+      chain_context: "ethereum",
+
+      status: "draft",
+
+      workflow_json: workflow_json,
+
+      workflow_graph: workflow_json
+
+    };
+
+    console.log("CREATE PAYLOAD:", payload);
+
+    await createStrategyWorkflow(payload);
+
+    displayToast("success", "Create Strategy successfully!");
 
   } catch (err) {
 
     console.error(err);
-
-    displayToast("error", "Create strategy failed");
-
-  } finally {
-
-    setCreating(false);
 
   }
 
