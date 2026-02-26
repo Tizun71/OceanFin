@@ -163,8 +163,8 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
       onClick={onClose}
       className="
       fixed inset-0
-      bg-black/60
-      backdrop-blur-sm
+      bg-black/30
+      backdrop-blur-[1px]
       z-40
     "
     />
@@ -172,8 +172,11 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
     {/* Panel */}
     <div
       className="
-      fixed right-6 top-6 bottom-6
-      w-[400px]
+      fixed
+      right-8
+      top-[56%] -translate-y-1/2
+      w-[360px]
+      h-[600px]
       rounded-2xl
       bg-gradient-to-br from-[#18182a] to-[#0f0f1a]
       border border-white/10
