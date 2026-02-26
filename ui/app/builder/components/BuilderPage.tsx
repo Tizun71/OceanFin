@@ -2,11 +2,6 @@
 
 import ReactFlow, {
   ReactFlowProvider,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Connection,
-  Edge,
   Background,
   BackgroundVariant,
   Controls,
@@ -14,17 +9,11 @@ import ReactFlow, {
 } from "reactflow";
 
 import Sidebar from "./Sidebar";
-import { Action, CreateStrategyPayload, Module } from "@/types/defi";
-import { useDefiModules } from "@/hooks/use-defi-modules";
-import DefiNode from "./DefiNode";
-
-import { useCallback, useState } from "react";
 import ConfigPanel from "./ConfigPanel";
-
-import { createStrategyWorkflow } from "@/services/defi-module-service";
-import { displayToast } from "@/components/shared/toast-manager";
 import CreateStrategyModal from "./CreateStrategyModal";
-import { useUser } from "@/app/contexts/user-context";
+import DefiNode from "./DefiNode";
+import { useDefiModules } from "@/hooks/use-defi-modules";
+import { useDefiBuilder } from "@/hooks/use-strategy-builder";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -33,185 +22,25 @@ const nodeTypes = {
 function Builder() {
   const { data: modules = [], isLoading } = useDefiModules();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const {
+    nodes,
+    edges,
+    selectedNode,
+    showModal,
+    creating,
 
-  const [selectedNode, setSelectedNode] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+    setSelectedNode,
+    setShowModal,
 
-  const [showModal, setShowModal] = useState(false);
-  const [creating, setCreating] = useState(false);
+    onNodesChange,
+    onEdgesChange,
+   
 
-  /*
-  BUILD WORKFLOW JSON
-  */
-  const buildWorkflowJson = (nodes: any[]) => {
-    let stepNumber = 1;
-    const steps = nodes.map((node, index) => {
-      const config = node.data.config;
-      // tokenIn
-      let tokenIn = undefined;
-      if (index === 0) {
-        // step config
-        if (config?.tokenInId) {
-          tokenIn = {
-            assetId: config.tokenInId,
-            symbol: config.tokenInSymbol,
-            amount: config.amount,
-          };
-        }
-      } else {
-        const prevConfig = nodes[index - 1].data.config;
-        if (prevConfig?.tokenOutId) {
-          tokenIn = {
-            assetId: prevConfig.tokenOutId,
-            symbol: prevConfig.tokenOutSymbol,
-            amount: prevConfig.amountOut,
-          };
-        }
-      }
-      // tokenOut
-      let tokenOut = undefined;
-      if (config?.tokenOutId) {
-        tokenOut = {
-          assetId: config.tokenOutId,
-          symbol: config.tokenOutSymbol,
-          amount: config.amountOut,
-        };
-      }
-      return {
-        step: stepNumber++,
-        type: node.data.action.name.toUpperCase().replace(" ", "_"),
-        agent: node.data.module.name.toUpperCase(),
-        tokenIn,
-        tokenOut,
-      };
-    });
-    return {
-      loops: "1",
-      fee: 0,
-      steps,
-    };
-  };
+    addNode,
+    saveConfig,
+    createStrategy,
+  } = useDefiBuilder();
 
-  
-
-  /*
-  DELETE NODE
-  */
-  const handleDeleteNode = useCallback(
-    (id: string) => {
-      setNodes((nds) => nds.filter((node) => node.id !== id));
-      setEdges((eds) =>
-        eds.filter((edge) => edge.source !== id && edge.target !== id),
-      );
-    },
-    [setNodes, setEdges],
-  );
-
-  /*
-  ADD NODE
-  */
-  const handleAddNode = useCallback(
-    (module: Module, action: Action) => {
-      const id = crypto.randomUUID();
-      setNodes((nds) => {
-        const newNode = {
-          id,
-          type: "defiNode",
-          position: {
-            x: 250,
-            y: nds.length * 180 + 80,
-          },
-          data: {
-            id,
-            module,
-            action,
-            onDelete: handleDeleteNode,
-          },
-        };
-        if (nds.length > 0) {
-          const lastNode = nds[nds.length - 1];
-          setTimeout(() => {
-            setEdges((eds) =>
-              addEdge(
-                {
-                  id: `${lastNode.id}-${id}`,
-                  source: lastNode.id,
-                  target: id,
-                  sourceHandle: "bottom",
-                  targetHandle: "top",
-                  type: "smoothstep",
-                  animated: true,
-                  style: {
-                    stroke: "#6366f1",
-                    strokeWidth: 2,
-                  },
-                },
-                eds,
-              ),
-            );
-          }, 0);
-        }
-        return [...nds, newNode];
-      });
-    },
-    [handleDeleteNode, setEdges],
-  );
-
-  /*
-  CONNECT
-  */
-  const onConnect = useCallback(
-    (params: Edge | Connection) =>
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            type: "smoothstep",
-            animated: true,
-            style: {
-              stroke: "#6366f1",
-              strokeWidth: 2,
-            },
-          },
-          eds,
-        ),
-      ),
-    [setEdges],
-  );
-
-  /*
-  SAVE CONFIG
-  */
-  const handleSaveConfig = (payload: CreateStrategyPayload) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === payload.nodeId
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                config: payload,
-              },
-            }
-          : node,
-      ),
-    );
-
-    // update selectedNode
-    setSelectedNode((prev: any) =>
-      prev
-        ? {
-            ...prev,
-            data: {
-              ...prev.data,
-              config: payload,
-            },
-          }
-        : prev,
-    );
-  };
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen text-white">
@@ -219,52 +48,12 @@ function Builder() {
       </div>
     );
   }
-  const { user } = useUser();
-  const handleCreate = async (name: string) => {
-
-  try {
-
-    const workflow_json = buildWorkflowJson(nodes);
-
-    const payload = {
-
-      owner_id: "f705f5d2-59f6-4433-8c6d-ed0ebe565d4b",
-
-      name: name,
-
-      description: "Strategy description",
-
-      is_public: true,
-
-      chain_context: "ethereum",
-
-      status: "draft",
-
-      workflow_json: workflow_json,
-
-      workflow_graph: workflow_json
-
-    };
-
-    console.log("CREATE PAYLOAD:", payload);
-
-    await createStrategyWorkflow(payload);
-
-    displayToast("success", "Create Strategy successfully!");
-
-  } catch (err) {
-
-    console.error(err);
-
-  }
-
-};
 
   return (
     <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
       {/* Sidebar */}
       <div className="w-72 border-r border-white/10">
-        <Sidebar modules={modules} onSelect={handleAddNode} />
+        <Sidebar modules={modules} onSelect={addNode} />
       </div>
 
       {/* Canvas */}
@@ -285,7 +74,7 @@ function Builder() {
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          
           onNodeClick={(_, node) => setSelectedNode(node)}
           fitView
         >
@@ -296,6 +85,7 @@ function Builder() {
           >
             Create Strategy
           </button>
+
           <MiniMap
             className="defi-minimap"
             style={{
@@ -303,7 +93,9 @@ function Builder() {
               height: 90,
             }}
           />
+
           <Controls />
+
           <Background
             variant={BackgroundVariant.Dots}
             gap={20}
@@ -319,7 +111,7 @@ function Builder() {
           node={selectedNode}
           nodes={nodes}
           onClose={() => setSelectedNode(null)}
-          onSave={handleSaveConfig}
+          onSave={saveConfig}
         />
       )}
 
@@ -327,12 +119,11 @@ function Builder() {
         open={showModal}
         loading={creating}
         onClose={() => setShowModal(false)}
-        onCreate={handleCreate}
+        onCreate={createStrategy}
       />
     </div>
   );
 }
-
 
 export default function BuilderPage() {
   return (

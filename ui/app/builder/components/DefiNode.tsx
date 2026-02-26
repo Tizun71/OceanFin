@@ -39,6 +39,7 @@ export default function DefiNode({ data, selected }: any) {
       <Handle
         type="target"
         position={Position.Top}
+        isConnectable={false}
         className="!w-3 !h-3 !bg-indigo-400 !border-black"
       />
 
@@ -55,7 +56,10 @@ export default function DefiNode({ data, selected }: any) {
           </div>
           {data.onDelete && (
             <button
-              onClick={() => data.onDelete(data.id)}
+              onClick={(e) => {
+              e.stopPropagation(); 
+              data.onDelete(data.id);
+            }}
               className="
                 text-neutral-500
                 hover:text-red-500
@@ -173,6 +177,7 @@ export default function DefiNode({ data, selected }: any) {
       <Handle
         type="source"
         position={Position.Bottom}
+        isConnectable={false}
         className="!w-3 !h-3 !bg-emerald-400 !border-black"
       />
     </div>

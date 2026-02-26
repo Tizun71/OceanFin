@@ -34,7 +34,7 @@ export default function CreateStrategyModal({
 
       {/* overlay */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
 
@@ -52,7 +52,7 @@ export default function CreateStrategyModal({
       >
 
         <h2 className="text-lg font-semibold text-white mb-4">
-          Create Strategy
+         Strategy Name
         </h2>
 
         <input
