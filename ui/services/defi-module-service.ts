@@ -78,30 +78,58 @@ export const estimateSwap = async (data: {
 };
 
 export const createStrategyWorkflow = async (
+  name: string,
   workflow_json: any,
   workflow_graph: any = {},
 ) => {
+
+  const body = {
+
+    owner_id: "f705f5d2-59f6-4433-8c6d-ed0ebe565d4b",
+
+    name,
+
+    description: "Strategy description",
+
+    is_public: true,
+
+    chain_context: "ethereum",
+
+    status: "draft",
+
+    workflow_json,
+
+    workflow_graph,
+
+  };
+
+  console.log("BODY SEND", body);
+
   const res = await fetch(`${BASE_URL}/defi-strategies`, {
+
     method: "POST",
+
     headers: {
+
       "Content-Type": "application/json",
+
     },
+
     credentials: "include",
-    body: JSON.stringify({
-      owner_id: "f705f5d2-59f6-4433-8c6d-ed0ebe565d4b",
-      name: "My Strategy",
-      description: "Created from Builder",
-      is_public: true,
-      chain_context: "hydration",
-      status: "draft",
-      workflow_json,
-      workflow_graph,
-    }),
+
+    body: JSON.stringify(body),
+
   });
+
   if (!res.ok) {
+
     const error = await res.text();
-    console.error(error);
+
+    console.error("CREATE ERROR", error);
+
     throw new Error(error);
+
   }
+
   return res.json();
 };

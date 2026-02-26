@@ -23,6 +23,7 @@ import ConfigPanel from "./ConfigPanel";
 
 import { createStrategyWorkflow } from "@/services/defi-module-service";
 import { displayToast } from "@/components/shared/toast-manager";
+import CreateStrategyModal from "./CreateStrategyModal";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -36,6 +37,9 @@ function Builder() {
 
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   /*
   BUILD WORKFLOW JSON
@@ -89,18 +93,7 @@ function Builder() {
     };
   };
 
-  /*
-  CREATE STRATEGY
-  */
-  const handleCreateStrategy = async () => {
-    try {
-      const workflow_json = buildWorkflowJson(nodes);
-      await createStrategyWorkflow(workflow_json);
-      displayToast("success", "Create Strategy successfully!")
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  
 
   /*
   DELETE NODE
@@ -226,6 +219,34 @@ function Builder() {
     );
   }
 
+  const handleCreate = async (name: string) => {
+
+  try {
+
+    setCreating(true);
+
+    const workflow_json = buildWorkflowJson(nodes);
+
+    await createStrategyWorkflow(name, workflow_json);
+
+    displayToast("success", "Create strategy successfully");
+
+    setShowModal(false);
+
+  } catch (err) {
+
+    console.error(err);
+
+    displayToast("error", "Create strategy failed");
+
+  } finally {
+
+    setCreating(false);
+
+  }
+
+};
+
   return (
     <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
       {/* Sidebar */}
@@ -257,8 +278,7 @@ function Builder() {
         >
           {/* CREATE BUTTON */}
           <button
-            onClick={handleCreateStrategy}
-            disabled={nodes.length === 0 || loading}
+            onClick={() => setShowModal(true)}
             className="defi-btn-glass defi-create-btn"
           >
             Create Strategy
@@ -289,9 +309,17 @@ function Builder() {
           onSave={handleSaveConfig}
         />
       )}
+
+      <CreateStrategyModal
+        open={showModal}
+        loading={creating}
+        onClose={() => setShowModal(false)}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }
+
 
 export default function BuilderPage() {
   return (
