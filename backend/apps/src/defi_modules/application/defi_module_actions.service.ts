@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { DefiModuleActionsRepository } from '../domain/defi_module_actions.repository';
-import { DefiModuleAction } from '../domain/defi_module_actions.entity';
-import { DefiModulesService } from './defi_modules.service';
-import { v4 as uuidv4 } from 'uuid';
-import { CreateDefiModuleActionDto } from '../interfaces/dtos/create_defi_module_action.dto';
+import { Injectable } from "@nestjs/common";
+import { DefiModuleActionsRepository } from "../domain/defi_module_actions.repository";
+import { DefiModuleAction } from "../domain/defi_module_actions.entity";
+import { DefiModulesService } from "./defi_modules.service";
+import { v4 as uuidv4 } from "uuid";
+import { CreateDefiModuleActionDto } from "../interfaces/dtos/create_defi_module_action.dto";
 
 @Injectable()
 export class DefiModuleActionsService {
@@ -12,9 +12,7 @@ export class DefiModuleActionsService {
     private readonly defiModulesService: DefiModulesService,
   ) {}
 
-  async createAction(
-    data: CreateDefiModuleActionDto,
-  ): Promise<DefiModuleAction> {
+  async createAction(data: CreateDefiModuleActionDto): Promise<DefiModuleAction> {
     // Throw 404 if the module does not exist
     await this.defiModulesService.getById(data.module_id);
 

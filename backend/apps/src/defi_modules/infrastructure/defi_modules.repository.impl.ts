@@ -1,15 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { DefiModulesRepository } from '../domain/defi_modules.repository';
-import { DefiModule } from '../domain/defi_modules.entity';
-import { SupabaseService } from '../../shared/infrastructure/supabase.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DefiModulesRepository } from "../domain/defi_modules.repository";
+import { DefiModule } from "../domain/defi_modules.entity";
+import { SupabaseService } from "../../shared/infrastructure/supabase.service";
 
 @Injectable()
 export class DefiModulesRepositoryImplement implements DefiModulesRepository {
   constructor(private readonly supabase: SupabaseService) {}
 
   async findAll() {
-    const { data, error } = await this.supabase.getClient().from('defi_modules')
-      .select(`
+    const { data, error } = await this.supabase.getClient().from("defi_modules").select(`
           *,
           defi_module_actions (
           *,
@@ -29,7 +28,7 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
   async save(defiModule: DefiModule): Promise<DefiModule> {
     const { data, error } = await this.supabase
       .getClient()
-      .from('defi_modules')
+      .from("defi_modules")
       .upsert({
         id: defiModule.id,
         name: defiModule.name,
@@ -66,10 +65,16 @@ export class DefiModulesRepositoryImplement implements DefiModulesRepository {
   async findById(id: string) {
     const { error, data } = await this.supabase
       .getClient()
-      .from('defi_modules')
-      .select('*, defi_module_actions(*, defi_pairs(id, defi_token(*)))')
-      .eq('id', id)
+      .from("defi_modules")
+      .select(
+        "*, defi_module_actions(*, defi_pairs(id, token_in:defi_token!defi_pairs_token_in_id_fkey (*), token_out:defi_token!defi_pairs_token_out_id_fkey (*)))",
+      )
+      .eq("id", id)
       .single();
+
+    if (!data) {
+      throw new NotFoundException("Defi Module not found");
+    }
 
     if (error) throw new Error(`Failed to fetch DefiModule: ${error.message}`);
 
