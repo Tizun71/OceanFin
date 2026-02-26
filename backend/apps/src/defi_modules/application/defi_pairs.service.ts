@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { DefiPair } from '../domain/defi_pairs.entity';
-import { DefiPairsRepository } from '../domain/defi_pairs.repository';
-import { DefiTokenService } from 'src/defi_token/application/defi_token.service';
-import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.service';
-import { HydrationStrategyService } from 'src/strategies/application/hydration-strategy.service';
-import { EstimateDefiPairResponseDto } from '../interfaces/dtos/estimate-defi-pair-response.dto';
-import { EstimateDefiPairDto } from '../interfaces/dtos/estimate-defi-pair.dto';
-import { OperationType } from '../domain/operation-type.enum';
-import { UiPoolDataProvider } from '@aave/contract-helpers';
-import { PolkadotEvmRpcProvider } from '../../strategies/infrastructure/helpers/hydration/utils/polkadotEVMProvider';
+import { Injectable } from "@nestjs/common";
+import { DefiPair } from "../domain/defi_pairs.entity";
+import { DefiPairsRepository } from "../domain/defi_pairs.repository";
+import { DefiTokenService } from "src/defi_token/application/defi_token.service";
+import { HydrationSdkService } from "src/shared/infrastructure/hydration-sdk.service";
+import { HydrationStrategyService } from "src/strategies/application/hydration-strategy.service";
+import { EstimateDefiPairResponseDto } from "../interfaces/dtos/estimate-defi-pair-response.dto";
+import { EstimateDefiPairDto } from "../interfaces/dtos/estimate-defi-pair.dto";
+import { OperationType } from "../domain/operation-type.enum";
+import { UiPoolDataProvider } from "@aave/contract-helpers";
+import { PolkadotEvmRpcProvider } from "../../strategies/infrastructure/helpers/hydration/utils/polkadotEVMProvider";
 
-const POOL_DATA_PROVIDER = '0x112b087b60C1a166130d59266363C45F8aa99db0';
-const POOL = '0xf3Ba4D1b50f78301BDD7EAEa9B67822A15FCA691';
+const POOL_DATA_PROVIDER = "0x112b087b60C1a166130d59266363C45F8aa99db0";
+const POOL = "0xf3Ba4D1b50f78301BDD7EAEa9B67822A15FCA691";
 
 @Injectable()
 export class DefiPairsService {
@@ -23,17 +23,17 @@ export class DefiPairsService {
   ) {}
 
   async createDefiPair(defiPair: DefiPair): Promise<DefiPair> {
-    await Promise.all([
-      this.defiTokenService.getDefiTokenById(defiPair.token_in_id),
-      this.defiTokenService.getDefiTokenById(defiPair.token_out_id),
-    ]);
+    if (defiPair.token_in_id) {
+      await this.defiTokenService.getDefiTokenById(defiPair.token_in_id);
+    }
+    if (defiPair.token_out_id) {
+      await this.defiTokenService.getDefiTokenById(defiPair.token_out_id);
+    }
 
     return this.defiPairsRepository.save(defiPair);
   }
 
-  async estimateDefiPair(
-    dto: EstimateDefiPairDto,
-  ): Promise<EstimateDefiPairResponseDto> {
+  async estimateDefiPair(dto: EstimateDefiPairDto): Promise<EstimateDefiPairResponseDto> {
     switch (dto.operation_type) {
       case OperationType.SWAP:
         return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
@@ -63,11 +63,11 @@ export class DefiPairsService {
 
     try {
       const amountInRaw = BigInt(Math.floor(amountIn * 10 ** 12));
-      
+
       const swapResult = await sdk.api.router.getBestSell(assetInId, assetOutId, amountInRaw);
 
       if (!swapResult || !swapResult.amountOut) {
-        throw new Error('Failed to calculate swap estimate');
+        throw new Error("Failed to calculate swap estimate");
       }
 
       let amountOut = 0;
@@ -81,7 +81,7 @@ export class DefiPairsService {
         amountOut = spotPrice * amountIn * 0.99;
         priceImpact = ((spotPrice - actualPrice) / spotPrice) * 100;
       } catch (error) {
-        console.warn('Failed to calculate price impact:', error.message);
+        console.warn("Failed to calculate price impact:", error.message);
       }
 
       console.log(priceImpact);
@@ -104,7 +104,7 @@ export class DefiPairsService {
         token_out_id: tokenOutId,
         amount_in: amountIn,
         amount_out: Number(amountOut.toFixed(6)),
-        slippage: 0.01
+        slippage: 0.01,
       };
     } catch (error) {
       throw new Error(`Failed to estimate swap: ${error.message}`);
@@ -119,7 +119,7 @@ export class DefiPairsService {
 
     try {
       const { api } = await this.hydrationSdk.getApiAndSdk();
-      
+
       const provider = new UiPoolDataProvider({
         uiPoolDataProviderAddress: POOL_DATA_PROVIDER,
         provider: new PolkadotEvmRpcProvider(api),
@@ -138,7 +138,7 @@ export class DefiPairsService {
         throw new Error(`No lending pool found for token ${tokenIn.name}`);
       }
 
-      const supplyApy = (parseFloat(reserve.liquidityRate) * 100 / 1e27).toFixed(2);
+      const supplyApy = ((parseFloat(reserve.liquidityRate) * 100) / 1e27).toFixed(2);
       console.log(supplyApy);
       return {
         operation_type: OperationType.SUPPLY,
@@ -163,7 +163,7 @@ export class DefiPairsService {
 
     try {
       const { api } = await this.hydrationSdk.getApiAndSdk();
-      
+
       const provider = new UiPoolDataProvider({
         uiPoolDataProviderAddress: POOL_DATA_PROVIDER,
         provider: new PolkadotEvmRpcProvider(api),
@@ -189,9 +189,12 @@ export class DefiPairsService {
       }
 
       const ltv = parseFloat(collateralReserve.baseLTVasCollateral) / 10000;
-      const borrowApy = parseFloat(borrowReserve.variableBorrowRate) * 100 / 1e27;
+      const borrowApy = (parseFloat(borrowReserve.variableBorrowRate) * 100) / 1e27;
 
-      const spotPrice = await this.hydrationStrategyService.getAssetPrice(collateralToken.asset_id.toString(), borrowToken.asset_id.toString());
+      const spotPrice = await this.hydrationStrategyService.getAssetPrice(
+        collateralToken.asset_id.toString(),
+        borrowToken.asset_id.toString(),
+      );
       const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
 
       return {

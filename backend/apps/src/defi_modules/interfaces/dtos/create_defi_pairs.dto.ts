@@ -1,25 +1,27 @@
-import { IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class CreateDefiPairsDto {
   @ApiProperty({
-    description: 'ID of the DeFi module action',
-    example: 'action-uuid-1234',
+    description: "ID of the DeFi module action",
+    example: "action-uuid-1234",
   })
   @IsString()
   action_id: string;
 
   @ApiProperty({
-    description: 'ID of the input token',
-    example: 'token-uuid-5678',
+    description: "ID of the input token",
+    example: "token-uuid-5678",
   })
   @IsString()
-  token_in_id: string;
+  @IsOptional()
+  token_in_id?: string;
 
   @ApiProperty({
-    description: 'ID of the output token',
-    example: 'token-uuid-91011',
+    description: "ID of the output token",
+    example: "token-uuid-91011",
   })
   @IsString()
-  token_out_id: string;
+  @IsOptional()
+  token_out_id?: string;
 }
