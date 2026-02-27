@@ -20,28 +20,31 @@ export default function DefiNode({ data, selected }: any) {
         relative
         w-[260px]
         rounded-2xl
-        bg-gradient-to-br from-[#18182a] to-[#0f0f1a]
-        border border-[#2a2a3d]
-        shadow-xl
-        transition
-        hover:border-indigo-500/60
+        bg-white/5
+        backdrop-blur-xl
+        border border-white/10
+        shadow-[0_0_25px_rgba(0,0,0,0.35)]
+        transition-all duration-300
+
+        hover:border-indigo-400/50
         hover:shadow-indigo-500/20
+
         ${selected
-          ? "ring-2 ring-indigo-500 shadow-indigo-500/30"
+          ? "ring-2 ring-indigo-400 shadow-indigo-500/30"
           : ""
         }
       `}
     >
-
       {/* Top Handle */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-indigo-500 !border-2 !border-[#0f0f1a]"
+        isConnectable={false}
+        className="!w-3 !h-3 !bg-indigo-400 !border-black"
       />
 
       {/* HEADER */}
-      <div className="px-4 py-3 border-b border-[#2a2a3d]">
+      <div className="px-4 py-3 border-b border-white/10">
         <div className="flex justify-between">
           <div>
             <p className="text-[10px] text-neutral-500 uppercase">
@@ -53,7 +56,10 @@ export default function DefiNode({ data, selected }: any) {
           </div>
           {data.onDelete && (
             <button
-              onClick={() => data.onDelete(data.id)}
+              onClick={(e) => {
+              e.stopPropagation(); 
+              data.onDelete(data.id);
+            }}
               className="
                 text-neutral-500
                 hover:text-red-500
@@ -89,12 +95,15 @@ export default function DefiNode({ data, selected }: any) {
         </div>
         {/* TOKEN FLOW */}
         {isConfigured ? (
-          <div className="
-            bg-[#141420]
-            border border-[#2a2a3d]
-            rounded-xl
-            p-3
-          ">
+          <div
+            className="
+              bg-white/5
+              border border-white/10
+              backdrop-blur-md
+              rounded-xl
+              p-3
+            "
+          >
             {/* INPUT */}
             <div className="text-center">
               <p className="
@@ -154,7 +163,9 @@ export default function DefiNode({ data, selected }: any) {
             text-center
             text-xs
             text-neutral-600
-            border border-dashed border-neutral-700
+            border border-dashed border-white/10
+            bg-white/5
+            backdrop-blur-md
             rounded-xl
             py-3
           ">
@@ -166,7 +177,8 @@ export default function DefiNode({ data, selected }: any) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-emerald-500 !border-2 !border-[#0f0f1a]"
+        isConnectable={false}
+        className="!w-3 !h-3 !bg-emerald-400 !border-black"
       />
     </div>
   );

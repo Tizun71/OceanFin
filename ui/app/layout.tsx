@@ -15,6 +15,7 @@ import { QueryProvider } from "@/providers/query-client-provider";
 import { Montserrat } from 'next/font/google';
 import { PreloaderProvider } from "@/providers/preloader-provider";
 import { Preloader } from "@/components/preloader";
+import "reactflow/dist/style.css"
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -95,7 +96,7 @@ export default function RootLayout({
                     <div className="fixed inset-0 bg-black/65 z-[2]" />
                     <div className="min-h-screen flex flex-col relative z-10">
                       <HeroSection />
-                      <main className="flex-1 pt-[30px]">
+                      <main className="flex-1 pt-[30px] flex flex-col overflow-hidden">
                         {children}
                       </main>
                       <Footer />
