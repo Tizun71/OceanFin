@@ -1,4 +1,4 @@
-import { CreateStrategyPayload } from "@/types/defi";
+import { CreateStrategyPayload, EstimatePayload } from "@/types/defi";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -54,28 +54,35 @@ export const createStrategy = async (payload: CreateStrategyPayload) => {
   return res.json();
 };
 
-export const estimateSwap = async (data: {
-  token_in_id: string;
-  token_out_id: string;
-  amount_in: number;
-}) => {
-  const res = await fetch(`${BASE_URL}/defi-modules/pairs/estimate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({
-      operation_type: "SWAP",
-      ...data,
-    }),
-  });
+export const estimateModule = async (
+  data: EstimatePayload
+) => {
+  console.log("🚀 Estimate Request:", data);
+
+  const res = await fetch(
+    `${BASE_URL}/defi-modules/pairs/estimate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    }
+  );
+
+  const json = await res.json();
+
+  console.log("✅ Estimate Response:", json);
+
   if (!res.ok) {
-    throw new Error("Failed to estimate swap");
+    console.error("❌ Estimate Error:", json);
+    throw new Error(json?.message || "Failed to estimate");
   }
 
-  return res.json();
+  return json; 
 };
+
 
 export const createStrategyWorkflow = async (payload: any) => {
 

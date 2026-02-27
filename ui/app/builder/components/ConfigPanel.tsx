@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { estimateSwap } from "@/services/defi-module-service";
+
 import { useEdges, Node, Edge  } from "reactflow";
+import { estimateModule } from "@/services/defi-module-service";
 
 interface Props {
   node: Node<any>;
@@ -14,6 +15,7 @@ interface Props {
 
 export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
 
+  const operationType = node.data.action.operation_type;
   const pairs = node.data.action.defi_pairs || [];
   const [tokenIn, setTokenIn] = useState(pairs[0]?.token_in.id || "");
   const [tokenOut, setTokenOut] = useState(pairs[0]?.token_out.id || "");
@@ -37,7 +39,6 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
     setAmount(config.amount?.toString() || "");
     setEstimate({
       amount_out: config.amountOut,
-      slippage: config.slippage
     });
   }, [node?.data?.config]);
 
@@ -93,7 +94,8 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
     }
     try {
       setEstimating(true);
-      const res = await estimateSwap({
+      const res = await estimateModule({
+        operation_type: operationType,
         token_in_id: tokenIn,
         token_out_id: tokenOut,
         amount_in: Number(amount),

@@ -73,3 +73,12 @@ export interface CreateStrategyRequest {
   workflow_json: any
   workflow_graph: any
 }
+
+export type OperationType = "SWAP" | "SUPPLY" | "BORROW";
+
+export interface EstimatePayload {
+  operation_type: OperationType;
+  token_in_id: string;
+  token_out_id: string; 
+  amount_in: number;
+}
