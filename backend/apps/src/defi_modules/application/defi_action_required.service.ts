@@ -19,7 +19,7 @@ export class DefiActionRequiredService {
     );
   }
 
-  async getRequiredActionsByActionId(actionId: string): Promise<string[]> {
+  async getRequiredActionsByActionId(actionId: string) {
     return this.defiActionRequiredRepository.findRequiredActionsByActionId(
       actionId,
     );
