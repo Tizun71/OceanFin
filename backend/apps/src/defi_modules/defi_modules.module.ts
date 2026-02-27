@@ -13,6 +13,9 @@ import { DefiPairsService } from './application/defi_pairs.service';
 import { DefiTokenModule } from '../defi_token/defi_token.module';
 import { HydrationSdkService } from '../shared/infrastructure/hydration-sdk.service';
 import { HydrationStrategyService } from '../strategies/application/hydration-strategy.service';
+import { DefiActionRequiredRepository } from './domain/defi_action_required.repository';
+import { DefiActionRequiredRepositoryImplement } from './infrastructure/defi_action_required.repository.impl';
+import { DefiActionRequiredService } from './application/defi_action_required.service';
 
 @Module({
   imports: [SupabaseModule, DefiTokenModule],
@@ -29,11 +32,16 @@ import { HydrationStrategyService } from '../strategies/application/hydration-st
       provide: DefiPairsRepository,
       useClass: DefiPairsRepositoryImpl,
     },
+    {
+      provide: DefiActionRequiredRepository,
+      useClass: DefiActionRequiredRepositoryImplement,
+    },
     HydrationSdkService,
     HydrationStrategyService,
     DefiModulesService,
     DefiModuleActionsService,
     DefiPairsService,
+    DefiActionRequiredService,
   ],
   controllers: [DefiModulesController],
 })
