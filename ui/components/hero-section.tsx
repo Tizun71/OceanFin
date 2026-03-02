@@ -32,7 +32,7 @@ export function HeroSection() {
   const navItems = [
     { icon: Layers, label: "STRATEGY", href: "/" },
     { icon: Workflow, label: "BUILDER", href: "/builder" },
-    { icon: Bookmark, label: "YOUR STRATEGY", href: "/" },
+    { icon: Bookmark, label: "YOUR STRATEGY", href: "/strategy" },
   ];
 
   return (
