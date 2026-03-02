@@ -37,6 +37,8 @@ export class DefiPairsService {
     switch (dto.operation_type) {
       case OperationType.SWAP:
         return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
+      case OperationType.JOIN_STRATEGY:
+        return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       case OperationType.SUPPLY:
         return this.estimateSupply(dto.token_in_id, dto.amount_in);
       case OperationType.BORROW:
@@ -204,6 +206,7 @@ export class DefiPairsService {
         amount_in: collateralAmount,
         amount_out: Number(maxBorrowAmount.toFixed(6)),
         borrow_apy: Number(borrowApy.toFixed(2)),
+        ltv: ltv * 100,
       };
     } catch (error) {
       throw new Error(`Failed to estimate borrow: ${error.message}`);
