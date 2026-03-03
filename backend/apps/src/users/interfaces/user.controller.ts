@@ -8,8 +8,9 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiHeader } from '@nestjs/swagger';
 import { UserService } from '../application/user.service';
 import { UserResponseDto } from './dtos/user-response.dto';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -32,6 +33,39 @@ export class UserController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
     const user = await this.userService.createUser(dto);
+    return UserMapper.toResponse(user);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user by wallet address' })
+  @ApiQuery({ 
+    name: 'address', 
+    required: false, 
+    description: 'Wallet address (alternative to header)' 
+  })
+  @ApiHeader({ 
+    name: 'x-wallet-address', 
+    required: false, 
+    description: 'Wallet address (alternative to query param)' 
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User found',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Wallet address is required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getCurrentUser(
+    @Query('address') queryAddress?: string,
+    @Headers('x-wallet-address') headerAddress?: string,
+  ): Promise<UserResponseDto> {
+    const walletAddress = queryAddress || headerAddress;
+    
+    if (!walletAddress) {
+      throw new Error('Wallet address is required via query param ?address or header x-wallet-address');
+    }
+
+    const user = await this.userService.getUserByWalletAddress(walletAddress);
     return UserMapper.toResponse(user);
   }
 

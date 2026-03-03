@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from '../domain/user.repository';
 import { User } from '../domain/user.entity';
 import { CreateUserDto } from '../interfaces/dtos/create-user.dto';
 import { HydrationSdkService } from '../../shared/infrastructure/hydration-sdk.service';
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class UserService {
@@ -19,7 +20,7 @@ export class UserService {
   }
 
   private generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    return uuidv4();
   }
 
   async getUser(id: string): Promise<User> {
@@ -50,5 +51,13 @@ export class UserService {
 
   async getUserTokenBalance(account: string, tokenId: string): Promise<number> {
     return this.hydrationSdk.getTokenBalance(account, tokenId);
+  }
+
+  async getUserByWalletAddress(walletAddress: string): Promise<User> {
+    const user = await this.userRepo.findByWalletAddress(walletAddress);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 }

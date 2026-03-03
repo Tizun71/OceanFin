@@ -19,7 +19,22 @@ export class UserRepositoryImplement implements UserRepository {
       return null;
     }
 
-    return new User(data.id, data.wallet_address, data.chain_id);
+    return new User(data.id, data.wallet_address, data.chain_id, data.username);
+  }
+
+  async findByWalletAddress(walletAddress: string): Promise<User | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('users')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return new User(data.id, data.wallet_address, data.chain_id, data.username);
   }
 
   async save(user: User): Promise<void> {
@@ -27,6 +42,7 @@ export class UserRepositoryImplement implements UserRepository {
       id: user.id,
       wallet_address: user.walletAddress,
       chain_id: user.chainId,
+      username: user.username,
     });
 
     if (error) {
@@ -45,7 +61,7 @@ export class UserRepositoryImplement implements UserRepository {
     }
 
     return (data || []).map(
-      (u) => new User(u.id, u.wallet_address, u.chain_id),
+      (u) => new User(u.id, u.wallet_address, u.chain_id, u.username),
     );
   }
 }

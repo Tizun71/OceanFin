@@ -5,14 +5,14 @@ import { DefiStrategy } from '../domain/defi_strategies.entity';
 import { DefiStrategyVersionService } from './defi_strategy_version.service';
 import { CreateDefiStrategyDto } from '../interfaces/dto/create_defi_strategy.dto';
 import { UpdateDefiStrategyDto } from '../interfaces/dto/update_defi_strategy.dto';
-import { DefiUsersService } from '../../defi_users/application/defi_users.service';
+import { UserService } from '../../users/application/user.service';
 
 @Injectable()
 export class DefiStrategiesService {
   constructor(
     private readonly defiStrategiesRepository: DefiStrategiesRepository,
     private readonly defiStrategyVersionService: DefiStrategyVersionService,
-    private readonly defiUsersService: DefiUsersService,
+    private readonly userService: UserService,
   ) {}
 
   public async create(data: CreateDefiStrategyDto): Promise<DefiStrategy> {
@@ -46,7 +46,7 @@ export class DefiStrategiesService {
 
   public async getAll(owner_id?: string) {
     if (owner_id) {
-      await this.defiUsersService.getDefiUserById(owner_id);
+      await this.userService.getUser(owner_id);
     }
 
     const strategies = await this.defiStrategiesRepository.getAll(owner_id);

@@ -7,7 +7,7 @@ import { DefiStrategiesController } from './interfaces/defi_strategies.controlle
 import { DefiStrategyVersionService } from './application/defi_strategy_version.service';
 import { DefiStrategyVersionRepository } from './domain/defi_strategy_version.repository';
 import { DefiStrategyVersionRepositoryImpl } from './infrastructure/defi_strategy_version.repository.impl';
-import { DefiUsersModule } from 'src/defi_users/defi_users.module';
+import { UsersModule } from '../users/users.module';
 import { DefiStrategySimulationSnapshotsController } from './interfaces/defi_strategy_simulation_snapshots.controller';
 import { DefiStrategySimulationSnapshotService } from './application/defi_strategy_simullation_snapshot.service';
 import { DefiStrategySimulationSnapshotRepositoryImpl } from './infrastructure/defi_strategy_simulation_snapshot.repository.impl';
@@ -22,7 +22,7 @@ import { DefiExecutionStepResultService } from './application/defi_execution_ste
 import { DefiExecutionStepResultController } from './interfaces/defi_execution_step_result.controller';
 
 @Module({
-  imports: [SupabaseModule, DefiUsersModule, DefiStrategiesModule],
+  imports: [SupabaseModule, UsersModule, DefiStrategiesModule],
   controllers: [
     DefiStrategiesController,
     DefiStrategySimulationSnapshotsController,

@@ -4,6 +4,7 @@ import { Space_Grotesk } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import LunoProvider from "@/providers/luno-provider";
 import { LunoProviderWrapper } from "./contexts/luno-context";
 import Footer from "@/components/shared/footer";
@@ -11,6 +12,11 @@ import { HeroSection } from "@/components/hero-section";
 import { BackgroundVideo } from "@/components/background-video";
 import { ToastProvider } from "@/providers/toast-provider";
 import { QueryProvider } from "@/providers/query-client-provider";
+
+const UserProvider = dynamic(
+  () => import("@/providers/user-provider").then((mod) => ({ default: mod.UserProvider })),
+  { ssr: false }
+);
 
 import { Montserrat } from 'next/font/google';
 import { PreloaderProvider } from "@/providers/preloader-provider";
@@ -88,20 +94,22 @@ export default function RootLayout({
             <ToastProvider>
               <LunoProvider>
                 <LunoProviderWrapper>
-                  <Suspense fallback={
-                    <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
-                      Loading...
-                    </div>}
-                  >
-                    <div className="fixed inset-0 bg-black/65 z-[2]" />
-                    <div className="min-h-screen flex flex-col relative z-10">
-                      <HeroSection />
-                      <main className="flex-1 pt-[30px] flex flex-col overflow-hidden">
-                        {children}
-                      </main>
-                      <Footer />
-                    </div>
-                  </Suspense>
+                  <UserProvider>
+                    <Suspense fallback={
+                      <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
+                        Loading...
+                      </div>}
+                    >
+                      <div className="fixed inset-0 bg-black/65 z-[2]" />
+                      <div className="min-h-screen flex flex-col relative z-10">
+                        <HeroSection />
+                        <main className="flex-1 pt-[30px] flex flex-col overflow-hidden">
+                          {children}
+                        </main>
+                        <Footer />
+                      </div>
+                    </Suspense>
+                  </UserProvider>
                 </LunoProviderWrapper>
               </LunoProvider>
             </ToastProvider>
