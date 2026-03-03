@@ -14,5 +14,6 @@ import { HydrationSdkService } from '../shared/infrastructure/hydration-sdk.serv
     HydrationSdkService,
     { provide: UserRepository, useClass: UserRepositoryImplement },
   ],
+  exports: [UserService],
 })
 export class UsersModule {}
