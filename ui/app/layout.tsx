@@ -4,6 +4,7 @@ import { Space_Grotesk } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import LunoProvider from "@/providers/luno-provider";
 import { LunoProviderWrapper } from "./contexts/luno-context";
 import Footer from "@/components/shared/footer";
@@ -11,7 +12,11 @@ import { HeroSection } from "@/components/hero-section";
 import { BackgroundVideo } from "@/components/background-video";
 import { ToastProvider } from "@/providers/toast-provider";
 import { QueryProvider } from "@/providers/query-client-provider";
-import { UserProvider } from "@/providers/user-provider";
+
+const UserProvider = dynamic(
+  () => import("@/providers/user-provider").then((mod) => ({ default: mod.UserProvider })),
+  { ssr: false }
+);
 
 import { Montserrat } from 'next/font/google';
 import { PreloaderProvider } from "@/providers/preloader-provider";

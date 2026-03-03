@@ -18,9 +18,14 @@ export const useWalletUser = (): UseWalletUserReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [needsSignup, setNeedsSignup] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const checkUser = useCallback(async () => {
-    if (!address) {
+    if (!isMounted || !address) {
       setUser(null);
       setNeedsSignup(false);
       return;
@@ -43,11 +48,13 @@ export const useWalletUser = (): UseWalletUserReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [address]);
+  }, [address, isMounted]);
 
   useEffect(() => {
-    checkUser();
-  }, [checkUser]);
+    if (isMounted) {
+      checkUser();
+    }
+  }, [checkUser, isMounted]);
 
   return {
     user,
