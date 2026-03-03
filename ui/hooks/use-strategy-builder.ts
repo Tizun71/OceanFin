@@ -13,8 +13,10 @@ import { useCallback, useState } from "react";
 import { Module, Action, CreateStrategyPayload } from "@/types/defi";
 import { createStrategyWorkflow } from "@/services/defi-module-service";
 import { displayToast } from "@/components/shared/toast-manager";
+import { useUser } from "@/providers/user-provider";
 
 export function useDefiBuilder() {
+  const { user } = useUser();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -276,26 +278,24 @@ export function useDefiBuilder() {
   CREATE STRATEGY
   */
   const createStrategy = async (name: string) => {
+    if (!user) {
+      displayToast("error", "Please connect your wallet first.");
+      return;
+    }
+
     try {
       setCreating(true);
 
       const workflow_json = buildWorkflowJson(nodes);
 
       const payload = {
-        owner_id: "f705f5d2-59f6-4433-8c6d-ed0ebe565d4b",
-
+        owner_id: user.id,
         name,
-
         description: "Strategy description",
-
         is_public: true,
-
-        chain_context: "ethereum",
-
+        chain_context: "Hydration",
         status: "draft",
-
         workflow_json,
-
         workflow_graph: workflow_json,
       };
 

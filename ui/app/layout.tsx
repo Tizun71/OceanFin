@@ -11,6 +11,7 @@ import { HeroSection } from "@/components/hero-section";
 import { BackgroundVideo } from "@/components/background-video";
 import { ToastProvider } from "@/providers/toast-provider";
 import { QueryProvider } from "@/providers/query-client-provider";
+import { UserProvider } from "@/providers/user-provider";
 
 import { Montserrat } from 'next/font/google';
 import { PreloaderProvider } from "@/providers/preloader-provider";
@@ -88,20 +89,22 @@ export default function RootLayout({
             <ToastProvider>
               <LunoProvider>
                 <LunoProviderWrapper>
-                  <Suspense fallback={
-                    <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
-                      Loading...
-                    </div>}
-                  >
-                    <div className="fixed inset-0 bg-black/65 z-[2]" />
-                    <div className="min-h-screen flex flex-col relative z-10">
-                      <HeroSection />
-                      <main className="flex-1 pt-[30px] flex flex-col overflow-hidden">
-                        {children}
-                      </main>
-                      <Footer />
-                    </div>
-                  </Suspense>
+                  <UserProvider>
+                    <Suspense fallback={
+                      <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
+                        Loading...
+                      </div>}
+                    >
+                      <div className="fixed inset-0 bg-black/65 z-[2]" />
+                      <div className="min-h-screen flex flex-col relative z-10">
+                        <HeroSection />
+                        <main className="flex-1 pt-[30px] flex flex-col overflow-hidden">
+                          {children}
+                        </main>
+                        <Footer />
+                      </div>
+                    </Suspense>
+                  </UserProvider>
                 </LunoProviderWrapper>
               </LunoProvider>
             </ToastProvider>
