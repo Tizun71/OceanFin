@@ -1,4 +1,5 @@
 import { CreateStrategyPayload } from "@/types/defi";
+import { DefiStrategy } from "@/types/defi.strategy";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -109,4 +110,24 @@ export const createStrategyWorkflow = async (payload: any) => {
 
   return data;
 
+};
+
+export const getStrategies = async (): Promise<DefiStrategy[]> => {
+  const res = await fetch(`${BASE_URL}/defi-strategies`)
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch strategies")
+  }
+
+  return res.json()
+}
+
+export const getStrategiesByOwner = async (ownerId: string) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/defi-strategies?owner=${ownerId}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch strategies");
+
+  return res.json();
 };
