@@ -80,7 +80,6 @@ export const estimateSwap = async (data: {
 
 export const createStrategyWorkflow = async (payload: any) => {
 
-  console.log("SERVICE PAYLOAD:", payload);
 
   const res = await fetch(`${BASE_URL}/defi-strategies`, {
 
@@ -106,8 +105,6 @@ export const createStrategyWorkflow = async (payload: any) => {
 
   }
 
-  console.log("CREATE SUCCESS:", data);
-
   return data;
 
 };
@@ -124,7 +121,7 @@ export const getStrategies = async (): Promise<DefiStrategy[]> => {
 
 export const getStrategiesByOwner = async (ownerId: string) => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/defi-strategies?owner=${ownerId}`
+    `${BASE_URL}/defi-strategies?owner=${ownerId}`
   );
 
   if (!res.ok) throw new Error("Failed to fetch strategies");
