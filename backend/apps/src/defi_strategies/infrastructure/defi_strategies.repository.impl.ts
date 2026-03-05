@@ -35,6 +35,21 @@ export class DefiStrategiesRepositoryImplement
     return data;
   }
 
+  public async getById(id: string): Promise<DefiStrategy | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_strategies')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data;
+  }
+
   public async getAll(
     owner_id?: string,
   ): Promise<
