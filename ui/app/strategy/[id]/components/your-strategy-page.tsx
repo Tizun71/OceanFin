@@ -5,6 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Target } from 'lucide-react';
 import { useStrategies } from '@/hooks/use-strategies';
 import { useUser } from '@/providers/user-provider';
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
+const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then(m => m.ExecutionModal), { ssr: false })
 
 const StatusBadge = ({
   status,
@@ -39,6 +42,8 @@ const mapStatus = (status: string): 'loading' | 'active' | 'paused' => {
 export default function StrategyTable() {
   const { user } = useUser();
   const { strategies, loading } = useStrategies(user?.id);
+  const [openExecution, setOpenExecution] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
 
   if (loading) {
     return (
@@ -175,8 +180,14 @@ export default function StrategyTable() {
                     </td>
 
                     <td className="px-6 py-4 text-right">
-                      <button className="px-4 py-2 rounded-lg bg-primary text-black font-medium hover:opacity-90 transition">
-                        Run 
+                      <button
+                        onClick={() => {
+                          setSelectedStrategy(strategy);
+                          setOpenExecution(true);
+                        }}
+                        className="px-4 py-2 rounded-lg bg-primary text-black font-medium hover:opacity-90 transition"
+                      >
+                        Run
                       </button>
                     </td>
                   </tr>
@@ -184,6 +195,12 @@ export default function StrategyTable() {
               })}
             </tbody>
           </table>
+          <ExecutionModal
+            open={openExecution}
+            onOpenChange={setOpenExecution}
+            strategy={selectedStrategy}
+            strategyId={selectedStrategy?.id}
+          />
         </div>
       </div>
     </div>
