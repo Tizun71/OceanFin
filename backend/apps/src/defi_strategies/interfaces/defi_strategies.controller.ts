@@ -130,6 +130,6 @@ export class DefiStrategiesController {
       },
     );
 
-    return this.simulationService.transformToExecutionFormat(simulationResult);
+    return simulationResult;
   }
 }

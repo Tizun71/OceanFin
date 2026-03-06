@@ -7,6 +7,21 @@ export interface SimulationContext {
   warnings: string[];
 }
 
+export interface SimulationStepDto {
+  step: number;
+  type: string;
+  agent: string;
+  tokenIn: {
+    assetId: string;
+    symbol: string;
+    amount: number;
+  },
+  tokenOut: {
+    assetId: string;
+    symbol: string;
+    amount: number;
+  };
+}
 export interface SimulationStepResult {
   step_index: number;
   action_type: string;
@@ -43,11 +58,5 @@ export abstract class SimulationEngine {
       slippage_tolerance?: number;
       gas_price?: number;
     },
-  ): Promise<{
-    steps: SimulationStepResult[];
-    final_amount: number;
-    total_fee: number;
-    estimated_slippage: number;
-    warnings: string[];
-  }>;
+  );
 }

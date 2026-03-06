@@ -4,6 +4,7 @@ import { DefiStrategiesRepository } from '../domain/defi_strategies.repository';
 import {
   SimulationContext,
   SimulationEngine,
+  SimulationStepDto,
   SimulationStepResult,
 } from '../domain/simulation-engine.interface';
 import { SwapSimulator } from './simulators/swap-simulator';
@@ -53,7 +54,7 @@ export class StrategySimulationService implements SimulationEngine {
       slippage_tolerance?: number;
       gas_price?: number;
     },
-  ): Promise<SimulationResultDto> {
+  ) {
     const strategy = await this.strategiesRepository.getById(strategy_id);
 
     if (!strategy) {
@@ -76,20 +77,7 @@ export class StrategySimulationService implements SimulationEngine {
 
     const result = await this.simulate(workflow_json, amount_in, options);
 
-    const totalDuration = this.calculateTotalDuration(result.steps);
-
-    return {
-      strategy_id,
-      simulation_id: uuidv4(),
-      input_amount: amount_in,
-      final_amount: result.final_amount,
-      total_fee: result.total_fee,
-      estimated_slippage: result.estimated_slippage,
-      estimated_duration: totalDuration,
-      steps: result.steps,
-      warnings: result.warnings,
-      simulated_at: new Date(),
-    };
+    return result;
   }
 
   async simulate(
@@ -99,13 +87,7 @@ export class StrategySimulationService implements SimulationEngine {
       slippage_tolerance?: number;
       gas_price?: number;
     },
-  ): Promise<{
-    steps: SimulationStepResult[];
-    final_amount: number;
-    total_fee: number;
-    estimated_slippage: number;
-    warnings: string[];
-  }> {
+  ) {
     if (!workflow_json || !workflow_json.steps || !Array.isArray(workflow_json.steps)) {
       throw new Error('Invalid workflow_json: missing or invalid steps array');
     }
@@ -119,7 +101,7 @@ export class StrategySimulationService implements SimulationEngine {
       warnings: [],
     };
 
-    const steps: SimulationStepResult[] = [];
+    const steps: SimulationStepDto[] = [];
 
     for (const step of workflow_json.steps) {
       if (!step.type) {
@@ -136,7 +118,13 @@ export class StrategySimulationService implements SimulationEngine {
 
       try {
         const result = await simulator.simulate(step, context);
-        steps.push(result);
+        steps.push({
+          step: step.step,
+          type: step.type,
+          agent: step.agent,
+          tokenIn: step.tokenIn,
+          tokenOut: step.tokenOut,
+        });
       } catch (error) {
         throw new Error(
           `Failed to simulate step ${step.step || 'unknown'}: ${error.message}`,
@@ -145,22 +133,17 @@ export class StrategySimulationService implements SimulationEngine {
     }
 
     return {
+      initialCapital: {
+        assetId: steps[0]?.tokenIn?.assetId,
+        symbol: steps[0]?.tokenIn?.symbol,
+        amount: amount_in,
+      },
       steps,
-      final_amount: context.current_amount,
-      total_fee: context.total_fee,
-      estimated_slippage: context.slippage_tolerance,
-      warnings: context.warnings,
     };
   }
 
   private getSimulator(actionType: string): any {
     return this.simulators.get(actionType);
-  }
-
-  private calculateTotalDuration(steps: SimulationStepResult[]): string {
-    const totalSeconds = steps.length * 60;
-    const minutes = Math.floor(totalSeconds / 60);
-    return `~${minutes} minutes`;
   }
 
   registerSimulator(actionType: string, simulator: any): void {
@@ -174,7 +157,7 @@ export class StrategySimulationService implements SimulationEngine {
 
     const transformedSteps = simulationResult.steps.map((step, index) => {
       const baseStep: any = {
-        step: index + 1, 
+        step: index + 1,
         type: step.action_type,
         agent: step.agent,
       };
