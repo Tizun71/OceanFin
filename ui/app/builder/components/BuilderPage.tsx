@@ -14,13 +14,15 @@ import CreateStrategyModal from "./CreateStrategyModal";
 import DefiNode from "./DefiNode";
 import { useDefiModules } from "@/hooks/use-defi-modules";
 import { useDefiBuilder } from "@/hooks/use-strategy-builder";
+import { useEffect } from "react";
+import { usePreloader } from "@/providers/preloader-provider";
 
 const nodeTypes = {
   defiNode: DefiNode,
 };
 
 function Builder() {
-  const { data: modules = [], isLoading } = useDefiModules();
+  const { data: modules = [], isFetching } = useDefiModules();
 
   const {
     nodes,
@@ -41,14 +43,16 @@ function Builder() {
     createStrategy,
   } = useDefiBuilder();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-white">
-        Loading modules...
-      </div>
-    );
-  }
-
+  const { show, hide } = usePreloader();
+  
+  useEffect(() => {
+    if (isFetching) {
+      show();
+    } else {
+      hide();
+    }
+  }, [isFetching, show, hide]);
+  
   return (
     <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
       {/* Sidebar */}

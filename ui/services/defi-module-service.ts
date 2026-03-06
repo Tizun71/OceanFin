@@ -128,3 +128,42 @@ export const getStrategiesByOwner = async (ownerId: string) => {
 
   return res.json();
 };
+
+export const simulateStrategy = async (
+  strategyId: string,
+  amount: number
+) => {
+  const res = await fetch(
+    `${BASE_URL}/defi-strategies/${strategyId}/simulate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        amount_in: amount,
+        slippage_tolerance: 0.5,
+        gas_price: 10,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Simulation failed");
+  }
+
+  return res.json();
+};
+
+export const deleteStrategy = async (id: string) => {
+  const res = await fetch(`${BASE_URL}/defi-strategies/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error("Delete failed");
+  }
+
+  return true;
+};
