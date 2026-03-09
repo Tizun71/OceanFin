@@ -232,9 +232,14 @@ export default function StrategyTable() {
 
                               {/* Token Flow */}
                               <div className="text-xs text-indigo-400">
-                                {visibleSteps.map((s: any) => s.tokenIn.symbol).join(" → ")}{" "}
-                                →{" "}
-                                {visibleSteps[visibleSteps.length - 1].tokenOut.symbol}
+                                {[
+                                  ...visibleSteps
+                                    .map((s: any) => s?.tokenIn?.symbol)
+                                    .filter(Boolean),
+                                  visibleSteps.at(-1)?.tokenOut?.symbol
+                                ]
+                                  .filter(Boolean)
+                                  .join(" → ")}
                               </div>
                             </>
                           );

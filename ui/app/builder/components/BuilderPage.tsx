@@ -16,6 +16,7 @@ import { useDefiModules } from "@/hooks/use-defi-modules";
 import { useDefiBuilder } from "@/hooks/use-strategy-builder";
 import { useEffect } from "react";
 import { usePreloader } from "@/providers/preloader-provider";
+import { displayToast } from "@/components/shared/toast-manager";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -52,6 +53,29 @@ function Builder() {
       hide();
     }
   }, [isFetching, show, hide]);
+
+  const validateWorkflow = () => {
+
+    if (!nodes || nodes.length === 0) {
+      displayToast("error", "Please add at least one step before creating strategy.");
+      return false;
+    }
+
+    const hasUnconfigured = nodes.some(
+      (node) => !node.data?.config
+    );
+
+    if (hasUnconfigured) {
+      displayToast(
+        "error",
+        "Please configure and save all steps before creating strategy."
+      );
+      return false;
+    }
+
+    return true;
+
+  };
   
   return (
     <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
@@ -84,7 +108,10 @@ function Builder() {
         >
           {/* CREATE BUTTON */}
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              if (!validateWorkflow()) return;
+              setShowModal(true);
+            }}
             className="defi-btn-glass defi-create-btn"
           >
             Create Strategy
