@@ -2,77 +2,19 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, ArrowDownRight, Target } from 'lucide-react';
-
-interface Strategy {
-  id: string;
-  name: string;
-  status: 'loading' | 'active' | 'paused';
-  tokens: { symbol: string; icon: string }[];
-  metrics: {
-    apy: string;
-    tvl: string;
-    users: number;
-  };
-}
-
-const MOCK_STRATEGIES: Strategy[] = [
-  {
-    id: '1',
-    name: 'Leverage Lending - zkEVM Reward',
-    status: 'loading',
-    tokens: [{ symbol: 'USDC', icon: '💙' }, { symbol: 'ETH', icon: '⟠' }],
-    metrics: {
-      apy: '13.34%',
-      tvl: '$2.4M',
-      users: 1250,
-    },
-  },
-  {
-    id: '2',
-    name: 'Stable Interest Money',
-    status: 'active',
-    tokens: [{ symbol: 'DAI', icon: '🟨' }, { symbol: 'USDC', icon: '💙' }],
-    metrics: {
-      apy: '18.81%',
-      tvl: '$5.2M',
-      users: 2840,
-    },
-  },
-  {
-    id: '3',
-    name: 'PT yzUSD (23-June) Looping (Weighted)',
-    status: 'active',
-    tokens: [{ symbol: 'yzUSD', icon: '🔷' }, { symbol: 'PT', icon: '⬛' }],
-    metrics: {
-      apy: '6.17%',
-      tvl: '$1.8M',
-      users: 642,
-    },
-  },
-  {
-    id: '4',
-    name: 'veODIE - Morphe',
-    status: 'paused',
-    tokens: [{ symbol: 'ODIE', icon: '🟢' }, { symbol: 'veODIE', icon: '💚' }],
-    metrics: {
-      apy: '5.23%',
-      tvl: '$890K',
-      users: 356,
-    },
-  },
-  {
-    id: '5',
-    name: 'Earn Yield With Your Bitcoin',
-    status: 'active',
-    tokens: [{ symbol: 'BTC', icon: '🟠' }, { symbol: 'USDC', icon: '💙' }],
-    metrics: {
-      apy: '3.44%',
-      tvl: '$12.1M',
-      users: 5120,
-    },
-  },
-];
+import { ChevronDown, ChevronUp, Play, Rocket, Target, Trash2 } from 'lucide-react';
+import { useStrategies } from '@/hooks/use-strategies';
+import { useUser } from '@/providers/user-provider';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import RunStrategyModal from '@/components/shared/run-strategy-modal';
+import Image from "next/image";
+import { assetIcons } from '@/lib/iconMap';
+import { deleteStrategy } from '@/services/defi-module-service';
+import { displayToast } from '@/components/shared/toast-manager';
+import ConfirmModal from '@/components/shared/confirm-modal';
+import { usePreloader } from '@/providers/preloader-provider';
+const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then(m => m.ExecutionModal), { ssr: false })
 
 const StatusBadge = ({
   status,
@@ -93,39 +35,75 @@ const StatusBadge = ({
   );
 };
 
-const ReturnBadge = ({ value }: { value: number }) => {
-  const isPositive = value >= 0;
-
-  return (
-    <div className="flex items-center gap-1.5">
-      {isPositive ? (
-        <ArrowUpRight className="w-4 h-4 text-green-400" />
-      ) : (
-        <ArrowDownRight className="w-4 h-4 text-red-400" />
-      )}
-      <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
-        {isPositive ? '+' : ''}
-        {value.toFixed(2)}%
-      </span>
-    </div>
-  );
-};
-
-const RiskBadge = ({ risk }: { risk: 'low' | 'medium' | 'high' }) => {
-  const styles = {
-    low: 'bg-green-500/10 text-green-400 border-green-500/30',
-    medium: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
-    high: 'bg-red-500/10 text-red-400 border-red-500/30',
-  };
-
-  return (
-    <Badge variant="outline" className={`${styles[risk]} text-xs`}>
-      {risk.charAt(0).toUpperCase() + risk.slice(1)} Risk
-    </Badge>
-  );
+const mapStatus = (status: string): 'loading' | 'active' | 'paused' => {
+  switch (status) {
+    case 'draft':
+      return 'loading';
+    case 'published':
+      return 'active';
+    default:
+      return 'paused';
+  }
 };
 
 export default function StrategyTable() {
+  const { user } = useUser();
+  const { strategies, loading, refetch } = useStrategies(user?.id);
+  const [strategyId, setStrategyId] = useState<string | null>(null)
+  const [runModal, setRunModal] = useState(false)
+  const [executionModal, setExecutionModal] = useState(false)
+  const [simulateData, setSimulateData] = useState<any>(null)
+
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  
+  const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null);
+  const { show, hide } = usePreloader();
+  
+  const [openExecution, setOpenExecution] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
+
+  const handleDeleteClick = (id: string) => {
+    setSelectedId(id);
+    setOpenConfirm(true);
+  };
+
+  const handleCancel = () => {
+    setOpenConfirm(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedId) return;
+
+    try {
+      await deleteStrategy(selectedId);
+
+      displayToast("success", "Strategy deleted successfully");
+
+      refetch(); 
+    } catch (error) {
+      displayToast("error", "Failed to delete strategy");
+    }
+
+    setOpenConfirm(false);
+  };
+  
+  useEffect(() => {
+    if (loading) {
+      show();
+    } else {
+      hide();
+    }
+  }, [loading]);
+
+  if (!strategies.length) {
+    return (
+      <div className="text-center py-20 text-neutral-400">
+        No strategies yet
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-4 px-6">
       {/* Header */}
@@ -139,91 +117,233 @@ export default function StrategyTable() {
             Manage and monitor your DeFi strategies
           </p>
         </div>
+
       </div>
 
-      {/* Table Container */}
+      {/* Table */}
       <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden">
-        {/* Table Wrapper */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/10 bg-neutral-900/50">
-                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase">
                   Strategy
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+
+                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase">
+                  Steps
+                </th>
+
+                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase">
                   Status
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+
+                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase">
                   Metrics
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+
+                <th className="px-6 py-4 text-left text-xs font-semibold text-neutral-400 uppercase">
                   Tokens
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+
+                <th className="px-6 py-4 text-right text-xs font-semibold text-neutral-400 uppercase">
                   Action
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-neutral-400 uppercase">
+                  Run Strategy
                 </th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-white/5">
-              {MOCK_STRATEGIES.map((strategy, idx) => (
-                <tr
-                  key={strategy.id}
-                  className="hover:bg-white/5 transition-colors"
-                >
-                  {/* Strategy Name */}
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-white">
-                        {strategy.name}
-                      </p>
-                      <p className="text-xs text-neutral-500">ID: {strategy.id}</p>
-                    </div>
-                  </td>
+              {strategies.map((strategy) => {
+                const version = strategy.defi_strategy_versions?.find(
+                  (v: any) => v.id === strategy.current_version_id
+                );
 
-                  {/* Status */}
-                  <td className="px-6 py-4">
-                    <StatusBadge status={strategy.status} />
-                  </td>
+                const steps = version?.workflow_json?.steps || [];
 
-                  {/* Metrics */}
-                  <td className="px-6 py-4">
-                    <div className="space-y-0.5 text-sm">
-                      <p className="text-white font-medium">
-                        APY: {strategy.metrics.apy}
-                      </p>
-                    </div>
-                  </td>
+                const tokens = Array.from(
+                  new Set(
+                    steps.flatMap((step: any) => [
+                      step.tokenIn?.symbol,
+                      step.tokenOut?.symbol,
+                    ])
+                  )
+                ).filter(Boolean) as string[];
 
-                  {/* Tokens */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1">
-                      {strategy.tokens.map((token, i) => (
-                        <div
-                          key={i}
-                          className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-sm"
-                          title={token.symbol}
+                return (
+                  <tr
+                    key={strategy.id}
+                    className="hover:bg-white/5 transition-colors"
+                  >
+                    {/* Strategy Name */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-semibold text-white">
+                          {strategy.name}
+                        </span>
+
+                        <span className="text-[11px] text-neutral-500">
+                          {strategy.chain_context} •{" "}
+                          {strategy.defi_strategy_versions?.[0]?.workflow_json?.steps?.length || 0} steps
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Steps */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        {strategy.defi_strategy_versions?.[0]?.workflow_json?.steps && (() => {
+
+                          const steps = strategy.defi_strategy_versions[0].workflow_json.steps;
+                          const isExpanded = expandedStrategy === strategy.id;
+
+                          const visibleSteps = isExpanded ? steps : steps.slice(0, 3);
+
+                          return (
+                            <>
+                              {/* Steps */}
+                              <div className="text-xs text-neutral-400 flex items-center flex-wrap gap-1">
+
+                                {visibleSteps.map((s: any, index: number) => (
+                                  <span key={index}>
+                                    {s.type}
+                                    {index < visibleSteps.length - 1 && " → "}
+                                  </span>
+                                ))}
+
+                                {steps.length > 3 && (
+                                  <button
+                                    onClick={() =>
+                                      setExpandedStrategy(isExpanded ? null : strategy.id)
+                                    }
+                                    className="ml-1 text-indigo-400 hover:text-indigo-300 transition"
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronUp size={14} />
+                                    ) : (
+                                      <ChevronDown size={14} />
+                                    )}
+                                  </button>
+                                )}
+
+                              </div>
+
+                              {/* Token Flow */}
+                              <div className="text-xs text-indigo-400">
+                                {visibleSteps.map((s: any) => s.tokenIn.symbol).join(" → ")}{" "}
+                                →{" "}
+                                {visibleSteps[visibleSteps.length - 1].tokenOut.symbol}
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-4">
+                      <StatusBadge status={mapStatus(strategy.status)} />
+                    </td>
+
+                    {/* Metrics */}
+                    <td className="px-6 py-4">
+                      <p className="text-white text-sm">APY: --</p>
+                    </td>
+
+                    {/* Tokens */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1">
+                        {tokens.map((symbol, i) => {
+                          const icon = assetIcons[symbol];
+
+                          return (
+                            <div
+                              key={i}
+                              className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center"
+                              title={symbol}
+                            >
+                              {icon ? (
+                                <Image
+                                  src={icon}
+                                  alt={symbol}
+                                  width={18}
+                                  height={18}
+                                  className="rounded-full"
+                                />
+                              ) : (
+                                <span className="text-[10px]">{symbol}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        // onClick={() => handlePublish(strategy.id)}
+                        className="p-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 transition"
+                      >
+                        <Rocket size={16} />
+                      </button>
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                        {/* Run */}
+                        <button
+                          onClick={() => {
+                            setStrategyId(strategy.id);
+                            setRunModal(true);
+                          }}
+                          className="p-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition"
                         >
-                          {token.icon}
-                        </div>
-                      ))}
-                    </div>
-                  </td>
+                          <Play size={16} />
+                        </button>
 
-                  {/* Action */}
-                  <td className="px-6 py-4 text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-indigo-500/50 text-indigo-400 hover:bg-indigo-500/10"
-                    >
-                      Publish
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+                        {/* Delete */}
+                        <button
+                          onClick={() => handleDeleteClick(strategy.id)}
+                          className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+          <ConfirmModal
+            open={openConfirm}
+            title="Delete Strategy"
+            message="Are you sure you want to delete this strategy?"
+            onConfirm={handleConfirmDelete}
+            onCancel={handleCancel}
+          />
+          {strategyId && (
+            <RunStrategyModal
+              open={runModal}
+              onOpenChange={setRunModal}
+              strategyId={strategyId}
+              onSimulated={(data) => {
+                setSimulateData(data)
+                setExecutionModal(true)
+              }}
+            />
+          )}
+          {strategyId && simulateData && (
+            <ExecutionModal
+              open={executionModal}
+              onOpenChange={setExecutionModal}
+              strategy={simulateData}
+              strategyId={strategyId}
+            />
+          )}
         </div>
       </div>
     </div>

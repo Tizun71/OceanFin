@@ -1,4 +1,5 @@
 import { CreateStrategyPayload } from "@/types/defi";
+import { DefiStrategy } from "@/types/defi.strategy";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -79,7 +80,6 @@ export const estimateSwap = async (data: {
 
 export const createStrategyWorkflow = async (payload: any) => {
 
-  console.log("SERVICE PAYLOAD:", payload);
 
   const res = await fetch(`${BASE_URL}/defi-strategies`, {
 
@@ -105,8 +105,65 @@ export const createStrategyWorkflow = async (payload: any) => {
 
   }
 
-  console.log("CREATE SUCCESS:", data);
-
   return data;
 
+};
+
+export const getStrategies = async (): Promise<DefiStrategy[]> => {
+  const res = await fetch(`${BASE_URL}/defi-strategies`)
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch strategies")
+  }
+
+  return res.json()
+}
+
+export const getStrategiesByOwner = async (ownerId: string) => {
+  const res = await fetch(
+    `${BASE_URL}/defi-strategies?owner=${ownerId}`
+  );
+
+  if (!res.ok) throw new Error("Failed to fetch strategies");
+
+  return res.json();
+};
+
+export const simulateStrategy = async (
+  strategyId: string,
+  amount: number
+) => {
+  const res = await fetch(
+    `${BASE_URL}/defi-strategies/${strategyId}/simulate`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        amount_in: amount,
+        slippage_tolerance: 0.5,
+        gas_price: 10,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Simulation failed");
+  }
+
+  return res.json();
+};
+
+export const deleteStrategy = async (id: string) => {
+  const res = await fetch(`${BASE_URL}/defi-strategies/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    throw new Error("Delete failed");
+  }
+
+  return true;
 };

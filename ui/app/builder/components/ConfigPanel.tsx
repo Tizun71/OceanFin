@@ -136,10 +136,13 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props){
       nodeId: node.id,
       moduleId: node.data.module.id,
       actionId: node.data.action.id,
-      tokenInId: tokenIn,
-      tokenOutId: tokenOut,
+
+      tokenInId: selectedPair.token_in.asset_id,
+      tokenOutId: selectedPair.token_out.asset_id,
+
       tokenInSymbol: selectedPair.token_in.name,
       tokenOutSymbol: selectedPair.token_out.name,
+
       amount: Number(amount),
       amountOut: estimate.amount_out,
       slippage: estimate.slippage,
