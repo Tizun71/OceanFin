@@ -2,10 +2,10 @@
 
 import { registerToast } from "@/components/shared/toast-manager"
 import { AlertCircle, CheckCircle2, Info, XCircle } from "lucide-react"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 
 interface Toast {
-  id: number
+  id: string
   status: "success" | "error" | "info" | "warning"
   message: string
 }
@@ -55,12 +55,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     },
   };
 
+  const setToastsRef = useRef(setToasts)
+
+  useEffect(() => {
+    setToastsRef.current = setToasts
+  })
+
   useEffect(() => {
     registerToast((status, message) => {
-      const id = Date.now()
-      setToasts((prev) => [...prev, { id, status: status as Toast["status"], message }])
+      const id = crypto.randomUUID()
+
+      setToastsRef.current((prev) => [
+        ...prev,
+        { id, status: status as Toast["status"], message }
+      ])
+
       setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id))
+        setToastsRef.current((prev) => prev.filter((t) => t.id !== id))
       }, 3000)
     })
   }, [])

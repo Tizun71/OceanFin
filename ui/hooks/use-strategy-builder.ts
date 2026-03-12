@@ -25,6 +25,17 @@ export function useDefiBuilder() {
   const [showModal, setShowModal] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  const isNodeConfigured = (node: any) => {
+    const config = node?.data?.config;
+
+    return (
+      config?.tokenInId &&
+      config?.tokenOutId &&
+      config?.amount &&
+      config?.amountOut
+    );
+  };
+
   /*
   BUILD WORKFLOW JSON
   */
@@ -88,6 +99,7 @@ export function useDefiBuilder() {
  const deleteNode = useCallback((id: string) => {
 
   let deleted = false;
+  let showError = false;
 
   setNodes((nds) => {
 
@@ -95,10 +107,7 @@ export function useDefiBuilder() {
 
     if (!lastNode || lastNode.id !== id) {
 
-      displayToast(
-        "error",
-        "Only the last node can be deleted."
-      );
+      showError = true;
 
       return nds;
     }
@@ -117,6 +126,11 @@ export function useDefiBuilder() {
 
   });
 
+  if (showError) {
+    displayToast("error","Only the last node can be deleted.");
+    return;
+  }
+
   if (deleted) {
 
     setEdges((eds) =>
@@ -127,86 +141,106 @@ export function useDefiBuilder() {
       )
     );
 
-    displayToast(
-      "success",
-      "Node deleted successfully."
-    );
+    displayToast("success","Node deleted successfully.");
 
   }
 
-}, []);
+ }, []);
   /*
   ADD NODE
   */
-  const addNode = useCallback(
-  (module: Module, action: Action) => {
+ const addNode = useCallback(
+    (module: Module, action: Action) => {
 
-    const id = crypto.randomUUID();
+      let added = false;
+      let showError = false;
 
-    setNodes((nds) => {
+      setNodes((nds) => {
 
-      const newIndex = nds.length;
+        const lastNode = nds[nds.length - 1];
 
-      const updatedNodes = nds.map((node) => ({
-        ...node,
-        data: {
-          ...node.data,
-          isLastNode: false,
-        },
-      }));
+        if (
+          lastNode &&
+          !isNodeConfigured(lastNode) &&
+          selectedNode?.id !== lastNode.id
+        ) {
 
-      const newNode = {
-        id,
-        type: "defiNode",
+          showError = true;
 
-        position: {
-          x: 250,
-          y: newIndex * 180 + 80,
-        },
+          return nds;
+        }
 
-        data: {
-          id,
-          module,
-          action,
-          onDelete: deleteNode,
-          isLastNode: true,
-        },
-      };
+        const id = crypto.randomUUID();
+        const newIndex = nds.length;
 
-      if (updatedNodes.length > 0) {
-
-        const prevNode =
-          updatedNodes[updatedNodes.length - 1];
-
-        setEdges((eds) => [
-
-          ...eds,
-
-          {
-            id: `${prevNode.id}-${id}`,
-            source: prevNode.id,
-            target: id,
-            sourceHandle: "bottom",
-            targetHandle: "top",
-            type: "smoothstep",
-            animated: true,
-            style: {
-              stroke: "#6366f1",
-              strokeWidth: 2,
-            },
+        const updatedNodes = nds.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isLastNode: false,
           },
+        }));
 
-        ]);
+        const newNode = {
+          id,
+          type: "defiNode",
+          position: {
+            x: 250,
+            y: newIndex * 180 + 80,
+          },
+          data: {
+            id,
+            module,
+            action,
+            onDelete: deleteNode,
+            isLastNode: true,
+          },
+        };
 
+        added = true;
+
+        if (updatedNodes.length > 0) {
+
+          const prevNode = updatedNodes[updatedNodes.length - 1];
+
+          setEdges((eds) => [
+            ...eds,
+            {
+              id: `${prevNode.id}-${id}`,
+              source: prevNode.id,
+              target: id,
+              sourceHandle: "bottom",
+              targetHandle: "top",
+              type: "smoothstep",
+              animated: true,
+              style: {
+                stroke: "#6366f1",
+                strokeWidth: 2,
+              },
+            },
+          ]);
+
+        }
+
+        return [...updatedNodes, newNode];
+
+      });
+
+      if (showError) {
+        displayToast(
+          "error",
+          "Please configure and save the current step before adding another node."
+        );
+        return;
       }
 
-      return [...updatedNodes, newNode];
+      if (added) {
+        displayToast("success", "Node added successfully.");
+      }
 
-    });
-
-  },
-  [deleteNode],
-);
+    },
+    [deleteNode, selectedNode]
+  ); 
 
   /*
   CONNECT
@@ -271,6 +305,11 @@ export function useDefiBuilder() {
             },
           }
         : prev,
+    );
+
+    displayToast(
+      "success",
+      "Configuration saved successfully."
     );
   };
 
