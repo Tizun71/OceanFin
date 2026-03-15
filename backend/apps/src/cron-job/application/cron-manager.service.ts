@@ -22,7 +22,7 @@ export class CronManagerService implements OnModuleInit {
     const jobs: CronDefinition[] = [
       {
         name: 'reload-apy',
-        schedule: '*/30 * * * * *',
+        schedule: '0 0 0 * * *',
         job: async () => await this.reloadApyJob.reloadAllAPY(),
       },
     ];
