@@ -15,7 +15,7 @@ export class StrategyService {
     private readonly hydrationStrategy: HydrationStrategyService,
     private readonly rewards: RewardsService,
     private readonly simulation: StrategySimulationService,
-  ) {}
+  ) { }
 
   async create(dto: {
     strategistName: string;
@@ -48,10 +48,10 @@ export class StrategyService {
   }
 
   async findAll(sortBy?: string, order: 'asc' | 'desc' = 'desc', limit?: number): Promise<Strategy[]> {
-  return this.strategiesRepo.findAll(sortBy, order, limit);
-}
+    return this.strategiesRepo.findAll(sortBy, order, limit);
+  }
 
-async findAllWithFilters(params: {
+  async findAllWithFilters(params: {
     keyword?: string;
     tags?: string[];
     sortBy?: string;
@@ -120,15 +120,16 @@ async findAllWithFilters(params: {
 
     await Promise.all(
       strategies.map(async (strategy) => {
-    try {
-  const result = await this.rewards.calculateAPY(strategy.strategistName);
-      strategy.update({ apy: result.apy });
-      await this.strategiesRepo.save(strategy);
-    } catch (err: any) {
-      console.error(`Error updating APY for strategy ID ${strategy.id}:`, err.message);
-    }
-  })
-);
+        try {
+          const result = await this.rewards.calculateAPY(strategy.strategistName);
+          console.log(result);
+          strategy.update({ apy: result.apy });
+          await this.strategiesRepo.save(strategy);
+        } catch (err: any) {
+          console.error(`Error updating APY for strategy ID ${strategy.id}:`, err.message);
+        }
+      })
+    );
 
   }
 }
