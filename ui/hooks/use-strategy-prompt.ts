@@ -18,6 +18,7 @@ export function useStrategyPrompt() {
   const [strategyResult, setStrategyResult] = useState<BuildStrategyResponse | null>(null);
 
   const [selectedToken, setSelectedToken] = useState("");
+  const [tokenAmount, setTokenAmount] = useState<number>(2); // Default amount
   const [prompt, setPrompt] = useState("");
 
   // Updated tokens for Hydration/Polkadot ecosystem
@@ -44,16 +45,25 @@ export function useStrategyPrompt() {
         return;
       }
 
-      // Build additional context from selected token
+      // Build additional context from selected token and amount
       const additionalContext = selectedToken 
-        ? AIStrategyService.formatTokenToContext(selectedToken)
+        ? `${AIStrategyService.formatTokenToContext(selectedToken)} with ${tokenAmount} ${selectedToken}`
         : undefined;
 
       // Call AI Strategy Builder API
+      console.log('Sending API request with:', {
+        userIntent: prompt,
+        additionalContext,
+        tokenAmount,
+      });
+      
       const result = await AIStrategyService.buildStrategy({
         userIntent: prompt,
         additionalContext,
+        tokenAmount, // Add token amount to API call
       });
+
+      console.log('Received strategy result:', result);
 
       // Validate token consistency after strategy is generated
       const tokenConsistencyValidation = AIStrategyService.validateTokenConsistency(
@@ -82,6 +92,7 @@ export function useStrategyPrompt() {
         name: `Strategy ${new Date().toLocaleString()}`, // Auto-generate name
         result,
         selectedToken,
+        tokenAmount,
         prompt,
       }));
 
@@ -103,9 +114,11 @@ export function useStrategyPrompt() {
     strategyResult,
 
     selectedToken,
+    tokenAmount,
     prompt,
 
     setSelectedToken,
+    setTokenAmount,
     setPrompt,
 
     onCancel,

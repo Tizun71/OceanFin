@@ -20,8 +20,10 @@ function Prompt() {
     submitting,
     strategyResult,
     selectedToken,
+    tokenAmount,
     prompt,
     setSelectedToken,
+    setTokenAmount,
     setPrompt,
     onCancel,
     onNext,
@@ -70,6 +72,11 @@ function Prompt() {
       return false;
     }
 
+    if (!tokenAmount || tokenAmount <= 0) {
+      displayToast("error", "Please enter a valid token amount.");
+      return false;
+    }
+
     if (!prompt.trim()) {
       displayToast("error", "Please enter your strategy prompt.");
       return false;
@@ -111,76 +118,108 @@ function Prompt() {
               </h1>
             </div>
 
-            {/* Starting Token */}
+            {/* Starting Token & Amount */}
             <section className="space-y-2">
-              <h2 className="text-sm font-medium text-white">Starting Token</h2>
+              <h2 className="text-sm font-medium text-white">Starting Token & Amount</h2>
 
-              <div className="relative w-full max-w-sm token-dropdown">
-                {/* Custom Dropdown */}
-                <div
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="
-                    h-12 w-full cursor-pointer rounded-3xl
-                    border border-white/10
-                    bg-white/[0.05]
-                    pl-5 pr-12
-                    text-sm text-white
-                    outline-none transition-all duration-200
-                    backdrop-blur-xl
-                    hover:border-white/15
-                    hover:bg-white/[0.07]
-                    focus:border-violet-500/40
-                    focus:bg-white/[0.08]
-                    shadow-[0_4px_20px_rgba(0,0,0,0.15)]
-                    flex items-center gap-3
-                  "
-                >
-                  {selectedToken ? (
-                    <>
-                      <img 
-                        src={assetIcons[selectedToken] || 
-                             assetIcons[selectedToken?.toUpperCase()] || 
-                             assetIcons[selectedToken?.toLowerCase()] || 
-                             "/icons/default.png"}
-                        alt={selectedToken}
-                        className="w-5 h-5 rounded-full object-contain bg-white border border-white/20"
-                      />
-                      <span>{tokens.find(t => t.value === selectedToken)?.label || selectedToken}</span>
-                    </>
-                  ) : (
-                    <span className="text-white/60">Select starting token</span>
-                  )}
+              <div className="flex gap-3">
+                {/* Amount Input */}
+                <div className="relative w-32">
+                  <input
+                    type="number"
+                    value={tokenAmount}
+                    onChange={(e) => setTokenAmount(Number(e.target.value))}
+                    min="0"
+                    step="0.000001"
+                    placeholder="Amount"
+                    className="
+                      h-12 w-full rounded-3xl
+                      border border-white/10
+                      bg-white/[0.05]
+                      pl-4 pr-4
+                      text-sm text-white text-center
+                      placeholder:text-white/40
+                      outline-none transition-all duration-200
+                      backdrop-blur-xl
+                      hover:border-white/15
+                      hover:bg-white/[0.07]
+                      focus:border-violet-500/40
+                      focus:bg-white/[0.08]
+                      shadow-[0_4px_20px_rgba(0,0,0,0.15)]
+                      [appearance:textfield]
+                      [&::-webkit-outer-spin-button]:appearance-none
+                      [&::-webkit-inner-spin-button]:appearance-none
+                    "
+                  />
                 </div>
 
-                <div className="pointer-events-none absolute inset-y-0 right-5 flex items-center">
-                  <ChevronDown className={`h-4 w-4 text-white/45 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </div>
-
-                {/* Dropdown Options */}
-                {isDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl border border-white/10 bg-[#1a1a1a] backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
-                    {tokens.map((token) => (
-                      <div
-                        key={token.value}
-                        onClick={() => {
-                          setSelectedToken(token.value);
-                          setIsDropdownOpen(false);
-                        }}
-                        className="flex items-center gap-3 px-5 py-3 text-sm text-white hover:bg-white/[0.05] cursor-pointer transition-colors"
-                      >
+                {/* Token Dropdown */}
+                <div className="relative flex-1 token-dropdown">
+                  <div
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="
+                      h-12 w-full cursor-pointer rounded-3xl
+                      border border-white/10
+                      bg-white/[0.05]
+                      pl-5 pr-12
+                      text-sm text-white
+                      outline-none transition-all duration-200
+                      backdrop-blur-xl
+                      hover:border-white/15
+                      hover:bg-white/[0.07]
+                      focus:border-violet-500/40
+                      focus:bg-white/[0.08]
+                      shadow-[0_4px_20px_rgba(0,0,0,0.15)]
+                      flex items-center gap-3
+                    "
+                  >
+                    {selectedToken ? (
+                      <>
                         <img 
-                          src={assetIcons[token.value] || 
-                               assetIcons[token.value?.toUpperCase()] || 
-                               assetIcons[token.value?.toLowerCase()] || 
+                          src={assetIcons[selectedToken] || 
+                               assetIcons[selectedToken?.toUpperCase()] || 
+                               assetIcons[selectedToken?.toLowerCase()] || 
                                "/icons/default.png"}
-                          alt={token.value}
+                          alt={selectedToken}
                           className="w-5 h-5 rounded-full object-contain bg-white border border-white/20"
                         />
-                        <span>{token.label}</span>
-                      </div>
-                    ))}
+                        <span>{tokens.find(t => t.value === selectedToken)?.label || selectedToken}</span>
+                      </>
+                    ) : (
+                      <span className="text-white/60">Select token</span>
+                    )}
                   </div>
-                )}
+
+                  <div className="pointer-events-none absolute inset-y-0 right-5 flex items-center">
+                    <ChevronDown className={`h-4 w-4 text-white/45 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+
+                  {/* Dropdown Options */}
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl border border-white/10 bg-[#1a1a1a] backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
+                      {tokens.map((token) => (
+                        <div
+                          key={token.value}
+                          onClick={() => {
+                            setSelectedToken(token.value);
+                            setIsDropdownOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-5 py-3 text-sm text-white hover:bg-white/[0.05] cursor-pointer transition-colors"
+                        >
+                          <img 
+                            src={assetIcons[token.value] || 
+                                 assetIcons[token.value?.toUpperCase()] || 
+                                 assetIcons[token.value?.toLowerCase()] || 
+                                 "/icons/default.png"}
+                            alt={token.value}
+                            className="w-5 h-5 rounded-full object-contain bg-white border border-white/20"
+                          />
+                          <span>{token.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
 

@@ -31,10 +31,17 @@ export class AiStrategyBuilderService {
       recommendations: string[];
     };
   }> {
+    console.log('BuildStrategy DTO received:', {
+      userIntent: dto.userIntent,
+      additionalContext: dto.additionalContext,
+      tokenAmount: dto.tokenAmount,
+    });
+
     // Parse natural language to steps using Gemini AI
     const steps = await this.parser.parseNaturalLanguage(
       dto.userIntent,
-      dto.additionalContext
+      dto.additionalContext,
+      dto.tokenAmount
     );
 
     // Validate steps against DefiPair entities

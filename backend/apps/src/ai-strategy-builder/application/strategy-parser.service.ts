@@ -8,20 +8,28 @@ export class StrategyParserService {
 
   async parseNaturalLanguage(
     userIntent: string,
-    additionalContext?: string
+    additionalContext?: string,
+    tokenAmount?: number
   ): Promise<StrategyStepResponseDto[]> {
+    console.log('ParseNaturalLanguage called with:', {
+      userIntent,
+      additionalContext,
+      tokenAmount,
+    });
+
     try {
       // Check if input is structured steps format
       if (this.isStructuredStepsFormat(userIntent)) {
         console.log('Using structured steps parsing');
-        return this.parseStructuredSteps(userIntent, additionalContext);
+        return this.parseStructuredSteps(userIntent, additionalContext, tokenAmount);
       }
 
       // Use Gemini AI to generate strategy steps
       console.log('Using Gemini AI parsing');
       const steps = await this.geminiAi.generateStrategySteps(
         userIntent,
-        additionalContext
+        additionalContext,
+        tokenAmount
       );
       
       // Validate and sanitize the generated steps
@@ -30,7 +38,7 @@ export class StrategyParserService {
       console.error('Gemini parsing failed, falling back to rule-based parsing:', error);
       
       // Fallback to rule-based parsing if Gemini fails
-      return this.fallbackParsing(userIntent);
+      return this.fallbackParsing(userIntent, tokenAmount);
     }
   }
 
@@ -77,14 +85,16 @@ export class StrategyParserService {
   }
 
   private async fallbackParsing(
-    userIntent: string
+    userIntent: string,
+    tokenAmount?: number
   ): Promise<StrategyStepResponseDto[]> {
     const normalizedIntent = userIntent.toLowerCase().trim();
     
     // Extract input token and amount from intent
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const finalAmount = tokenAmount || defaultAmount;
     const tokenSymbol = inputToken;
-    const amount = defaultAmount;
+    const amount = finalAmount;
 
     // Auto-detect asset ID
     const assetId = this.getAssetIdBySymbol(tokenSymbol);
@@ -114,19 +124,27 @@ export class StrategyParserService {
 
   private parseStructuredSteps(
     input: string,
-    additionalContext?: string
+    additionalContext?: string,
+    tokenAmount?: number
   ): StrategyStepResponseDto[] {
     const steps: StrategyStepResponseDto[] = [];
     
     // Extract input token and amount from the user intent
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(input);
+    const finalAmount = tokenAmount || defaultAmount; // Use provided amount or default
+    
+    console.log('ParseStructuredSteps amounts:', {
+      tokenAmount,
+      defaultAmount,
+      finalAmount,
+    });
     
     // Extract numbered steps using regex
     const stepMatches = input.match(/\d+\.\s*[^,\d]+/g) || [];
     
     let stepNumber = 1;
     let currentTokenAmounts: { [symbol: string]: number } = {
-      [inputToken]: defaultAmount
+      [inputToken]: finalAmount
     };
     
     for (const stepMatch of stepMatches) {
@@ -134,7 +152,7 @@ export class StrategyParserService {
       
       // Parse each step based on action keywords
       if (normalizedStep.includes('lend') || normalizedStep.includes('supply')) {
-        const step = this.parseSupplyStepWithContext(stepMatch, stepNumber, inputToken, defaultAmount, currentTokenAmounts);
+        const step = this.parseSupplyStepWithContext(stepMatch, stepNumber, inputToken, finalAmount, currentTokenAmounts);
         if (step) {
           steps.push(step);
           // Update available amounts after supply
@@ -145,7 +163,7 @@ export class StrategyParserService {
           }
         }
       } else if (normalizedStep.includes('borrow')) {
-        const step = this.parseBorrowStepWithContext(stepMatch, stepNumber, inputToken, defaultAmount, currentTokenAmounts);
+        const step = this.parseBorrowStepWithContext(stepMatch, stepNumber, inputToken, finalAmount, currentTokenAmounts);
         if (step) {
           steps.push(step);
           // Update available amounts after borrow
@@ -155,7 +173,7 @@ export class StrategyParserService {
           }
         }
       } else if (normalizedStep.includes('swap') || normalizedStep.includes('exchange')) {
-        const step = this.parseSwapStepFromIntent(stepMatch, stepNumber, inputToken, defaultAmount);
+        const step = this.parseSwapStepFromIntent(stepMatch, stepNumber, inputToken, finalAmount);
         if (step) {
           steps.push(step);
           // Update amounts after swap
@@ -168,7 +186,7 @@ export class StrategyParserService {
           }
         }
       } else if (normalizedStep.includes('join') || normalizedStep.includes('stake')) {
-        const step = this.parseJoinStrategyStepFromIntent(stepMatch, stepNumber, inputToken, defaultAmount);
+        const step = this.parseJoinStrategyStepFromIntent(stepMatch, stepNumber, inputToken, finalAmount);
         if (step) steps.push(step);
       }
       
@@ -275,7 +293,7 @@ export class StrategyParserService {
     stepLine: string,
     stepNumber: number,
     defaultInputToken: string,
-    defaultAmount: number,
+    finalAmount: number,
     currentTokenAmounts: { [symbol: string]: number }
   ): StrategyStepResponseDto | null {
     // Extract token from step like "Supply DOT" or "Supply USDC"
@@ -288,17 +306,17 @@ export class StrategyParserService {
     if (tokenMatch) {
       token = tokenMatch[1].toUpperCase();
       // Use available amount for this token
-      const availableAmount = currentTokenAmounts[token] || defaultAmount;
+      const availableAmount = currentTokenAmounts[token] || finalAmount;
       const percentage = percentageMatch ? parseInt(percentageMatch[1]) : 100;
       amount = (availableAmount * percentage) / 100;
     } else if (stepNumber === 1) {
       token = defaultInputToken;
       const percentage = percentageMatch ? parseInt(percentageMatch[1]) : 100;
-      amount = (defaultAmount * percentage) / 100;
+      amount = (finalAmount * percentage) / 100;
     } else {
       // Default fallback
       token = 'DOT';
-      amount = defaultAmount;
+      amount = finalAmount;
     }
     
     return {
@@ -317,7 +335,7 @@ export class StrategyParserService {
     stepLine: string,
     stepNumber: number,
     defaultInputToken: string,
-    defaultAmount: number,
+    finalAmount: number,
     currentTokenAmounts: { [symbol: string]: number }
   ): StrategyStepResponseDto | null {
     // Extract token from step like "Borrow USDC" or "Borrow USDT using USDC at 50% LTV"
@@ -332,11 +350,11 @@ export class StrategyParserService {
     let borrowAmount: number;
     if (collateralTokenMatch) {
       const collateralToken = collateralTokenMatch[1].toUpperCase();
-      const collateralAmount = currentTokenAmounts[collateralToken] || defaultAmount;
+      const collateralAmount = currentTokenAmounts[collateralToken] || finalAmount;
       borrowAmount = (collateralAmount * ltv) / 100;
     } else {
       // Use a reasonable default based on input token
-      borrowAmount = (defaultAmount * ltv) / 100;
+      borrowAmount = (finalAmount * ltv) / 100;
     }
     
     return {
@@ -355,7 +373,7 @@ export class StrategyParserService {
     stepLine: string,
     stepNumber: number,
     defaultInputToken: string,
-    defaultAmount: number
+    finalAmount: number
   ): StrategyStepResponseDto | null {
     // Extract tokens from step like "Swap DOT to VDOT"
     const swapMatch = stepLine.match(/swap\s+(\w+)\s+to\s+(\w+)/i);
@@ -364,7 +382,7 @@ export class StrategyParserService {
     
     const tokenIn = swapMatch[1].toUpperCase();
     const tokenOut = swapMatch[2].toUpperCase();
-    const amount = defaultAmount;
+    const amount = finalAmount;
     
     // Estimate output amount based on conversion rates
     let outputAmount = amount;
@@ -394,7 +412,7 @@ export class StrategyParserService {
     stepLine: string,
     stepNumber: number,
     defaultInputToken: string,
-    defaultAmount: number
+    finalAmount: number
   ): StrategyStepResponseDto | null {
     // Extract tokens from step like "Join gDOT strategy with DOT"
     const joinMatch = stepLine.match(/(gdot|vdot)/i);
@@ -402,7 +420,7 @@ export class StrategyParserService {
     if (!joinMatch) return null;
     
     const strategyToken = joinMatch[1].toUpperCase();
-    const amount = defaultAmount;
+    const amount = finalAmount;
     
     // DOT -> gDOT conversion
     const outputAmount = strategyToken === 'GDOT' ? amount * 0.929 : amount * 0.95;

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, MinLength, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, MinLength, IsOptional, IsNumber, Min } from 'class-validator';
 
 export class BuildStrategyDto {
   @ApiProperty({
@@ -28,4 +28,14 @@ export class BuildStrategyDto {
   @IsString()
   @IsOptional()
   additionalContext?: string;
+
+  @ApiProperty({
+    description: 'Amount of tokens to use in the strategy (optional)',
+    example: 100,
+    required: false,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tokenAmount?: number;
 }

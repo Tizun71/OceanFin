@@ -30,15 +30,29 @@ export class GeminiAiService {
 
   async generateStrategySteps(
     userIntent: string,
-    additionalContext?: string
+    additionalContext?: string,
+    tokenAmount?: number
   ): Promise<StrategyStepResponseDto[]> {
+    console.log('GenerateStrategySteps called with:', {
+      userIntent,
+      additionalContext,
+      tokenAmount,
+    });
+
     // Check if this is a "maximize yield" request
     if (this.isMaximizeYieldRequest(userIntent)) {
-      return this.generateMaximizeYieldStrategy(userIntent, additionalContext);
+      return this.generateMaximizeYieldStrategy(userIntent, additionalContext, tokenAmount);
     }
 
     // Extract input token from user intent
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const finalAmount = tokenAmount || defaultAmount; // Use provided amount or default
+    
+    console.log('Token amounts:', {
+      tokenAmount,
+      defaultAmount,
+      finalAmount,
+    });
     const loopCount = this.extractLoopCount(userIntent);
     const initialToken = this.extractInitialTokenFromContext(additionalContext);
     const swapInfo = this.needsInitialSwap(userIntent, additionalContext);
@@ -53,7 +67,7 @@ export class GeminiAiService {
 
     const prompt = this.buildConstrainedPrompt(
       userIntent, 
-      { symbol: inputToken, amount: defaultAmount }, 
+      { symbol: inputToken, amount: finalAmount }, 
       constraints, 
       additionalContext, 
       loopCount,
@@ -311,10 +325,12 @@ export class GeminiAiService {
 
   private async generateMaximizeYieldStrategy(
     userIntent: string,
-    additionalContext?: string
+    additionalContext?: string,
+    tokenAmount?: number
   ): Promise<StrategyStepResponseDto[]> {
     // Extract input token and amount
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const finalAmount = tokenAmount || defaultAmount;
     const initialToken = this.extractInitialTokenFromContext(additionalContext);
     
     // Determine risk level from user intent
@@ -339,7 +355,7 @@ export class GeminiAiService {
     let adaptedSteps = this.templatesService.adaptTemplateToToken(
       bestTemplate, 
       tokenToUse, 
-      defaultAmount
+      finalAmount
     );
     
     // Add initial SWAP step if needed
@@ -365,10 +381,12 @@ export class GeminiAiService {
 
   private async generateRegularStrategy(
     userIntent: string,
-    additionalContext?: string
+    additionalContext?: string,
+    tokenAmount?: number
   ): Promise<StrategyStepResponseDto[]> {
     // This is the original logic for non-maximize-yield requests
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const finalAmount = tokenAmount || defaultAmount;
     const loopCount = this.extractLoopCount(userIntent);
     const initialToken = this.extractInitialTokenFromContext(additionalContext);
     const swapInfo = this.needsInitialSwap(userIntent, additionalContext);
@@ -382,7 +400,7 @@ export class GeminiAiService {
 
     const prompt = this.buildConstrainedPrompt(
       userIntent, 
-      { symbol: inputToken, amount: defaultAmount }, 
+      { symbol: inputToken, amount: finalAmount }, 
       constraints, 
       additionalContext, 
       loopCount,
