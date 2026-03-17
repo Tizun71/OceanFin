@@ -7,171 +7,88 @@ import {
   Connection,
   Edge,
 } from "reactflow";
-
 import { useCallback, useState } from "react";
 
 import { Module, Action, CreateStrategyPayload } from "@/types/defi";
-import { createStrategyWorkflow } from "@/services/defi-module-service";
 import { displayToast } from "@/components/shared/toast-manager";
 import { useUser } from "@/providers/user-provider";
 
+import { validateAddNode } from "@/lib/defi-builder-validation";
+import {
+  createDefiNode,
+  createDefiEdge,
+  markLastNode,
+} from "@/lib/defi-node-factory";
+import { buildWorkflowJson } from "@/lib/defi-workflow-builder";
+import { submitStrategy } from "@/services/defi-strategy-builder";
+
 export function useDefiBuilder() {
   const { user } = useUser();
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const [selectedNode, setSelectedNode] = useState<any>(null);
-
   const [showModal, setShowModal] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const isNodeConfigured = (node: any) => {
-    const config = node?.data?.config;
-
-    return (
-      config?.tokenInId &&
-      config?.tokenOutId &&
-      config?.amount &&
-      config?.amountOut
-    );
-  };
-
   /*
-  BUILD WORKFLOW JSON
-  */
-  const buildWorkflowJson = (nodes: any[]) => {
-    let stepNumber = 1;
+   * DELETE NODE
+   */
+  const deleteNode = useCallback((id: string) => {
+    let deleted = false;
+    let showError = false;
 
-    const steps = nodes.map((node, index) => {
-      const config = node.data.config;
+    setNodes((nds) => {
+      const lastNode = nds[nds.length - 1];
 
-      let tokenIn;
-
-      if (index === 0) {
-        if (config?.tokenInId) {
-          tokenIn = {
-            assetId: config.tokenInId,
-            symbol: config.tokenInSymbol,
-            amount: config.amount,
-          };
-        }
-      } else {
-        const prevConfig = nodes[index - 1].data.config;
-
-        if (prevConfig?.tokenOutId) {
-          tokenIn = {
-            assetId: prevConfig.tokenOutId,
-            symbol: prevConfig.tokenOutSymbol,
-            amount: prevConfig.amountOut,
-          };
-        }
+      if (!lastNode || lastNode.id !== id) {
+        showError = true;
+        return nds;
       }
 
-      let tokenOut;
+      deleted = true;
 
-      if (config?.tokenOutId) {
-        tokenOut = {
-          assetId: config.tokenOutId,
-          symbol: config.tokenOutSymbol,
-          amount: config.amountOut,
-        };
-      }
+      const newNodes = nds.slice(0, -1);
 
-      return {
-        step: stepNumber++,
-        type: node.data.action.name.toUpperCase().replace(" ", "_"),
-        agent: node.data.module.name.toUpperCase(),
-        tokenIn,
-        tokenOut,
-      };
+      return markLastNode(newNodes);
     });
 
-    return {
-      loops: "1",
-      fee: 0,
-      steps,
-    };
-  };
-
-  /*
-  DELETE NODE
-  */
- const deleteNode = useCallback((id: string) => {
-
-  let deleted = false;
-  let showError = false;
-
-  setNodes((nds) => {
-
-    const lastNode = nds[nds.length - 1];
-
-    if (!lastNode || lastNode.id !== id) {
-
-      showError = true;
-
-      return nds;
+    if (showError) {
+      displayToast("error", "Only the last node can be deleted.");
+      return;
     }
 
-    deleted = true;
+    if (deleted) {
+      setEdges((eds) =>
+        eds.filter((edge) => edge.source !== id && edge.target !== id),
+      );
 
-    const newNodes = nds.slice(0, -1);
+      displayToast("success", "Node deleted successfully.");
+    }
+  }, [setNodes, setEdges]);
 
-    return newNodes.map((node, index) => ({
-      ...node,
-      data: {
-        ...node.data,
-        isLastNode: index === newNodes.length - 1,
-      },
-    }));
-
-  });
-
-  if (showError) {
-    displayToast("error","Only the last node can be deleted.");
-    return;
-  }
-
-  if (deleted) {
-
-    setEdges((eds) =>
-      eds.filter(
-        (edge) =>
-          edge.source !== id &&
-          edge.target !== id
-      )
-    );
-
-    displayToast("success","Node deleted successfully.");
-
-  }
-
- }, []);
   /*
-  ADD NODE
-  */
- const addNode = useCallback(
+   * ADD NODE
+   */
+  const addNode = useCallback(
     (module: Module, action: Action) => {
-
       let added = false;
       let showError = false;
+      let errorMessage = "";
 
       setNodes((nds) => {
+        const validation = validateAddNode({
+          nodes: nds,
+          selectedNode,
+          action,
+        });
 
-        const lastNode = nds[nds.length - 1];
-
-        if (
-          lastNode &&
-          !isNodeConfigured(lastNode) &&
-          selectedNode?.id !== lastNode.id
-        ) {
-
+        if (!validation.valid) {
           showError = true;
-
+          errorMessage = validation.message;
           return nds;
         }
-
-        const id = crypto.randomUUID();
-        const newIndex = nds.length;
 
         const updatedNodes = nds.map((node) => ({
           ...node,
@@ -181,77 +98,43 @@ export function useDefiBuilder() {
           },
         }));
 
-        const newNode = {
-          id,
-          type: "defiNode",
-          position: {
-            x: 250,
-            y: newIndex * 180 + 80,
-          },
-          data: {
-            id,
-            module,
-            action,
-            onDelete: deleteNode,
-            isLastNode: true,
-          },
-        };
+        const newNode = createDefiNode({
+          module,
+          action,
+          index: nds.length,
+          onDelete: deleteNode,
+        });
 
         added = true;
 
         if (updatedNodes.length > 0) {
-
           const prevNode = updatedNodes[updatedNodes.length - 1];
 
-          setEdges((eds) => [
-            ...eds,
-            {
-              id: `${prevNode.id}-${id}`,
-              source: prevNode.id,
-              target: id,
-              sourceHandle: "bottom",
-              targetHandle: "top",
-              type: "smoothstep",
-              animated: true,
-              style: {
-                stroke: "#6366f1",
-                strokeWidth: 2,
-              },
-            },
-          ]);
-
+          setEdges((eds) => [...eds, createDefiEdge(prevNode.id, newNode.id)]);
         }
 
         return [...updatedNodes, newNode];
-
       });
 
       if (showError) {
-        displayToast(
-          "error",
-          "Please configure and save the current step before adding another node."
-        );
+        displayToast("error", errorMessage || "Invalid step flow.");
         return;
       }
 
       if (added) {
         displayToast("success", "Node added successfully.");
       }
-
     },
-    [deleteNode, selectedNode]
-  ); 
+    [deleteNode, selectedNode, setNodes, setEdges],
+  );
 
   /*
-  CONNECT
-  */
- const onConnect = useCallback(
-  (params: Edge | Connection) => {
-
+   * MANUAL CONNECT (optional)
+   */
+  const onConnect = useCallback((params: Edge | Connection) => {
     setEdges((eds) => {
-
       const alreadyConnected = eds.some(
-        (edge) => edge.source === params.source
+        (edge) => edge.source === params.source,
       );
 
       if (alreadyConnected) {
@@ -270,17 +153,13 @@ export function useDefiBuilder() {
         },
         eds,
       );
-
     });
-
-  },
-  [],
-);
+  }, [setEdges]);
 
   /*
-  SAVE CONFIG
-  */
-  const saveConfig = (payload: CreateStrategyPayload) => {
+   * SAVE CONFIG
+   */
+  const saveConfig = useCallback((payload: CreateStrategyPayload) => {
     setNodes((nds) =>
       nds.map((node) =>
         node.id === payload.nodeId
@@ -307,63 +186,47 @@ export function useDefiBuilder() {
         : prev,
     );
 
-    displayToast(
-      "success",
-      "Configuration saved successfully."
-    );
-  };
+    displayToast("success", "Configuration saved successfully.");
+  }, [setNodes]);
 
   /*
-  CREATE STRATEGY
-  */
-  const createStrategy = async (name: string) => {
-    if (!user) {
-      displayToast("error", "Please connect your wallet first.");
-      return;
-    }
+   * CREATE STRATEGY
+   */
+  const createStrategy = useCallback(
+    async (name: string) => {
+      if (!user) {
+        displayToast("error", "Please connect your wallet first.");
+        return;
+      }
 
-    try {
-      setCreating(true);
+      try {
+        setCreating(true);
 
-      const workflow_json = buildWorkflowJson(nodes);
+        const workflowJson = buildWorkflowJson(nodes);
 
-      const payload = {
-        owner_id: user.id,
-        name,
-        description: "Strategy description",
-        is_public: true,
-        chain_context: "Hydration",
-        status: "draft",
-        workflow_json,
-        workflow_graph: workflow_json,
-      };
+        await submitStrategy({
+          userId: user.id,
+          name,
+          workflowJson,
+        });
 
-      await createStrategyWorkflow(payload);
-
-      displayToast(
-        "success",
-        "Strategy created successfully.",
-      );
-
-      setShowModal(false);
-    } catch (error) {
-      console.error(error);
-
-      displayToast(
-        "error",
-        "Failed to create strategy.",
-      );
-    } finally {
-      setCreating(false);
-    }
-  };
+        displayToast("success", "Strategy created successfully.");
+        setShowModal(false);
+      } catch (error) {
+        console.error(error);
+        displayToast("error", "Failed to create strategy.");
+      } finally {
+        setCreating(false);
+      }
+    },
+    [user, nodes],
+  );
 
   return {
     nodes,
     edges,
 
     selectedNode,
-
     showModal,
     creating,
 
@@ -372,13 +235,13 @@ export function useDefiBuilder() {
 
     onNodesChange,
     onEdgesChange,
+    onConnect,
 
+    setEdges,
 
     addNode,
     deleteNode,
-
     saveConfig,
-
     createStrategy,
   };
 }

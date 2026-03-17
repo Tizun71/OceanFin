@@ -13,6 +13,7 @@ export interface DefiPair {
 export interface Action {
   id: string
   name: string
+  operation_type: "JOIN STRATEGY" | "SWAP" | "SUPPLY" | "BORROW";
   call: string
   pallet: string
   is_active: boolean

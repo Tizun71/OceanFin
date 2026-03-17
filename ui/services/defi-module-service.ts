@@ -167,3 +167,18 @@ export const deleteStrategy = async (id: string) => {
 
   return true;
 };
+
+export const getRequiredActionData = async (actionId: string) => {
+  const res = await fetch(
+    `${BASE_URL}/defi-modules/actions/required?action_id=${actionId}`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch action requirements");
+  }
+
+  return res.json();
+};

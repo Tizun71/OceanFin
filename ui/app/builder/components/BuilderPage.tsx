@@ -6,6 +6,8 @@ import ReactFlow, {
   BackgroundVariant,
   Controls,
   MiniMap,
+  addEdge,
+  type Connection,
 } from "reactflow";
 
 import Sidebar from "./Sidebar";
@@ -17,6 +19,7 @@ import { useDefiBuilder } from "@/hooks/use-strategy-builder";
 import { useEffect } from "react";
 import { usePreloader } from "@/providers/preloader-provider";
 import { displayToast } from "@/components/shared/toast-manager";
+import { canBeFirstStep, validateConnection } from "@/lib/defi-connection-rules";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -37,7 +40,7 @@ function Builder() {
 
     onNodesChange,
     onEdgesChange,
-   
+    setEdges, 
 
     addNode,
     saveConfig,
@@ -45,7 +48,7 @@ function Builder() {
   } = useDefiBuilder();
 
   const { show, hide } = usePreloader();
-  
+
   useEffect(() => {
     if (isFetching) {
       show();
@@ -55,15 +58,12 @@ function Builder() {
   }, [isFetching, show, hide]);
 
   const validateWorkflow = () => {
-
     if (!nodes || nodes.length === 0) {
       displayToast("error", "Please add at least one step before creating strategy.");
       return false;
     }
 
-    const hasUnconfigured = nodes.some(
-      (node) => !node.data?.config
-    );
+    const hasUnconfigured = nodes.some((node) => !node.data?.config);
 
     if (hasUnconfigured) {
       displayToast(
@@ -74,14 +74,91 @@ function Builder() {
     }
 
     return true;
-
   };
-  
+
+  const handleAddNode = (module: any, action: any) => {
+    const isFirstNode = nodes.length === 0;
+    const operationType = action?.operation_type;
+
+    if (isFirstNode) {
+      const result = canBeFirstStep(operationType);
+
+      if (!result.valid) {
+        displayToast("error", result.message);
+        return;
+      }
+    }
+
+    addNode(module, action);
+  };
+
+  const getOperationType = (node: any) => {
+    return (
+      node?.data?.action?.operation_type ||
+      node?.data?.module?.operation_type ||
+      node?.data?.operation_type ||
+      ""
+    );
+  };
+
+  const isValidConnection = (connection: Connection) => {
+    const sourceNode = nodes.find((node) => node.id === connection.source);
+    const targetNode = nodes.find((node) => node.id === connection.target);
+
+    if (!sourceNode || !targetNode) return false;
+
+    if (connection.source === connection.target) return false;
+
+    const sourceType = getOperationType(sourceNode);
+    const targetType = getOperationType(targetNode);
+
+    const result = validateConnection(sourceType, targetType);
+
+    return result.valid;
+  };
+
+  const handleConnect = (connection: Connection) => {
+    const sourceNode = nodes.find((node) => node.id === connection.source);
+    const targetNode = nodes.find((node) => node.id === connection.target);
+
+    if (!sourceNode || !targetNode) {
+      displayToast("error", "Invalid connection.");
+      return;
+    }
+
+    if (connection.source === connection.target) {
+      displayToast("error", "A step cannot connect to itself.");
+      return;
+    }
+
+    const edgeExists = edges.some(
+      (edge) =>
+        edge.source === connection.source && edge.target === connection.target
+    );
+
+    if (edgeExists) {
+      displayToast("error", "This connection already exists.");
+      return;
+    }
+
+    const sourceType = getOperationType(sourceNode);
+    const targetType = getOperationType(targetNode);
+
+    const result = validateConnection(sourceType, targetType);
+
+    if (!result.valid) {
+      displayToast("error", result.message);
+      return;
+    }
+
+    setEdges((eds) => addEdge(connection, eds));
+  };
+
   return (
     <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
       {/* Sidebar */}
       <div className="w-72 border-r border-white/10">
-        <Sidebar modules={modules} onSelect={addNode} />
+        <Sidebar modules={modules} onSelect={handleAddNode} />
       </div>
 
       {/* Canvas */}
@@ -102,7 +179,8 @@ function Builder() {
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          
+          onConnect={handleConnect}
+          isValidConnection={isValidConnection}
           onNodeClick={(_, node) => setSelectedNode(node)}
           fitView
         >
