@@ -2,13 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { StrategyStepResponseDto } from '../interfaces/dtos/strategy-step-response.dto';
 import { StrategyConstraintsService, StrategyConstraints } from './strategy-constraints.service';
+import { StrategyTemplatesService } from './strategy-templates.service';
 
 @Injectable()
 export class GeminiAiService {
   private genAI: GoogleGenerativeAI;
   private model: any;
 
-  constructor(private readonly constraintsService: StrategyConstraintsService) {
+  constructor(private readonly constraintsService: StrategyConstraintsService,
+              private readonly templatesService: StrategyTemplatesService) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY environment variable is required');
@@ -30,8 +32,17 @@ export class GeminiAiService {
     userIntent: string,
     additionalContext?: string
   ): Promise<StrategyStepResponseDto[]> {
+    // Check if this is a "maximize yield" request
+    if (this.isMaximizeYieldRequest(userIntent)) {
+      return this.generateMaximizeYieldStrategy(userIntent, additionalContext);
+    }
+
     // Extract input token from user intent
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const loopCount = this.extractLoopCount(userIntent);
+    const initialToken = this.extractInitialTokenFromContext(additionalContext);
+    const swapInfo = this.needsInitialSwap(userIntent, additionalContext);
+    const needsEMode = this.shouldAddEnableEMode(userIntent);
     
     // Get actual constraints from database
     const constraints = await this.constraintsService.getStrategyConstraints(
@@ -40,7 +51,16 @@ export class GeminiAiService {
       additionalContext
     );
 
-    const prompt = this.buildConstrainedPrompt(userIntent, { symbol: inputToken, amount: defaultAmount }, constraints, additionalContext);
+    const prompt = this.buildConstrainedPrompt(
+      userIntent, 
+      { symbol: inputToken, amount: defaultAmount }, 
+      constraints, 
+      additionalContext, 
+      loopCount,
+      initialToken,
+      swapInfo,
+      needsEMode
+    );
     
     try {
       const result = await this.model.generateContent(prompt);
@@ -48,17 +68,26 @@ export class GeminiAiService {
       const text = response.text();
       
       // Parse JSON response from Gemini
+      let steps: StrategyStepResponseDto[];
       const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[1]);
+        steps = JSON.parse(jsonMatch[1]);
+      } else {
+        // Fallback: try to parse the entire response as JSON
+        try {
+          steps = JSON.parse(text);
+        } catch {
+          throw new Error('Failed to parse Gemini response as JSON');
+        }
       }
       
-      // Fallback: try to parse the entire response as JSON
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new Error('Failed to parse Gemini response as JSON');
-      }
+      // Post-processing: Remove ENABLE_E_MODE from simple supply/borrow strategies
+      steps = this.filterInvalidEnableEMode(steps, userIntent);
+      
+      // Post-processing: Add initial SWAP step if needed
+      steps = this.addInitialSwapIfNeeded(steps, userIntent, additionalContext);
+      
+      return steps;
     } catch (error) {
       console.error('Gemini API error:', error);
       throw new Error(`Failed to generate strategy: ${error.message}`);
@@ -105,11 +134,290 @@ export class GeminiAiService {
     return { inputToken, defaultAmount };
   }
 
+  private extractLoopCount(input: string): number {
+    // Extract iterations from patterns like "3 times", "5 loops", "1 loop", "iterate 4"
+    const iterMatch = input.match(/(\d+)\s*(times?|loops?|iterations?)/i);
+    if (iterMatch) return parseInt(iterMatch[1]);
+
+    // Check for "3x", "5x" pattern
+    const xMatch = input.match(/(\d+)x/i);
+    if (xMatch) return parseInt(xMatch[1]);
+
+    // Check for "with 3 loop" pattern
+    const withLoopMatch = input.match(/with\s+(\d+)\s+loops?/i);
+    if (withLoopMatch) return parseInt(withLoopMatch[1]);
+
+    return 3; // Default 3 iterations
+  }
+
+  private extractInitialTokenFromContext(additionalContext?: string): string | undefined {
+    if (!additionalContext) return undefined;
+    
+    const initialTokenMatch = additionalContext.match(/initial\s+token\s+is\s+(DOT|VDOT|GDOT|USDT|USDC)/i);
+    return initialTokenMatch ? initialTokenMatch[1].toUpperCase() : undefined;
+  }
+
+  private shouldAddEnableEMode(userIntent: string): boolean {
+    // Check if user explicitly mentions enable e mode
+    const explicitEMode = /enable\s+e\s*mode/i.test(userIntent);
+    
+    // Check if strategy explicitly mentions JOIN_STRATEGY operations (GDOT/VDOT liquid staking)
+    const hasJoinStrategy = /join.*(?:gdot|vdot).*strategy|(?:gdot|vdot).*strategy|join.*strategy.*(?:gdot|vdot)/i.test(userIntent);
+    
+    // Check if it's a simple supply/borrow strategy (should NOT have ENABLE_E_MODE)
+    const isSimpleSupplyBorrow = /^\s*(?:\d+\.\s*)?(?:supply|lend).*(?:borrow|loan)/i.test(userIntent.trim()) && 
+                                !hasJoinStrategy && 
+                                !explicitEMode;
+    
+    // ENABLE_E_MODE is FORBIDDEN for simple supply/borrow strategies
+    if (isSimpleSupplyBorrow) {
+      return false;
+    }
+    
+    return explicitEMode || hasJoinStrategy;
+  }
+
+  private needsInitialSwap(userIntent: string, additionalContext?: string): { needsSwap: boolean; fromToken: string; toToken: string } {
+    const initialToken = this.extractInitialTokenFromContext(additionalContext);
+    if (!initialToken) return { needsSwap: false, fromToken: '', toToken: '' };
+
+    // Extract the first token mentioned in the strategy steps
+    // Handle both structured format (1. Supply USDC) and natural language (Supply USDC and borrow DOT)
+    const firstStepMatch = userIntent.match(/(?:1\.\s*)?(?:supply|lend|swap|borrow|join)\s+(\w+)/i);
+    if (!firstStepMatch) return { needsSwap: false, fromToken: '', toToken: '' };
+
+    const firstStepToken = firstStepMatch[1].toUpperCase();
+    
+    // Check if initial token is different from first step token
+    const needsSwap = initialToken.toUpperCase() !== firstStepToken;
+    
+    return {
+      needsSwap,
+      fromToken: initialToken.toUpperCase(),
+      toToken: firstStepToken
+    };
+  }
+
+  private filterInvalidEnableEMode(steps: StrategyStepResponseDto[], userIntent: string): StrategyStepResponseDto[] {
+    // Check if strategy has JOIN_STRATEGY operations or explicit ENABLE_E_MODE request
+    const hasJoinStrategy = steps.some(step => step.type === 'JOIN_STRATEGY');
+    const explicitEMode = /enable\s+e\s*mode/i.test(userIntent);
+    
+    // If no JOIN_STRATEGY and no explicit request, remove ENABLE_E_MODE
+    if (!hasJoinStrategy && !explicitEMode) {
+      const filteredSteps = steps.filter(step => step.type !== 'ENABLE_E_MODE');
+      
+      // Renumber steps after filtering
+      return filteredSteps.map((step, index) => ({
+        ...step,
+        step: index + 1
+      }));
+    }
+    
+    return steps;
+  }
+
+  private addInitialSwapIfNeeded(steps: StrategyStepResponseDto[], userIntent: string, additionalContext?: string): StrategyStepResponseDto[] {
+    const initialToken = this.extractInitialTokenFromContext(additionalContext);
+    if (!initialToken) {
+      return steps;
+    }
+    
+    // Find the first step that has tokenIn (skip ENABLE_E_MODE)
+    const firstStepWithToken = steps.find(step => 
+      step.type !== 'ENABLE_E_MODE' && step.tokenIn?.symbol
+    );
+    
+    if (!firstStepWithToken || !firstStepWithToken.tokenIn) {
+      return steps;
+    }
+    
+    const firstStepToken = firstStepWithToken.tokenIn.symbol.toUpperCase();
+    const needsSwap = initialToken.toUpperCase() !== firstStepToken;
+    
+    if (!needsSwap) {
+      return steps;
+    }
+    
+    // Check if SWAP step already exists at the beginning (after ENABLE_E_MODE if present)
+    const enableEModeIndex = steps.findIndex(step => step.type === 'ENABLE_E_MODE');
+    const expectedSwapIndex = enableEModeIndex >= 0 ? enableEModeIndex + 1 : 0;
+    
+    const hasInitialSwap = steps.length > expectedSwapIndex && 
+                          steps[expectedSwapIndex].type === 'SWAP' && 
+                          steps[expectedSwapIndex].tokenIn?.symbol === initialToken.toUpperCase() &&
+                          steps[expectedSwapIndex].tokenOut?.symbol === firstStepToken;
+    
+    if (hasInitialSwap) {
+      return steps;
+    }
+    
+    // Get asset IDs for the tokens
+    const fromAssetId = this.getAssetIdBySymbol(initialToken);
+    const toAssetId = this.getAssetIdBySymbol(firstStepToken);
+    
+    // Estimate swap amount (use the amount from first step if available)
+    const firstStepAmount = firstStepWithToken.tokenIn.amount || 10;
+    
+    // Create SWAP step
+    const swapStep: StrategyStepResponseDto = {
+      step: expectedSwapIndex + 1,
+      type: 'SWAP',
+      agent: 'HYDRATION',
+      tokenIn: {
+        assetId: fromAssetId,
+        symbol: initialToken.toUpperCase(),
+        amount: firstStepAmount
+      },
+      tokenOut: {
+        assetId: toAssetId,
+        symbol: firstStepToken,
+        amount: firstStepAmount * 0.98 // Assume 2% slippage
+      }
+    };
+    
+    // Insert SWAP step at the correct position and renumber all subsequent steps
+    const updatedSteps = [...steps];
+    updatedSteps.splice(expectedSwapIndex, 0, swapStep);
+    
+    // Renumber all steps
+    return updatedSteps.map((step, index) => ({
+      ...step,
+      step: index + 1
+    }));
+  }
+
+  private getAssetIdBySymbol(symbol: string): string {
+    const assetMap: { [key: string]: string } = {
+      'DOT': '5',
+      'USDC': '22',
+      'USDT': '23',
+      'GDOT': '18',
+      'VDOT': '19',
+      'BTC': '21',
+      'ETH': '20'
+    };
+    
+    return assetMap[symbol.toUpperCase()] || '5'; // Default to DOT
+  }
+
+  private isMaximizeYieldRequest(userIntent: string): boolean {
+    const intent = userIntent.toLowerCase();
+    return intent.includes('maximize yield') || 
+           intent.includes('maximum yield') || 
+           intent.includes('highest yield') ||
+           intent.includes('best yield');
+  }
+
+  private async generateMaximizeYieldStrategy(
+    userIntent: string,
+    additionalContext?: string
+  ): Promise<StrategyStepResponseDto[]> {
+    // Extract input token and amount
+    const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const initialToken = this.extractInitialTokenFromContext(additionalContext);
+    
+    // Determine risk level from user intent
+    const riskLevel = this.extractRiskLevel(userIntent);
+    const maxLoops = this.templatesService.getMaxLoopsForRisk(riskLevel);
+    
+    console.log(`Maximize yield request: token=${inputToken}, risk=${riskLevel}, maxLoops=${maxLoops}`);
+    
+    // Get the highest yield template that matches the criteria
+    const bestTemplate = this.templatesService.getHighestYieldTemplate(riskLevel, maxLoops);
+    
+    if (!bestTemplate) {
+      // Fallback to regular AI generation if no template found
+      console.log('No suitable template found, falling back to AI generation');
+      return this.generateRegularStrategy(userIntent, additionalContext);
+    }
+    
+    console.log(`Selected template: ${bestTemplate.name} (APY: ${bestTemplate.apy}%)`);
+    
+    // Adapt the template to the input token
+    const tokenToUse = initialToken || inputToken;
+    let adaptedSteps = this.templatesService.adaptTemplateToToken(
+      bestTemplate, 
+      tokenToUse, 
+      defaultAmount
+    );
+    
+    // Add initial SWAP step if needed
+    adaptedSteps = this.addInitialSwapIfNeeded(adaptedSteps, userIntent, additionalContext);
+    
+    return adaptedSteps;
+  }
+
+  private extractRiskLevel(userIntent: string): 'LOW' | 'MEDIUM' | 'HIGH' {
+    const intent = userIntent.toLowerCase();
+    
+    if (intent.includes('low risk') || intent.includes('conservative') || intent.includes('safe')) {
+      return 'LOW';
+    } else if (intent.includes('high risk') || intent.includes('aggressive') || intent.includes('risky')) {
+      return 'HIGH';
+    } else if (intent.includes('moderate risk') || intent.includes('medium risk') || intent.includes('balanced')) {
+      return 'MEDIUM';
+    }
+    
+    // Default to MEDIUM if no risk level specified
+    return 'MEDIUM';
+  }
+
+  private async generateRegularStrategy(
+    userIntent: string,
+    additionalContext?: string
+  ): Promise<StrategyStepResponseDto[]> {
+    // This is the original logic for non-maximize-yield requests
+    const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
+    const loopCount = this.extractLoopCount(userIntent);
+    const initialToken = this.extractInitialTokenFromContext(additionalContext);
+    const swapInfo = this.needsInitialSwap(userIntent, additionalContext);
+    const needsEMode = this.shouldAddEnableEMode(userIntent);
+    
+    const constraints = await this.constraintsService.getStrategyConstraints(
+      inputToken,
+      userIntent,
+      additionalContext
+    );
+
+    const prompt = this.buildConstrainedPrompt(
+      userIntent, 
+      { symbol: inputToken, amount: defaultAmount }, 
+      constraints, 
+      additionalContext, 
+      loopCount,
+      initialToken,
+      swapInfo,
+      needsEMode
+    );
+    
+    const result = await this.model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    let steps: StrategyStepResponseDto[];
+    const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+    if (jsonMatch) {
+      steps = JSON.parse(jsonMatch[1]);
+    } else {
+      steps = JSON.parse(text);
+    }
+    
+    steps = this.filterInvalidEnableEMode(steps, userIntent);
+    steps = this.addInitialSwapIfNeeded(steps, userIntent, additionalContext);
+    
+    return steps;
+  }
+
   private buildConstrainedPrompt(
     userIntent: string,
     inputToken: { symbol: string; amount: number; assetId?: string },
     constraints: StrategyConstraints,
-    additionalContext?: string
+    additionalContext?: string,
+    loopCount?: number,
+    initialToken?: string,
+    swapInfo?: { needsSwap: boolean; fromToken: string; toToken: string },
+    needsEMode?: boolean
   ): string {
     const availableOpsText = constraints.availableOperations
       .filter(op => op.supported)
@@ -134,6 +442,9 @@ export class GeminiAiService {
     const isStructuredSteps = /^\s*\d+\.\s*\w+/m.test(userIntent);
 
     if (isStructuredSteps) {
+      const swapInfo = this.needsInitialSwap(userIntent, additionalContext);
+      const needsEMode = this.shouldAddEnableEMode(userIntent);
+      
       return `
 You are a DeFi strategy expert for Polkadot ecosystem. Convert the structured step-by-step instructions into executable DeFi strategy steps.
 
@@ -141,6 +452,9 @@ USER STRUCTURED STEPS:
 ${userIntent}
 
 INPUT TOKEN: ${inputToken.amount} ${inputToken.symbol} (assetId: ${constraints.inputToken.assetId})
+${initialToken ? `INITIAL TOKEN: ${initialToken}` : ''}
+${swapInfo?.needsSwap ? `NEEDS INITIAL SWAP: ${swapInfo.fromToken} → ${swapInfo.toToken}` : ''}
+${needsEMode ? `REQUIRES ENABLE_E_MODE: YES (GDOT/VDOT strategy or explicitly requested)` : `REQUIRES ENABLE_E_MODE: NO (simple supply/borrow strategy)`}
 ${additionalContext ? `ADDITIONAL CONTEXT: "${additionalContext}"` : ''}
 
 CONSTRAINTS FROM DATABASE:
@@ -160,14 +474,41 @@ TRANSLATION RULES:
 4. "Join strategy" or "Stake" → JOIN_STRATEGY operation
 5. Replace any non-Hydration protocols with HYDRATION
 6. Convert percentages to actual amounts based on input token
-7. Add ENABLE_E_MODE if borrowing operations exist
+7. ENABLE_E_MODE rules - CRITICAL:
+   - ABSOLUTELY FORBIDDEN for simple supply/borrow strategies
+   - ONLY add if strategy contains JOIN_STRATEGY operations (GDOT/VDOT liquid staking)
+   - OR if user explicitly mentions "enable e mode" in their intent
+   - NEVER add for basic lending strategies like "Supply X, Borrow Y"
+   - If user intent is just supply and borrow operations → NO ENABLE_E_MODE
 8. ONLY use operations and tokens listed above
+
+INITIAL TOKEN HANDLING:
+${swapInfo?.needsSwap ? `
+- DETECTED: User starts with ${swapInfo.fromToken} but first step needs ${swapInfo.toToken}
+- SYSTEM WILL AUTO-ADD: SWAP ${swapInfo.fromToken} to ${swapInfo.toToken} as step 1
+- You can focus on the main strategy steps, the initial swap will be handled automatically
+- Example: If user has USDT but strategy starts with "Supply USDC", system adds SWAP USDT→USDC automatically
+` : 'No initial swap needed - starting token matches first step token or no initial token specified'}
 
 CRITICAL RULES:
 1. ONLY use operations listed in "AVAILABLE OPERATIONS" above
 2. ONLY use tokens listed in "SUPPORTED TOKENS" above  
 3. Agent is always "HYDRATION" for all operations
 4. Step numbers must be sequential starting from 1
+5. ENABLE_E_MODE rules - READ CAREFULLY:
+   - ABSOLUTELY FORBIDDEN for simple supply/borrow strategies
+   - ENABLE_E_MODE is ONLY allowed when:
+     a) Strategy contains JOIN_STRATEGY operations (GDOT/VDOT liquid staking)
+     b) User explicitly requests "enable e mode" in their intent
+   - If this is just "Supply X and Borrow Y" → NEVER ADD ENABLE_E_MODE
+   - If this is just "1. Supply USDC, 2. Borrow DOT" → NEVER ADD ENABLE_E_MODE
+   - Examples that MUST NOT have ENABLE_E_MODE: "Supply USDC, Borrow DOT", "Supply DOT, Borrow USDC"
+   - ENABLE_E_MODE is FORBIDDEN unless strategy involves liquid staking (JOIN_STRATEGY)
+${swapInfo?.needsSwap ? `6. AUTOMATIC SWAP: System will auto-add SWAP ${swapInfo.fromToken} → ${swapInfo.toToken} as first step` : ''}
+
+FORBIDDEN COMBINATIONS:
+- ENABLE_E_MODE + only SUPPLY/BORROW operations (without JOIN_STRATEGY)
+- ENABLE_E_MODE + simple lending strategies
 
 Generate a JSON array of strategy steps using ONLY the available operations above.
 
@@ -198,6 +539,10 @@ You are a DeFi strategy expert for Polkadot ecosystem. Create a strategy based o
 USER INPUT:
 - Intent: "${userIntent}"
 - Input Token: ${inputToken.amount} ${inputToken.symbol} (assetId: ${constraints.inputToken.assetId})
+${initialToken ? `- Initial Token: ${initialToken}` : ''}
+${swapInfo?.needsSwap ? `- Needs Initial Swap: ${swapInfo.fromToken} → ${swapInfo.toToken}` : ''}
+${needsEMode ? `- Requires ENABLE_E_MODE: YES (GDOT/VDOT strategy or explicitly requested)` : `- Requires ENABLE_E_MODE: NO (simple supply/borrow strategy)`}
+${loopCount ? `- Loop Count: ${loopCount} iterations` : ''}
 ${additionalContext ? `- Additional Context: "${additionalContext}"` : ''}
 
 CONSTRAINTS FROM DATABASE:
@@ -218,19 +563,68 @@ CRITICAL RULES:
 5. Agent is always "HYDRATION" for all operations
 6. Step numbers must be sequential starting from 1
 
+LOOPING STRATEGY LOGIC:
+If user mentions "loop", "loops", "leverage", or "multiply":
+1. Extract number of loops from phrases like "3 loop", "5 loops", "2 times" (detected: ${loopCount || 3} loops)
+2. Create a looping strategy with the specified iterations
+3. Each loop should: Supply → Borrow → (repeat)
+4. Use decreasing amounts for each iteration (e.g., 90% of previous amount)
+5. For "Supply DOT and borrow USDC with 3 loop": Create 3 complete Supply+Borrow cycles
+
 STRATEGY GENERATION LOGIC:
-1. Start with ENABLE_E_MODE if borrowing operations are available
-2. Use available SWAP/JOIN_STRATEGY operations for the input token
-3. Use available SUPPLY operations for collateral
-4. Use available BORROW operations for leverage
-5. Respect leverage limits and create realistic amounts
+${swapInfo?.needsSwap ? `1. AUTOMATIC SWAP: System will auto-add SWAP ${swapInfo.fromToken} → ${swapInfo.toToken} as first step` : '1. Check if initial token differs from first step token - system will auto-add SWAP if needed'}
+2. ENABLE_E_MODE rules - CRITICAL:
+   - ABSOLUTELY FORBIDDEN for simple supply/borrow strategies
+   - ONLY add if strategy contains JOIN_STRATEGY operations (GDOT/VDOT liquid staking)
+   - OR if user explicitly mentions "enable e mode" in their intent
+   - NEVER add for basic lending strategies
+   - If user just wants to "Supply X and Borrow Y" → NO ENABLE_E_MODE
+   - ENABLE_E_MODE is ONLY for liquid staking strategies or explicit requests
+3. For looping strategies: Repeat Supply + Borrow for specified iterations
+4. For simple strategies: Use available SWAP/JOIN_STRATEGY operations for the input token
+5. Use available SUPPLY operations for collateral
+6. Use available BORROW operations for leverage
+7. Respect leverage limits and create realistic amounts
+
+INITIAL TOKEN HANDLING:
+${swapInfo?.needsSwap ? `
+- DETECTED: User starts with ${swapInfo.fromToken} but first step needs ${swapInfo.toToken}
+- SYSTEM WILL AUTO-ADD: SWAP ${swapInfo.fromToken} to ${swapInfo.toToken} as step 1
+- You can focus on the main strategy steps, the initial swap will be handled automatically
+- Example: If user has USDT but strategy starts with "Supply USDC", system adds SWAP USDT→USDC automatically
+` : 'No initial swap needed - starting token matches first step token or no initial token specified'}
 
 OPERATION TYPES EXPLANATION:
 - SWAP: Direct token exchange
-- JOIN_STRATEGY: Join liquid staking (e.g., DOT → gDOT)
+- JOIN_STRATEGY: Join liquid staking (e.g., DOT → gDOT, DOT → vDOT)
 - SUPPLY: Provide tokens as collateral
 - BORROW: Borrow tokens against collateral
-- ENABLE_E_MODE: Enable efficiency mode for better rates
+- ENABLE_E_MODE: Enable efficiency mode (ONLY for GDOT/VDOT strategies OR when user explicitly requests it)
+
+ENABLE_E_MODE RULES:
+- ABSOLUTELY FORBIDDEN for simple supply/borrow strategies
+- DO NOT add ENABLE_E_MODE unless:
+  a) Strategy contains JOIN_STRATEGY operations (GDOT/VDOT liquid staking)
+  b) User explicitly mentions "enable e mode" in their intent
+- Examples that MUST NOT have ENABLE_E_MODE:
+  * "Supply DOT and borrow USDC" → NO ENABLE_E_MODE
+  * "Supply USDC and borrow DOT" → NO ENABLE_E_MODE
+  * "1. Supply USDC, 2. Borrow DOT" → NO ENABLE_E_MODE
+  * Any simple lending/borrowing → NO ENABLE_E_MODE
+- Examples that NEED ENABLE_E_MODE:
+  * "Join GDOT strategy" → YES ENABLE_E_MODE
+  * "Enable e mode then supply" → YES ENABLE_E_MODE
+
+EXAMPLE LOOPING STRATEGY for "Supply DOT and borrow USDC with 3 loop":
+1. ENABLE_E_MODE
+2. SUPPLY DOT (10 DOT)
+3. BORROW USDC (9 USDC at 90% LTV)
+4. SWAP USDC to DOT (get ~1.35 DOT)
+5. SUPPLY DOT (1.35 DOT)
+6. BORROW USDC (1.2 USDC)
+7. SWAP USDC to DOT (get ~0.18 DOT)
+8. SUPPLY DOT (0.18 DOT)
+9. BORROW USDC (0.16 USDC)
 
 Generate a JSON array of strategy steps using ONLY the available operations above.
 

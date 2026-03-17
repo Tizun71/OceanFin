@@ -76,4 +76,39 @@ export class AIStrategyService {
 
     return { isValid: true };
   }
+
+  static validateTokenConsistency(
+    steps: StrategyStep[], 
+    selectedToken: string
+  ): { isValid: boolean; error?: string } {
+    if (!steps || steps.length === 0) {
+      return { isValid: true };
+    }
+
+    // Find the first step that has tokenIn (skip ENABLE_E_MODE)
+    let checkStepIndex = 0;
+    
+    // If step 1 is ENABLE_E_MODE, check step 2 instead
+    if (steps[0]?.type === 'ENABLE_E_MODE') {
+      checkStepIndex = 1;
+    }
+
+    // Check if the step exists and has tokenIn
+    const stepToCheck = steps[checkStepIndex];
+    if (!stepToCheck || !stepToCheck.tokenIn?.symbol) {
+      return { isValid: true }; // No token to validate
+    }
+
+    const stepTokenSymbol = stepToCheck.tokenIn.symbol.toUpperCase();
+    const startingTokenSymbol = selectedToken.toUpperCase();
+
+    if (stepTokenSymbol !== startingTokenSymbol) {
+      return { 
+        isValid: false, 
+        error: `Choose token consistency for the workflow. Starting token is ${startingTokenSymbol} but step ${checkStepIndex + 1} expects ${stepTokenSymbol}.` 
+      };
+    }
+
+    return { isValid: true };
+  }
 }

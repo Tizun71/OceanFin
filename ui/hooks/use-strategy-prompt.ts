@@ -55,6 +55,17 @@ export function useStrategyPrompt() {
         additionalContext,
       });
 
+      // Validate token consistency after strategy is generated
+      const tokenConsistencyValidation = AIStrategyService.validateTokenConsistency(
+        result.steps, 
+        selectedToken
+      );
+
+      if (!tokenConsistencyValidation.isValid) {
+        displayToast("error", tokenConsistencyValidation.error!);
+        return;
+      }
+
       setStrategyResult(result);
 
       // Show success message with strategy info

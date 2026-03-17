@@ -20,6 +20,17 @@ export function StrategyFlowPreview({
 }: StrategyFlowPreviewProps) {
   const { steps, metadata } = strategy;
 
+  // Find the actual initial token from the first step that has tokenIn (skip ENABLE_E_MODE)
+  // This ensures the displayed initial token matches the real first token used in the strategy
+  const getInitialToken = () => {
+    const firstStepWithToken = steps.find(step => 
+      step.type !== 'ENABLE_E_MODE' && step.tokenIn?.symbol
+    );
+    return firstStepWithToken?.tokenIn?.symbol || selectedToken;
+  };
+
+  const initialToken = getInitialToken();
+
   const formatAmount = (amount: number) => {
     if (amount < 0.001) {
       return amount.toExponential(3);
@@ -166,16 +177,16 @@ export function StrategyFlowPreview({
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <img 
-                  src={assetIcons[selectedToken] || 
-                       assetIcons[selectedToken?.toUpperCase()] || 
-                       assetIcons[selectedToken?.toLowerCase()] || 
+                  src={assetIcons[initialToken] || 
+                       assetIcons[initialToken?.toUpperCase()] || 
+                       assetIcons[initialToken?.toLowerCase()] || 
                        "/icons/default.png"}
-                  alt={selectedToken}
+                  alt={initialToken}
                   className="w-4 h-4 rounded-full object-contain bg-white border border-white/20"
                 />
               </div>
               <div className="text-xs font-semibold text-white">
-                {selectedToken}
+                {initialToken}
               </div>
               <div className="text-xs text-white/50">Initial</div>
             </div>

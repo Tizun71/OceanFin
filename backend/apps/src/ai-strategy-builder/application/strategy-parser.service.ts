@@ -13,10 +13,12 @@ export class StrategyParserService {
     try {
       // Check if input is structured steps format
       if (this.isStructuredStepsFormat(userIntent)) {
-        return this.parseStructuredSteps(userIntent);
+        console.log('Using structured steps parsing');
+        return this.parseStructuredSteps(userIntent, additionalContext);
       }
 
       // Use Gemini AI to generate strategy steps
+      console.log('Using Gemini AI parsing');
       const steps = await this.geminiAi.generateStrategySteps(
         userIntent,
         additionalContext
@@ -111,7 +113,8 @@ export class StrategyParserService {
   }
 
   private parseStructuredSteps(
-    input: string
+    input: string,
+    additionalContext?: string
   ): StrategyStepResponseDto[] {
     const steps: StrategyStepResponseDto[] = [];
     
@@ -172,9 +175,12 @@ export class StrategyParserService {
       stepNumber++;
     }
 
-    // Add E-Mode if there are borrow operations
-    const hasBorrow = steps.some(s => s.type === 'BORROW');
-    if (hasBorrow) {
+    // Add E-Mode only for GDOT/VDOT strategies or when explicitly requested
+    const hasJoinStrategy = steps.some(s => s.type === 'JOIN_STRATEGY');
+    const explicitEMode = /enable\s+e\s*mode/i.test(input);
+    const hasGDOTVDOT = /gdot|vdot/i.test(input);
+    
+    if (hasJoinStrategy || explicitEMode || hasGDOTVDOT) {
       steps.unshift({
         step: 0,
         type: 'ENABLE_E_MODE',

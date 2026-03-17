@@ -6,7 +6,9 @@ import { usePreloader } from "@/providers/preloader-provider";
 import { displayToast } from "@/components/shared/toast-manager";
 import { useStrategyPrompt } from "@/hooks/use-strategy-prompt";
 import { StrategyFlowPreview } from "@/components/strategy/StrategyFlowPreview";
+import { StrategyFlowSkeleton } from "@/components/strategy/StrategyFlowSkeleton";
 import { assetIcons } from "@/lib/iconMap";
+import { motion } from "framer-motion";
 
 function Prompt() {
   const { show, hide } = usePreloader();
@@ -225,14 +227,28 @@ function Prompt() {
               disabled={submitting}
               className="h-11 rounded-full border border-white/10 bg-white/[0.06] px-7 text-sm font-semibold text-white/80 transition hover:border-white/15 hover:bg-white/[0.09] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? "Processing..." : "Generate Strategy"}
+              {submitting ? (
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full"
+                  />
+                  <span>Generating...</span>
+                </div>
+              ) : (
+                "Generate Strategy"
+              )}
             </button>
           </div>
         </div>
 
         {/* RIGHT GUIDE PANEL */}
         <div className="w-[320px] shrink-0">
-          {strategyResult ? (
+          {submitting ? (
+            /* Strategy Generation Skeleton */
+            <StrategyFlowSkeleton />
+          ) : strategyResult ? (
             /* Strategy Flow Preview */
             <StrategyFlowPreview 
               strategy={strategyResult}
