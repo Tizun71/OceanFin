@@ -41,6 +41,37 @@ export class DefiTokenRepositoryImpl implements DefiTokenRepository {
       throw new Error(`Failed to find DefiToken by id: ${error.message}`);
     }
 
-    return data;
+    return new DefiToken(data.id, data.name, data.asset_id);
+  }
+
+  public async findByAssetId(assetId: number): Promise<DefiToken | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_token')
+      .select('*')
+      .eq('asset_id', assetId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Not found
+      }
+      throw new Error(`Failed to find DefiToken by asset_id: ${error.message}`);
+    }
+
+    return new DefiToken(data.id, data.name, data.asset_id);
+  }
+
+  public async findAll(): Promise<DefiToken[]> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('defi_token')
+      .select('*');
+
+    if (error) {
+      throw new Error(`Failed to fetch all DefiTokens: ${error.message}`);
+    }
+
+    return data.map(row => new DefiToken(row.id, row.name, row.asset_id));
   }
 }

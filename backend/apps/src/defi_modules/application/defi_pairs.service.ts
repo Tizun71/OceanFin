@@ -33,6 +33,26 @@ export class DefiPairsService {
     return this.defiPairsRepository.save(defiPair);
   }
 
+  async getAllAvailablePairs(): Promise<DefiPair[]> {
+    return this.defiPairsRepository.findAll();
+  }
+
+  async getAvailablePairsForToken(tokenId: string): Promise<{
+    asInput: DefiPair[];
+    asOutput: DefiPair[];
+  }> {
+    const [asInput, asOutput] = await Promise.all([
+      this.defiPairsRepository.findByTokenInId(tokenId),
+      this.defiPairsRepository.findByTokenOutId(tokenId),
+    ]);
+
+    return { asInput, asOutput };
+  }
+
+  async getAvailableOperationsForTokenPair(tokenInId: string, tokenOutId: string): Promise<DefiPair[]> {
+    return this.defiPairsRepository.findByTokenPair(tokenInId, tokenOutId);
+  }
+
   async estimateDefiPair(dto: EstimateDefiPairDto): Promise<EstimateDefiPairResponseDto> {
     switch (dto.operation_type) {
       case OperationType.SWAP:

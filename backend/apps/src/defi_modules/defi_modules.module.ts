@@ -44,5 +44,6 @@ import { DefiActionRequiredService } from './application/defi_action_required.se
     DefiActionRequiredService,
   ],
   controllers: [DefiModulesController],
+  exports: [DefiPairsService, DefiModulesService, DefiModuleActionsService],
 })
 export class DefiModulesModule {}
