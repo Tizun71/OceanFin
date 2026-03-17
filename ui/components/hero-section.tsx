@@ -1,15 +1,18 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bookmark, Layers, Sparkles, Workflow } from "lucide-react";
 import { WalletButton } from "./shared/wallet-button";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { usePreloader } from "@/providers/preloader-provider";
 
 export function HeroSection() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { show } = usePreloader();
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -28,6 +31,17 @@ export function HeroSection() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleNavClick = (href: string, e: React.MouseEvent) => {
+    // Don't show loader if already on the same page
+    if (pathname === href) {
+      return;
+    }
+    
+    e.preventDefault();
+    show(); // Show loader
+    router.push(href);
+  };
 
   const navItems = [
     { icon: Layers, label: "STRATEGY", href: "/" },
@@ -82,6 +96,7 @@ export function HeroSection() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(e) => handleNavClick(item.href, e)}
                   className={`
                     relative flex items-center gap-2 px-4 py-2 
                     text-[15px] font-medium rounded-lg

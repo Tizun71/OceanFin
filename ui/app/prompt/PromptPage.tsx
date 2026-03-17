@@ -39,6 +39,11 @@ function Prompt() {
     }
   }, [loading, show, hide]);
 
+  // Hide loader when component mounts (after navigation)
+  useEffect(() => {
+    hide();
+  }, [hide]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
