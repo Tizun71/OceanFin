@@ -25,6 +25,7 @@
     "@ethersproject/providers": "^5.7.2",
     "@galacticcouncil/sdk": "^9.0.1",
     "@galacticcouncil/xcm-core": "^8.5.0",
+    "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
