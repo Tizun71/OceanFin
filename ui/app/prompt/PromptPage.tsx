@@ -152,16 +152,6 @@ function Prompt() {
             </section>
 
             {/* Strategy Name */}
-            <section className="space-y-2">
-              <h2 className="text-sm font-medium text-white">Strategy Name</h2>
-
-              <input
-                value={strategyName}
-                onChange={(e) => setStrategyName(e.target.value)}
-                placeholder="Enter strategy name"
-                className="h-11 w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white outline-none transition focus:border-violet-500/50 placeholder:text-white/30"
-              />
-            </section>
           </div>
 
           {/* ACTIONS */}
@@ -178,7 +168,7 @@ function Prompt() {
               disabled={submitting}
               className="h-11 rounded-full border border-white/10 bg-white/[0.06] px-7 text-sm font-semibold text-white/80 transition hover:border-white/15 hover:bg-white/[0.09] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? "Processing..." : "Next"}
+              {submitting ? "Processing..." : "Generate Strategy"}
             </button>
           </div>
         </div>
@@ -189,71 +179,17 @@ function Prompt() {
             <div className="space-y-5">
               {/* Header */}
               <div className="flex items-center gap-2 text-yellow-400">
-                <Lightbulb className="h-4 w-4" />
-                <span className="text-sm font-semibold">Prompt Guide</span>
+                <span className="text-sm font-semibold">Strategy Flow</span>
               </div>
 
               {/* Guide Tips */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-white">
-                    Best Practices
-                  </h3>
-
-                  <button className="text-[11px] text-violet-400 transition hover:text-violet-300">
-                    Details
-                  </button>
                 </div>
 
-                <div className="space-y-2.5">
-                  {[
-                    "Be clear and concise",
-                    "Use step-by-step actions",
-                    "Include protocol or asset details",
-                    "Prefer structured prompts",
-                  ].map((item, index) => (
-                    <div key={item} className="flex items-start gap-3">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-yellow-500/10 text-[10px] font-semibold text-yellow-400">
-                        {index + 1}
-                      </span>
-
-                      <p className="text-xs leading-5 text-white/70">{item}</p>
-                    </div>
-                  ))}
-                </div>
               </div>
 
-              {/* Examples */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-white">Examples</h3>
-
-                <div className="space-y-2">
-                  {promptExamples.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setPrompt(item)}
-                      className="flex w-full items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-2.5 text-left text-xs text-white/75 transition hover:border-violet-500/20 hover:bg-white/[0.06] hover:text-white"
-                    >
-                      <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                      <span>{item}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Help */}
               <div className="space-y-3 border-t border-white/8 pt-6">
-                <div className="space-y-1.5">
-                  <h3 className="text-sm font-semibold text-white">
-                    Need Help?
-                  </h3>
-                </div>
-
-                <button className="flex h-10 w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] text-xs font-medium text-white transition hover:bg-white/[0.06]">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  View Supported Agents
-                </button>
               </div>
             </div>
           </div>
