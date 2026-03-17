@@ -100,7 +100,7 @@ function Prompt() {
     <div className="flex flex-1 min-h-[calc(100vh-120px)] items-center justify-center px-6 py-5 text-white">
       <div className="flex w-full max-w-7xl items-start justify-center gap-6">
         {/* LEFT FORM */}
-        <div className="flex w-full max-w-[820px] flex-col rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur-xl shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+        <div className="flex w-full max-w-[820px] flex-col relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-card/80 via-card/60 to-card/40 text-card-foreground rounded-xl border border-border p-6 shadow-lg shadow-black/20 transition-all duration-300 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20">
           <div className="space-y-5">
             {/* Page Title */}
             <div className="space-y-1">
@@ -241,7 +241,7 @@ function Prompt() {
             />
           ) : (
             /* Strategy Guide */
-            <div className="rounded-3xl border border-white/10 bg-black/25 p-5 backdrop-blur-xl shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+            <div className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-card/80 via-card/60 to-card/40 text-card-foreground rounded-xl border border-border p-5 shadow-lg shadow-black/20 transition-all duration-300 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20">
               <div className="space-y-5">
                 {/* Header */}
                 <div className="flex items-center gap-2 text-yellow-400">
@@ -256,21 +256,30 @@ function Prompt() {
                     <div className="space-y-1">
                       <div 
                         onClick={() => handleExampleClick("Create a gdot looping 3 loops")}
-                        className="text-xs text-white/50 p-2 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer hover:bg-white/[0.04] hover:text-white/70 transition-all"
+                        className="group text-xs text-white/60 p-3 rounded-lg bg-white/[0.03] border border-white/10 cursor-pointer hover:bg-white/[0.08] hover:text-white/90 hover:border-accent/30 transition-all duration-200 hover:shadow-sm hover:shadow-accent/10 active:scale-[0.98]"
                       >
-                        "Create a gdot looping 3 loops"
+                        <div className="flex items-center justify-between">
+                          <span>"Create a gdot looping 3 loops"</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent/70">→</span>
+                        </div>
                       </div>
                       <div 
                         onClick={() => handleExampleClick("Supply DOT and borrow USDC")}
-                        className="text-xs text-white/50 p-2 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer hover:bg-white/[0.04] hover:text-white/70 transition-all"
+                        className="group text-xs text-white/60 p-3 rounded-lg bg-white/[0.03] border border-white/10 cursor-pointer hover:bg-white/[0.08] hover:text-white/90 hover:border-accent/30 transition-all duration-200 hover:shadow-sm hover:shadow-accent/10 active:scale-[0.98]"
                       >
-                        "Supply DOT and borrow USDC"
+                        <div className="flex items-center justify-between">
+                          <span>"Supply DOT and borrow USDC"</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent/70">→</span>
+                        </div>
                       </div>
                       <div 
                         onClick={() => handleExampleClick("Maximize yield with moderate risk")}
-                        className="text-xs text-white/50 p-2 rounded-lg bg-white/[0.02] border border-white/5 cursor-pointer hover:bg-white/[0.04] hover:text-white/70 transition-all"
+                        className="group text-xs text-white/60 p-3 rounded-lg bg-white/[0.03] border border-white/10 cursor-pointer hover:bg-white/[0.08] hover:text-white/90 hover:border-accent/30 transition-all duration-200 hover:shadow-sm hover:shadow-accent/10 active:scale-[0.98]"
                       >
-                        "Maximize yield with moderate risk"
+                        <div className="flex items-center justify-between">
+                          <span>"Maximize yield with moderate risk"</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent/70">→</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -280,10 +289,10 @@ function Prompt() {
                   <div className="space-y-2">
                     <h3 className="text-xs font-medium text-white/70">Supported Operations:</h3>
                     <div className="grid grid-cols-2 gap-1 text-xs text-white/50">
-                      <div className="p-1.5 rounded bg-white/[0.02]">Supply</div>
-                      <div className="p-1.5 rounded bg-white/[0.02]">Borrow</div>
-                      <div className="p-1.5 rounded bg-white/[0.02]">Swap</div>
-                      <div className="p-1.5 rounded bg-white/[0.02]">Join Strategy</div>
+                      <div className="p-1.5 rounded bg-white/[0.02] border border-white/5 select-none">Supply</div>
+                      <div className="p-1.5 rounded bg-white/[0.02] border border-white/5 select-none">Borrow</div>
+                      <div className="p-1.5 rounded bg-white/[0.02] border border-white/5 select-none">Swap</div>
+                      <div className="p-1.5 rounded bg-white/[0.02] border border-white/5 select-none">Join Strategy</div>
                     </div>
                   </div>
                 </div>
@@ -295,7 +304,7 @@ function Prompt() {
                       {tokens.map((token) => (
                         <span 
                           key={token.value}
-                          className="px-2 py-1 text-xs rounded-full bg-white/[0.05] text-white/60 border border-white/10"
+                          className="px-2 py-1 text-xs rounded-full bg-white/[0.05] text-white/60 border border-white/10 select-none"
                         >
                           {token.label}
                         </span>

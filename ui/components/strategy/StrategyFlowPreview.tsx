@@ -48,7 +48,7 @@ export function StrategyFlowPreview({
   };
 
   return (
-    <div className={`rounded-3xl border border-white/10 bg-black/25 backdrop-blur-xl shadow-[0_0_0_1px_rgba(255,255,255,0.03)] ${className}`}>
+    <div className={`relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-card/80 via-card/60 to-card/40 text-card-foreground rounded-xl border border-border shadow-lg shadow-black/20 transition-all duration-300 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 ${className}`}>
       {/* Header */}
       <div className="border-b border-white/10 p-5 pb-4">
         <div className="flex items-center justify-between">
