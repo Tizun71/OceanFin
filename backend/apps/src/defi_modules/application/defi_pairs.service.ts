@@ -58,7 +58,7 @@ export class DefiPairsService {
       case OperationType.SWAP:
         return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       case OperationType.JOIN_STRATEGY:
-        return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in, true);
+        return this.estimateJoinStrategy(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       case OperationType.SUPPLY:
         return this.estimateSupply(dto.token_in_id, dto.amount_in);
       case OperationType.BORROW:
@@ -68,11 +68,98 @@ export class DefiPairsService {
     }
   }
 
+  private async estimateJoinStrategy(
+    tokenInId: string,
+    tokenOutId: string,
+    amountIn: number,
+  ): Promise<EstimateDefiPairResponseDto> {
+    const [tokenIn, tokenOut] = await Promise.all([
+      this.defiTokenService.getDefiTokenById(tokenInId),
+      this.defiTokenService.getDefiTokenById(tokenOutId),
+    ]);
+
+    const { sdk } = await this.hydrationSdk.getApiAndSdk();
+
+    const assetInId = tokenIn.asset_id.toString();
+    const assetOutId = tokenOut.asset_id.toString();
+
+    try {
+      const amountInRaw = BigInt(Math.floor(amountIn * 10 ** 12));
+
+      const swapResult = await sdk.api.router.getBestSell(assetInId, assetOutId, amountInRaw);
+
+      if (!swapResult || !swapResult.amountOut) {
+        throw new Error("Failed to calculate swap estimate");
+      }
+
+      let amountOut = 0;
+
+      let priceImpact: number | undefined;
+      let fee: number | undefined;
+
+      try {
+        const spotPrice = await this.hydrationStrategyService.getAssetPrice(assetInId, assetOutId);
+        const actualPrice = spotPrice / amountIn;
+        amountOut = spotPrice * amountIn * 0.99;
+        priceImpact = ((spotPrice - actualPrice) / spotPrice) * 100;
+      } catch (error) {
+        console.warn("Failed to calculate price impact:", error.message);
+      }
+
+      console.log(priceImpact);
+
+      if (swapResult.swaps && swapResult.swaps.length > 0) {
+        const totalFee = swapResult.swaps.reduce((acc: number, swap: any) => {
+          return acc + (swap.calculatedFees || 0);
+        }, 0);
+        fee = totalFee / 10 ** 12;
+      }
+
+      const route = swapResult.swaps?.map((swap: any) => swap.assetIn) || [];
+      if (route.length > 0) {
+        route.push(assetOutId);
+      }
+
+      const { api } = await this.hydrationSdk.getApiAndSdk();
+
+      const provider = new UiPoolDataProvider({
+        uiPoolDataProviderAddress: POOL_DATA_PROVIDER,
+        provider: new PolkadotEvmRpcProvider(api),
+        chainId: 222222,
+      });
+
+      const poolData = await provider.getReservesHumanized({
+        lendingPoolAddressProvider: POOL,
+      });
+
+      const reserve = poolData.reservesData.find(
+        (r) => r.symbol === tokenOut.name || r.id === tokenOut.asset_id.toString(),
+      );
+
+      if (!reserve) {
+        throw new Error(`No lending pool found for token ${tokenOut.name}`);
+      }
+
+      const supplyApy = ((parseFloat(reserve.liquidityRate) * 100) / 1e27).toFixed(2);
+
+      return {
+        operation_type: OperationType.JOIN_STRATEGY,
+        token_in_id: tokenInId,
+        token_out_id: tokenOutId,
+        amount_in: amountIn,
+        amount_out: Number(amountOut.toFixed(6)),
+        slippage: 0.01,
+        supply_apy: Number(supplyApy),
+      };
+    } catch (error) {
+      throw new Error(`Failed to estimate swap: ${error.message}`);
+    }
+  }
+
   private async estimateSwap(
     tokenInId: string,
     tokenOutId: string,
     amountIn: number,
-    isJoinStrategy = false,
   ): Promise<EstimateDefiPairResponseDto> {
     const [tokenIn, tokenOut] = await Promise.all([
       this.defiTokenService.getDefiTokenById(tokenInId),
@@ -122,7 +209,7 @@ export class DefiPairsService {
       }
 
       return {
-        operation_type: isJoinStrategy ? OperationType.JOIN_STRATEGY : OperationType.SWAP,
+        operation_type: OperationType.SWAP,
         token_in_id: tokenInId,
         token_out_id: tokenOutId,
         amount_in: amountIn,
