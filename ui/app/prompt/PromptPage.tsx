@@ -9,10 +9,18 @@ import { StrategyFlowPreview } from "@/components/strategy/StrategyFlowPreview";
 import { StrategyFlowSkeleton } from "@/components/strategy/StrategyFlowSkeleton";
 import { assetIcons } from "@/lib/iconMap";
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 
-function Prompt() {
+const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then((m) => m.ExecutionModal), {
+  ssr: false,
+})
+
+export default function PromptPage() {
   const { show, hide } = usePreloader();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const [isExecutionOpen, setIsExecutionOpen] = useState(false);
+  const [strategyToExecute, setStrategyToExecute] = useState<any>(null);
 
   const {
     tokens,
@@ -90,19 +98,10 @@ function Prompt() {
     await onNext();
   };
 
-  const handleRunStrategy = () => {
-    if (strategyResult) {
-      // Store strategy for execution
-      localStorage.setItem('strategyToExecute', JSON.stringify({
-        name: `Strategy ${new Date().toLocaleString()}`,
-        result: strategyResult,
-        selectedToken,
-        prompt,
-      }));
-      
-      // Navigate to execution page
-      window.location.href = "/execute";
-    }
+   const handleRunStrategyClick = () => {
+    if (!strategyResult) return;
+    setStrategyToExecute(strategyResult);
+    setIsExecutionOpen(true);
   };
 
   return (
@@ -292,7 +291,7 @@ function Prompt() {
             <StrategyFlowPreview 
               strategy={strategyResult}
               selectedToken={selectedToken}
-              onRunStrategy={handleRunStrategy}
+              onRunStrategy={handleRunStrategyClick}
             />
           ) : (
             /* Strategy Guide */
@@ -372,10 +371,18 @@ function Prompt() {
           )}
         </div>
       </div>
+      {strategyToExecute && (
+        <ExecutionModal
+          open={isExecutionOpen}
+          onOpenChange={setIsExecutionOpen}
+          strategy={strategyToExecute}
+          strategyId={String(strategyToExecute.id)} 
+          startFromStep={0}                 
+          activityId={null}                  
+        />
+      )}
     </div>
+    
   );
 }
 
-export default function PromptPage() {
-  return <Prompt />;
-}
