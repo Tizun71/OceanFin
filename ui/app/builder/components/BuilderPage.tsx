@@ -57,6 +57,11 @@ function Builder() {
     }
   }, [isFetching, show, hide]);
 
+  // Hide loader when component mounts (after navigation)
+  useEffect(() => {
+    hide();
+  }, [hide]);
+
   const validateWorkflow = () => {
     if (!nodes || nodes.length === 0) {
       displayToast("error", "Please add at least one step before creating strategy.");

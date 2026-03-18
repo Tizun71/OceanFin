@@ -20,4 +20,21 @@ export class DefiTokenService {
     }
     return defiToken;
   }
+
+  public async getDefiTokenByAssetId(assetId: string): Promise<DefiToken> {
+    const assetIdNumber = parseInt(assetId, 10);
+    if (isNaN(assetIdNumber)) {
+      throw new NotFoundException('Invalid asset ID format');
+    }
+    
+    const defiToken = await this.defiTokenRepository.findByAssetId(assetIdNumber);
+    if (!defiToken) {
+      throw new NotFoundException(`DefiToken not found for asset_id: ${assetId}`);
+    }
+    return defiToken;
+  }
+
+  public async getAllDefiTokens(): Promise<DefiToken[]> {
+    return this.defiTokenRepository.findAll();
+  }
 }

@@ -33,18 +33,106 @@ export class DefiPairsService {
     return this.defiPairsRepository.save(defiPair);
   }
 
+  async getAllAvailablePairs(): Promise<DefiPair[]> {
+    return this.defiPairsRepository.findAll();
+  }
+
+  async getAvailablePairsForToken(tokenId: string): Promise<{
+    asInput: DefiPair[];
+    asOutput: DefiPair[];
+  }> {
+    const [asInput, asOutput] = await Promise.all([
+      this.defiPairsRepository.findByTokenInId(tokenId),
+      this.defiPairsRepository.findByTokenOutId(tokenId),
+    ]);
+
+    return { asInput, asOutput };
+  }
+
+  async getAvailableOperationsForTokenPair(tokenInId: string, tokenOutId: string): Promise<DefiPair[]> {
+    return this.defiPairsRepository.findByTokenPair(tokenInId, tokenOutId);
+  }
+
   async estimateDefiPair(dto: EstimateDefiPairDto): Promise<EstimateDefiPairResponseDto> {
     switch (dto.operation_type) {
       case OperationType.SWAP:
         return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       case OperationType.JOIN_STRATEGY:
-        return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
+        return this.estimateJoinStrategy(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       case OperationType.SUPPLY:
         return this.estimateSupply(dto.token_in_id, dto.amount_in);
       case OperationType.BORROW:
         return this.estimateBorrow(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       default:
         throw new Error(`Unsupported operation type: ${dto.operation_type}`);
+    }
+  }
+
+  private async estimateJoinStrategy(
+    tokenInId: string,
+    tokenOutId: string,
+    amountIn: number,
+  ): Promise<EstimateDefiPairResponseDto> {
+    const [tokenIn, tokenOut] = await Promise.all([
+      this.defiTokenService.getDefiTokenById(tokenInId),
+      this.defiTokenService.getDefiTokenById(tokenOutId),
+    ]);
+
+    const { sdk } = await this.hydrationSdk.getApiAndSdk();
+
+    const assetInId = tokenIn.asset_id.toString();
+    const assetOutId = tokenOut.asset_id.toString();
+
+    try {
+      const amountInRaw = BigInt(Math.floor(amountIn * 10 ** 12));
+
+      const swapResult = await sdk.api.router.getBestSell(assetInId, assetOutId, amountInRaw);
+
+      if (!swapResult || !swapResult.amountOut) {
+        throw new Error("Failed to calculate swap estimate");
+      }
+
+      let amountOut = 0;
+
+      let priceImpact: number | undefined;
+      let fee: number | undefined;
+
+      try {
+        const spotPrice = await this.hydrationStrategyService.getAssetPrice(assetInId, assetOutId);
+        const actualPrice = spotPrice / amountIn;
+        amountOut = spotPrice * amountIn * 0.99;
+        priceImpact = ((spotPrice - actualPrice) / spotPrice) * 100;
+      } catch (error) {
+        console.warn("Failed to calculate price impact:", error.message);
+      }
+
+      console.log(priceImpact);
+
+      if (swapResult.swaps && swapResult.swaps.length > 0) {
+        const totalFee = swapResult.swaps.reduce((acc: number, swap: any) => {
+          return acc + (swap.calculatedFees || 0);
+        }, 0);
+        fee = totalFee / 10 ** 12;
+      }
+
+      const route = swapResult.swaps?.map((swap: any) => swap.assetIn) || [];
+      if (route.length > 0) {
+        route.push(assetOutId);
+      }
+
+      const supplyApy = 6.5;
+
+      return {
+        operation_type: OperationType.JOIN_STRATEGY,
+        token_in_id: tokenInId,
+        token_out_id: tokenOutId,
+        amount_in: amountIn,
+        amount_out: Number(amountOut.toFixed(6)),
+        slippage: 0.01,
+        supply_apy: Number(supplyApy),
+      };
+    } catch (error) {
+      throw new Error(`Failed to estimate swap: ${error.message}`);
     }
   }
 
@@ -197,6 +285,7 @@ export class DefiPairsService {
         collateralToken.asset_id.toString(),
         borrowToken.asset_id.toString(),
       );
+      console.log("Step Borrow: ", ltv, borrowApy, spotPrice);
       const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
 
       return {

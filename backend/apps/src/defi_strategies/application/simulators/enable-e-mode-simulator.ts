@@ -26,6 +26,8 @@ export class EnableEModeSimulator extends BaseSimulator {
       'E-Mode enabled: Higher collateral ratio and lower liquidation risk',
     );
 
+    console.log("E-Mode step simulated:", step);
+
     return {
       step_index: step.step,
       action_type: step.type,
