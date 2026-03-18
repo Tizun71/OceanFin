@@ -13,6 +13,7 @@ export interface DefiPair {
 export interface Action {
   id: string
   name: string
+  operation_type: DefiOperationType;
   call: string
   pallet: string
   is_active: boolean
@@ -73,3 +74,59 @@ export interface CreateStrategyRequest {
   workflow_json: any
   workflow_graph: any
 }
+
+export type DefiOperationType =
+  | "JOIN_STRATEGY"
+  | "SWAP"
+  | "SUPPLY"
+  | "BORROW";
+
+export interface BaseEstimateResponse {
+  operation_type: DefiOperationType;
+  token_in_id?: string;
+  token_out_id?: string;
+  amount_in?: number;
+  amount_out?: number;
+}
+
+export interface SwapEstimateResponse extends BaseEstimateResponse {
+  operation_type: "SWAP";
+  token_in_id: string;
+  token_out_id: string;
+  amount_in: number;
+  amount_out: number;
+  slippage: number;
+}
+
+export interface JoinStrategyEstimateResponse extends BaseEstimateResponse {
+  operation_type: "JOIN_STRATEGY";
+  token_in_id: string;
+  token_out_id: string;
+  amount_in: number;
+  amount_out: number;
+  slippage: number;
+  supply_apy: number;
+}
+
+export interface SupplyEstimateResponse extends BaseEstimateResponse {
+  operation_type: "SUPPLY";
+  token_in_id: string;
+  amount_in: number;
+  supply_apy: number;
+}
+
+export interface BorrowEstimateResponse extends BaseEstimateResponse {
+  operation_type: "BORROW";
+  token_in_id: string;
+  token_out_id: string;
+  amount_in: number;
+  amount_out: number;
+  borrow_apy: number;
+  ltv: number;
+}
+
+export type DefiEstimateResponse =
+  | SwapEstimateResponse
+  | JoinStrategyEstimateResponse
+  | SupplyEstimateResponse
+  | BorrowEstimateResponse;
