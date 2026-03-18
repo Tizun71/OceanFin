@@ -33,7 +33,7 @@ import { HydrationStrategyService } from 'src/strategies/application/hydration-s
 import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.service';
 
 @Module({
-  imports: [SupabaseModule, UsersModule, DefiStrategiesModule],
+  imports: [SupabaseModule, UsersModule],
   controllers: [
     DefiStrategiesController,
     DefiStrategySimulationSnapshotsController,

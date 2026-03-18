@@ -72,7 +72,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setTimeout(() => {
         setToastsRef.current((prev) => prev.filter((t) => t.id !== id))
-      }, 3000)
+      }, 5000) // Reasonable timeout
     })
   }, [])
 

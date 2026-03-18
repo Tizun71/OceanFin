@@ -96,6 +96,11 @@ export default function StrategyTable() {
     }
   }, [loading]);
 
+  // Hide loader when component mounts (after navigation)
+  useEffect(() => {
+    hide();
+  }, [hide]);
+
   if (!strategies.length) {
     return (
       <div className="text-center py-20 text-neutral-400">
