@@ -63,7 +63,33 @@ export class AIStrategyService {
       return response.data;
     } catch (error: any) {
       console.error('Failed to build strategy:', error);
-      throw new Error(error.response?.data?.message || 'Failed to build strategy');
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const statusText = error.response.statusText;
+        const serverMessage = error.response.data?.message || 'Unknown server error';
+        
+        console.error('Server error details:', {
+          status,
+          statusText,
+          data: error.response.data
+        });
+        
+        // Create concise error message
+        let errorMessage = `${status} ${statusText}: ${serverMessage}`;
+        
+        throw new Error(errorMessage);
+      } else if (error.request) {
+        // Request was made but no response received
+        console.error('Network error:', error.request);
+        throw new Error('Network error: Unable to connect to server');
+      } else {
+        // Something else happened
+        console.error('Request setup error:', error.message);
+        throw new Error(error.message || 'Failed to build strategy');
+      }
     }
   }
 

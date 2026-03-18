@@ -3,6 +3,13 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { StrategyStepResponseDto } from '../interfaces/dtos/strategy-step-response.dto';
 import { StrategyConstraintsService, StrategyConstraints } from './strategy-constraints.service';
 import { StrategyTemplatesService } from './strategy-templates.service';
+import { 
+  GeminiApiException, 
+  GeminiRateLimitException, 
+  GeminiAuthException, 
+  GeminiQuotaException, 
+  GeminiParsingException 
+} from '../../common/exceptions/gemini-api.exception';
 
 @Injectable()
 export class GeminiAiService {
@@ -12,19 +19,24 @@ export class GeminiAiService {
   constructor(private readonly constraintsService: StrategyConstraintsService,
               private readonly templatesService: StrategyTemplatesService) {
     const apiKey = process.env.GEMINI_API_KEY;
+    console.log('Initializing GeminiAiService with API key:', apiKey);
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY environment variable is required');
     }
     
+    // Log API key info for debugging (only first/last few chars)
+    console.log('Gemini API Key loaded:', apiKey.substring(0, 8) + '...' + apiKey.substring(apiKey.length - 4));
+    console.log('API Key length:', apiKey.length);
+    
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.model = this.genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        temperature: 0.1,
-        topK: 1,
-        topP: 0.8,
-        maxOutputTokens: 2048,
-      },
+      model: 'gemini-3-flash-preview',
+      // generationConfig: {
+      //   temperature: 0.1,
+      //   topK: 1,
+      //   topP: 0.8,
+      //   maxOutputTokens: 2048,
+      // },
     });
   }
 
@@ -76,35 +88,103 @@ export class GeminiAiService {
       needsEMode
     );
     
-    try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      // Parse JSON response from Gemini
-      let steps: StrategyStepResponseDto[];
-      const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        steps = JSON.parse(jsonMatch[1]);
-      } else {
-        // Fallback: try to parse the entire response as JSON
-        try {
-          steps = JSON.parse(text);
-        } catch {
-          throw new Error('Failed to parse Gemini response as JSON');
+    // Retry logic with exponential backoff
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: any;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        const result = await this.model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        console.log("AI Response Text:", text);
+        
+        if (!text || text.trim().length === 0) {
+          throw new Error('Gemini returned empty response');
         }
+        
+        // Parse JSON response from Gemini
+        let steps: StrategyStepResponseDto[];
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatch) {
+          try {
+            steps = JSON.parse(jsonMatch[1]);
+          } catch (parseError) {
+            throw new Error(`Failed to parse JSON from Gemini response: ${parseError.message}`);
+          }
+        } else {
+          // Fallback: try to parse the entire response as JSON
+          try {
+            steps = JSON.parse(text);
+          } catch (parseError) {
+            throw new Error(`Gemini response is not valid JSON. Response: ${text.substring(0, 200)}...`);
+          }
+        }
+        
+        if (!Array.isArray(steps) || steps.length === 0) {
+          throw new Error('Gemini returned invalid strategy steps (not an array or empty)');
+        }
+        
+        // Post-processing: Remove ENABLE_E_MODE from simple supply/borrow strategies
+        steps = this.filterInvalidEnableEMode(steps, userIntent);
+        
+        // Post-processing: Add initial SWAP step if needed
+        steps = this.addInitialSwapIfNeeded(steps, userIntent, additionalContext);
+        
+        return steps;
+      } catch (error) {
+        console.error(`Gemini API error (attempt ${retryCount + 1}/${maxRetries + 1}):`, error);
+        lastError = error;
+        
+        // Check if it's a rate limit error
+        const isRateLimit = error.status === 429 || 
+                           error.message?.includes('429') || 
+                           error.message?.includes('Too Many Requests');
+        
+        if (isRateLimit && retryCount < maxRetries) {
+          // Exponential backoff: 2^retryCount seconds
+          const delaySeconds = Math.pow(2, retryCount);
+          console.log(`Rate limit hit, retrying in ${delaySeconds} seconds...`);
+          
+          await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+          retryCount++;
+          continue;
+        }
+        
+        // If not rate limit or max retries reached, break and throw
+        break;
       }
-      
-      // Post-processing: Remove ENABLE_E_MODE from simple supply/borrow strategies
-      steps = this.filterInvalidEnableEMode(steps, userIntent);
-      
-      // Post-processing: Add initial SWAP step if needed
-      steps = this.addInitialSwapIfNeeded(steps, userIntent, additionalContext);
-      
-      return steps;
-    } catch (error) {
-      console.error('Gemini API error:', error);
-      throw new Error(`Failed to generate strategy: ${error.message}`);
+    }
+    
+    // If we get here, all retries failed
+    const error = lastError;
+    
+    // Log full error details for debugging (server-side only)
+    console.error('Full Gemini error details:', {
+      status: error.status,
+      statusText: error.statusText,
+      message: error.message,
+      errorDetails: error.errorDetails,
+    });
+    
+    // Throw concise exceptions for client
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+      throw new GeminiRateLimitException('Rate limit exceeded. Please try again in a moment.');
+    } else if (error.status === 401 || error.message?.includes('API key')) {
+      throw new GeminiAuthException('API authentication failed.');
+    } else if (error.status === 403 || error.message?.includes('quota')) {
+      throw new GeminiQuotaException('API quota exceeded. Please try again later.');
+    } else if (error.message?.includes('timeout')) {
+      throw new GeminiApiException('Request timeout. Please try again.', 408);
+    } else if (error.message?.includes('Failed to parse') || 
+               error.message?.includes('empty response') || 
+               error.message?.includes('not valid JSON') || 
+               error.message?.includes('invalid strategy steps')) {
+      throw new GeminiParsingException('AI response parsing failed. Please try again.');
+    } else {
+      throw new GeminiApiException('AI service temporarily unavailable.');
     }
   }
 

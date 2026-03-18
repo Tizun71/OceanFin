@@ -17,15 +17,15 @@ export class StrategyParserService {
       tokenAmount,
     });
 
-    try {
-      // Check if input is structured steps format
-      if (this.isStructuredStepsFormat(userIntent)) {
-        console.log('Using structured steps parsing');
-        return this.parseStructuredSteps(userIntent, additionalContext, tokenAmount);
-      }
+    // Check if input is structured steps format
+    if (this.isStructuredStepsFormat(userIntent)) {
+      console.log('Using structured steps parsing');
+      return this.parseStructuredSteps(userIntent, additionalContext, tokenAmount);
+    }
 
-      // Use Gemini AI to generate strategy steps
-      console.log('Using Gemini AI parsing');
+    // Use Gemini AI to generate strategy steps
+    console.log('Using Gemini AI parsing');
+    try {
       const steps = await this.geminiAi.generateStrategySteps(
         userIntent,
         additionalContext,
@@ -35,10 +35,10 @@ export class StrategyParserService {
       // Validate and sanitize the generated steps
       return this.validateAndSanitizeSteps(steps);
     } catch (error) {
-      console.error('Gemini parsing failed, falling back to rule-based parsing:', error);
+      console.error('AI strategy generation failed:', error);
       
-      // Fallback to rule-based parsing if Gemini fails
-      return this.fallbackParsing(userIntent, tokenAmount);
+      // Throw error instead of falling back to rule-based parsing
+      throw new Error(`AI strategy generation failed: ${error.message}`);
     }
   }
 

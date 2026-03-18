@@ -101,7 +101,11 @@ export function useStrategyPrompt() {
 
     } catch (error: any) {
       console.error('Strategy generation failed:', error);
-      displayToast("error", error.message || "Failed to generate strategy.");
+      
+      // Display the original error message from backend
+      const errorMessage = error.message || "Failed to generate strategy.";
+      
+      displayToast("error", errorMessage);
     } finally {
       setSubmitting(false);
     }

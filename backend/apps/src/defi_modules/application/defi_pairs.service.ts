@@ -217,6 +217,7 @@ export class DefiPairsService {
         collateralToken.asset_id.toString(),
         borrowToken.asset_id.toString(),
       );
+      console.log("Step Borrow: ", ltv, borrowApy, spotPrice);
       const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
 
       return {

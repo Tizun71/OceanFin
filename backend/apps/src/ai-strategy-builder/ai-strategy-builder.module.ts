@@ -8,9 +8,10 @@ import { StrategyConstraintsService } from './application/strategy-constraints.s
 import { StrategyTemplatesService } from './application/strategy-templates.service';
 import { DefiModulesModule } from '../defi_modules/defi_modules.module';
 import { DefiTokenModule } from '../defi_token/defi_token.module';
+import { StrategiesModule } from '../strategies/stategies.module';
 
 @Module({
-  imports: [DefiModulesModule, DefiTokenModule],
+  imports: [DefiModulesModule, DefiTokenModule, StrategiesModule],
   controllers: [AiStrategyBuilderController],
   providers: [
     AiStrategyBuilderService,

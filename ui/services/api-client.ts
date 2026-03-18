@@ -3,7 +3,7 @@ import axios from 'axios';
 // Create axios instance with base configuration
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-  timeout: 30000, // 30 seconds timeout for AI operations
+  timeout: 600000, // 10 minutes timeout for AI operations
   headers: {
     'Content-Type': 'application/json',
   },
