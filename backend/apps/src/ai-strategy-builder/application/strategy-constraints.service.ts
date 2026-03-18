@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DefiPairsService } from '../../defi_modules/application/defi_pairs.service';
 import { DefiTokenService } from '../../defi_token/application/defi_token.service';
-import { DefiModuleActionsService } from '../../defi_modules/application/defi_module_actions.service';
 import { OperationType } from '../../defi_modules/domain/operation-type.enum';
 
 export interface AvailableOperation {
@@ -50,16 +49,12 @@ export class StrategyConstraintsService {
     userIntent: string,
     additionalContext?: string
   ): Promise<StrategyConstraints> {
-    // Get input token details
     const inputToken = await this.getTokenBySymbol(inputTokenSymbol);
     
-    // Get available operations for this token
     const availableOperations = await this.getAvailableOperations(inputToken.id);
     
-    // Get all supported tokens
     const supportedTokens = await this.getAllSupportedTokens();
     
-    // Analyze constraints from user intent
     const operationConstraints = this.analyzeOperationConstraints(
       userIntent,
       additionalContext
@@ -79,8 +74,6 @@ export class StrategyConstraintsService {
     assetId: number;
   }> {
     try {
-      // This is a simplified approach - in real implementation,
-      // you'd query the database for token by symbol
       const tokenMap = {
         'DOT': { id: 'dot-token-id', symbol: 'DOT', assetId: 5 },
         'VDOT': { id: 'vdot-token-id', symbol: 'VDOT', assetId: 18 },
@@ -161,7 +154,6 @@ export class StrategyConstraintsService {
     symbol: string;
     assetId: number;
   }> {
-    // Simplified implementation - in real app, query database
     const tokenMap = {
       'dot-token-id': { id: 'dot-token-id', symbol: 'DOT', assetId: 5 },
       'vdot-token-id': { id: 'vdot-token-id', symbol: 'VDOT', assetId: 18 },
@@ -178,7 +170,6 @@ export class StrategyConstraintsService {
     symbol: string;
     assetId: number;
   }>> {
-    // In real implementation, query all tokens from database
     return [
       { id: 'dot-token-id', symbol: 'DOT', assetId: 5 },
       { id: 'vdot-token-id', symbol: 'VDOT', assetId: 18 },

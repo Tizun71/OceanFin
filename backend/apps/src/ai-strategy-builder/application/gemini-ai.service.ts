@@ -19,7 +19,6 @@ export class GeminiAiService {
   constructor(private readonly constraintsService: StrategyConstraintsService,
               private readonly templatesService: StrategyTemplatesService) {
     const apiKey = process.env.GEMINI_API_KEY;
-    console.log('Initializing GeminiAiService with API key:', apiKey);
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY environment variable is required');
     }
@@ -51,26 +50,18 @@ export class GeminiAiService {
       tokenAmount,
     });
 
-    // Check if this is a "maximize yield" request
     if (this.isMaximizeYieldRequest(userIntent)) {
       return this.generateMaximizeYieldStrategy(userIntent, additionalContext, tokenAmount);
     }
 
-    // Extract input token from user intent
     const { inputToken, defaultAmount } = this.extractInputTokenFromIntent(userIntent);
-    const finalAmount = tokenAmount || defaultAmount; // Use provided amount or default
+    const finalAmount = tokenAmount || defaultAmount; 
     
-    console.log('Token amounts:', {
-      tokenAmount,
-      defaultAmount,
-      finalAmount,
-    });
     const loopCount = this.extractLoopCount(userIntent);
     const initialToken = this.extractInitialTokenFromContext(additionalContext);
     const swapInfo = this.needsInitialSwap(userIntent, additionalContext);
     const needsEMode = this.shouldAddEnableEMode(userIntent);
     
-    // Get actual constraints from database
     const constraints = await this.constraintsService.getStrategyConstraints(
       inputToken,
       userIntent,
@@ -602,13 +593,40 @@ CRITICAL RULES:
    - If this is just "1. Supply USDC, 2. Borrow DOT" → NEVER ADD ENABLE_E_MODE
    - Examples that MUST NOT have ENABLE_E_MODE: "Supply USDC, Borrow DOT", "Supply DOT, Borrow USDC"
    - ENABLE_E_MODE is FORBIDDEN unless strategy involves liquid staking (JOIN_STRATEGY)
-${swapInfo?.needsSwap ? `6. AUTOMATIC SWAP: System will auto-add SWAP ${swapInfo.fromToken} → ${swapInfo.toToken} as first step` : ''}
+6. BUSINESS RULES FOR STEP SEQUENCES - MANDATORY:
+   - SWAP can be followed by: SUPPLY, SWAP, JOIN_STRATEGY
+   - JOIN_STRATEGY can be followed by: SWAP, BORROW
+   - SUPPLY can be followed by: BORROW
+   - BORROW can be followed by: SWAP, JOIN_STRATEGY, SUPPLY
+   - ENABLE_E_MODE can appear anywhere and doesn't affect sequence rules
+   - NEVER create invalid sequences like: SWAP→BORROW, SUPPLY→SWAP (unless SUPPLY→BORROW→SWAP)
+${swapInfo?.needsSwap ? `7. AUTOMATIC SWAP: System will auto-add SWAP ${swapInfo.fromToken} → ${swapInfo.toToken} as first step` : ''}
 
 FORBIDDEN COMBINATIONS:
 - ENABLE_E_MODE + only SUPPLY/BORROW operations (without JOIN_STRATEGY)
 - ENABLE_E_MODE + simple lending strategies
+- Invalid step sequences (see business rules above)
+
+VALID SEQUENCE EXAMPLES:
+✅ SWAP → SUPPLY → BORROW → SWAP (valid chain)
+✅ JOIN_STRATEGY → BORROW → SUPPLY (valid chain)
+✅ SUPPLY → BORROW → JOIN_STRATEGY → SWAP (valid chain)
+✅ ENABLE_E_MODE → JOIN_STRATEGY → BORROW (valid with liquid staking)
+
+INVALID SEQUENCE EXAMPLES:
+❌ SWAP → BORROW (SWAP cannot directly lead to BORROW)
+❌ SUPPLY → SWAP (SUPPLY can only lead to BORROW)
+❌ JOIN_STRATEGY → SUPPLY (JOIN_STRATEGY can only lead to SWAP or BORROW)
+❌ Any sequence violating the business rules above
 
 Generate a JSON array of strategy steps using ONLY the available operations above.
+
+FINAL VALIDATION CHECKLIST:
+✅ Each step follows business rules for sequences
+✅ No invalid transitions (SWAP→BORROW, SUPPLY→SWAP, etc.)
+✅ ENABLE_E_MODE only for liquid staking or explicit requests
+✅ All tokens and operations are from available lists above
+✅ Step numbers are sequential starting from 1
 
 Each step format:
 {
@@ -660,14 +678,25 @@ CRITICAL RULES:
 4. Match risk level to user intent (${constraints.operationConstraints.riskLevel})
 5. Agent is always "HYDRATION" for all operations
 6. Step numbers must be sequential starting from 1
+7. BUSINESS RULES FOR STEP SEQUENCES - MANDATORY:
+   - SWAP can be followed by: SUPPLY, SWAP, JOIN_STRATEGY
+   - JOIN_STRATEGY can be followed by: SWAP, BORROW
+   - SUPPLY can be followed by: BORROW
+   - BORROW can be followed by: SWAP, JOIN_STRATEGY, SUPPLY
+   - ENABLE_E_MODE can appear anywhere and doesn't affect sequence rules
+   - NEVER create invalid sequences like: SWAP→BORROW, SUPPLY→SWAP (unless SUPPLY→BORROW→SWAP)
 
 LOOPING STRATEGY LOGIC:
 If user mentions "loop", "loops", "leverage", or "multiply":
 1. Extract number of loops from phrases like "3 loop", "5 loops", "2 times" (detected: ${loopCount || 3} loops)
 2. Create a looping strategy with the specified iterations
-3. Each loop should: Supply → Borrow → (repeat)
+3. Each loop should follow business rules: Supply → Borrow → (next valid step)
 4. Use decreasing amounts for each iteration (e.g., 90% of previous amount)
 5. For "Supply DOT and borrow USDC with 3 loop": Create 3 complete Supply+Borrow cycles
+6. ENSURE ALL SEQUENCES FOLLOW BUSINESS RULES:
+   - After SUPPLY: only BORROW is allowed
+   - After BORROW: SWAP, JOIN_STRATEGY, or SUPPLY are allowed
+   - Plan the complete sequence to avoid invalid transitions
 
 STRATEGY GENERATION LOGIC:
 ${swapInfo?.needsSwap ? `1. AUTOMATIC SWAP: System will auto-add SWAP ${swapInfo.fromToken} → ${swapInfo.toToken} as first step` : '1. Check if initial token differs from first step token - system will auto-add SWAP if needed'}
@@ -714,17 +743,26 @@ ENABLE_E_MODE RULES:
   * "Enable e mode then supply" → YES ENABLE_E_MODE
 
 EXAMPLE LOOPING STRATEGY for "Supply DOT and borrow USDC with 3 loop":
-1. ENABLE_E_MODE
+1. ENABLE_E_MODE (if needed for liquid staking)
 2. SUPPLY DOT (10 DOT)
-3. BORROW USDC (9 USDC at 90% LTV)
-4. SWAP USDC to DOT (get ~1.35 DOT)
-5. SUPPLY DOT (1.35 DOT)
-6. BORROW USDC (1.2 USDC)
-7. SWAP USDC to DOT (get ~0.18 DOT)
-8. SUPPLY DOT (0.18 DOT)
-9. BORROW USDC (0.16 USDC)
+3. BORROW USDC (9 USDC at 90% LTV) 
+4. SWAP USDC to DOT (get ~1.35 DOT) - Valid: BORROW → SWAP
+5. SUPPLY DOT (1.35 DOT) - Valid: SWAP → SUPPLY
+6. BORROW USDC (1.2 USDC) - Valid: SUPPLY → BORROW
+7. SWAP USDC to DOT (get ~0.18 DOT) - Valid: BORROW → SWAP
+8. SUPPLY DOT (0.18 DOT) - Valid: SWAP → SUPPLY
+9. BORROW USDC (0.16 USDC) - Valid: SUPPLY → BORROW
+
+Note: Each step follows business rules - no invalid sequences like SWAP→BORROW or SUPPLY→SWAP
 
 Generate a JSON array of strategy steps using ONLY the available operations above.
+
+FINAL VALIDATION CHECKLIST:
+✅ Each step follows business rules for sequences
+✅ No invalid transitions (SWAP→BORROW, SUPPLY→SWAP, etc.)
+✅ ENABLE_E_MODE only for liquid staking or explicit requests
+✅ All tokens and operations are from available lists above
+✅ Step numbers are sequential starting from 1
 
 Each step format:
 {

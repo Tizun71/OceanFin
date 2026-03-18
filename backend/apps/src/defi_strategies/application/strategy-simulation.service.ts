@@ -103,7 +103,9 @@ export class StrategySimulationService implements SimulationEngine {
 
     const steps: SimulationStepDto[] = [];
 
-    for (const step of workflow_json.steps) {
+    const workflow = workflow_json.steps ? workflow_json.steps : workflow_json;
+
+    for (const step of workflow) {
       if (!step.type) {
         throw new Error(`Step is missing 'type' property: ${JSON.stringify(step)}`);
       }
@@ -119,11 +121,19 @@ export class StrategySimulationService implements SimulationEngine {
       try {
         const result = await simulator.simulate(step, context);
         steps.push({
-          step: step.step,
-          type: step.type,
-          agent: step.agent,
-          tokenIn: step.tokenIn,
-          tokenOut: step.tokenOut,
+          step: result.step_index,
+          type: result.action_type,
+          agent: result.agent,
+          tokenIn: {
+            assetId: result.token_in.asset_id,
+            symbol: result.token_in.symbol,
+            amount: Math.floor(result.token_in.amount * 100000) / 100000,
+          },
+          tokenOut: {
+            assetId: result.token_out.asset_id,
+            symbol: result.token_out.symbol,
+            amount: Math.floor(result.token_out.amount * 100000) / 100000,
+          },
         });
       } catch (error) {
         throw new Error(

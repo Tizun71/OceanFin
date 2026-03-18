@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { StrategyStepResponseDto } from '../interfaces/dtos/strategy-step-response.dto';
 import { GeminiAiService } from './gemini-ai.service';
 
 @Injectable()
 export class StrategyParserService {
+  private readonly logger = new Logger(StrategyParserService.name);
+
   constructor(private readonly geminiAi: GeminiAiService) {}
 
   async parseNaturalLanguage(
@@ -11,35 +13,101 @@ export class StrategyParserService {
     additionalContext?: string,
     tokenAmount?: number
   ): Promise<StrategyStepResponseDto[]> {
-    console.log('ParseNaturalLanguage called with:', {
-      userIntent,
-      additionalContext,
+    this.logger.log('Parsing natural language input', {
+      userIntent: userIntent.substring(0, 100) + '...', // Log first 100 chars for privacy
+      hasAdditionalContext: !!additionalContext,
       tokenAmount,
     });
 
-    // Check if input is structured steps format
-    if (this.isStructuredStepsFormat(userIntent)) {
-      console.log('Using structured steps parsing');
-      return this.parseStructuredSteps(userIntent, additionalContext, tokenAmount);
-    }
-
-    // Use Gemini AI to generate strategy steps
-    console.log('Using Gemini AI parsing');
     try {
-      const steps = await this.geminiAi.generateStrategySteps(
+      // Check if input follows structured steps format (e.g., "1. Supply DOT, 2. Borrow USDC")
+      if (this.isStructuredStepsFormat(userIntent)) {
+        this.logger.debug('Using structured steps parsing');
+        return this.parseStructuredSteps(userIntent, additionalContext, tokenAmount);
+      }
+
+      // Use AI-powered parsing for natural language input
+      this.logger.debug('Using AI-powered parsing');
+      const aiResponse = await this.geminiAi.generateStrategySteps(
         userIntent,
         additionalContext,
         tokenAmount
       );
       
-      // Validate and sanitize the generated steps
-      return this.validateAndSanitizeSteps(steps);
+      // Validate and sanitize the AI-generated steps
+      return this.validateAndSanitizeSteps(aiResponse);
     } catch (error) {
-      console.error('AI strategy generation failed:', error);
-      
-      // Throw error instead of falling back to rule-based parsing
-      throw new Error(`AI strategy generation failed: ${error.message}`);
+      this.logger.error('Natural language parsing failed', error.stack);
+      return this.fallbackParsing(userIntent, tokenAmount);
     }
+  }
+
+  /**
+   * Parses AI response which can be either JSON object/array or JSON string.
+   * 
+   * AI services sometimes return JSON as string instead of parsed objects.
+   * This method handles both cases and ensures we get a proper array.
+   * 
+   * @param aiResponse - Response from AI service (can be string or object/array)
+   * @returns Parsed array of strategy steps
+   * @throws Error if response cannot be parsed
+   */
+  private parseAiResponse(aiResponse: any): any[] {
+    // If already an array, return as-is
+    if (Array.isArray(aiResponse)) {
+      this.logger.debug('AI response is already an array', { stepCount: aiResponse.length });
+      return aiResponse;
+    }
+
+    // If it's an object with steps property, extract steps
+    if (typeof aiResponse === 'object' && aiResponse !== null && aiResponse.steps && Array.isArray(aiResponse.steps)) {
+      this.logger.debug('AI response is object with steps array', { stepCount: aiResponse.steps.length });
+      return aiResponse.steps;
+    }
+
+    // If it's a string, try to parse as JSON
+    if (typeof aiResponse === 'string') {
+      this.logger.debug('AI response is string, attempting JSON parse', { 
+        length: aiResponse.length,
+        preview: aiResponse.substring(0, 100) + '...'
+      });
+      
+      try {
+        // Clean the string first (remove potential whitespace, newlines)
+        const cleanedResponse = aiResponse.trim();
+        const parsed = JSON.parse(cleanedResponse);
+        
+        // If parsed result is an array, return it
+        if (Array.isArray(parsed)) {
+          this.logger.debug('Parsed JSON string to array', { stepCount: parsed.length });
+          return parsed;
+        }
+        
+        // If parsed result has steps property, extract it
+        if (parsed && typeof parsed === 'object' && parsed.steps && Array.isArray(parsed.steps)) {
+          this.logger.debug('Parsed JSON string to object with steps', { stepCount: parsed.steps.length });
+          return parsed.steps;
+        }
+        
+        throw new Error('Parsed JSON does not contain valid steps array');
+      } catch (parseError) {
+        this.logger.error('Failed to parse AI response as JSON', { 
+          error: parseError.message,
+          responseType: typeof aiResponse,
+          responseLength: aiResponse.length,
+          responsePreview: aiResponse.substring(0, 200) + '...'
+        });
+        throw new Error(`Invalid AI response format: Unable to parse JSON - ${parseError.message}`);
+      }
+    }
+
+    // If we get here, the response format is not supported
+    this.logger.error('Unsupported AI response format', { 
+      responseType: typeof aiResponse,
+      isNull: aiResponse === null,
+      isUndefined: aiResponse === undefined
+    });
+    throw new Error(`Unsupported AI response format: ${typeof aiResponse}`);
   }
 
   private validateAndSanitizeSteps(steps: any[]): StrategyStepResponseDto[] {

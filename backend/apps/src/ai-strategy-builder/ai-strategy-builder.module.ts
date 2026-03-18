@@ -9,9 +9,15 @@ import { StrategyTemplatesService } from './application/strategy-templates.servi
 import { DefiModulesModule } from '../defi_modules/defi_modules.module';
 import { DefiTokenModule } from '../defi_token/defi_token.module';
 import { StrategiesModule } from '../strategies/stategies.module';
+import { DefiStrategiesModule } from '../defi_strategies/defi_strategies.module';
 
 @Module({
-  imports: [DefiModulesModule, DefiTokenModule, StrategiesModule],
+  imports: [
+    DefiModulesModule, 
+    DefiTokenModule, 
+    StrategiesModule,
+    DefiStrategiesModule
+  ],
   controllers: [AiStrategyBuilderController],
   providers: [
     AiStrategyBuilderService,
@@ -21,6 +27,11 @@ import { StrategiesModule } from '../strategies/stategies.module';
     StrategyConstraintsService,
     StrategyTemplatesService,
   ],
-  exports: [AiStrategyBuilderService, GeminiAiService, StrategyConstraintsService, StrategyTemplatesService],
+  exports: [
+    AiStrategyBuilderService, 
+    GeminiAiService, 
+    StrategyConstraintsService, 
+    StrategyTemplatesService
+  ],
 })
 export class AiStrategyBuilderModule {}

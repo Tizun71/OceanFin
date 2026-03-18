@@ -1,22 +1,46 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { StrategyStepResponseDto } from '../interfaces/dtos/strategy-step-response.dto';
 import { DefiPairsService } from '../../defi_modules/application/defi_pairs.service';
 import { DefiTokenService } from '../../defi_token/application/defi_token.service';
 import { OperationType } from '../../defi_modules/domain/operation-type.enum';
-import { EstimateDefiPairDto } from '../../defi_modules/interfaces/dtos/estimate-defi-pair.dto';
 
+/**
+ * Service responsible for validating DeFi strategy steps.
+ * 
+ * This service performs comprehensive validation including:
+ * 1. Step structure validation
+ * 2. Token pair compatibility validation
+ * 3. Business rule sequence validation
+ * 4. Overall strategy coherence validation
+ * 
+ * Business Rules for Step Sequences:
+ * - SWAP → SUPPLY, SWAP, JOIN_STRATEGY
+ * - JOIN_STRATEGY → SWAP, BORROW
+ * - SUPPLY → BORROW
+ * - BORROW → SWAP, JOIN_STRATEGY, SUPPLY
+ */
 @Injectable()
 export class StrategyValidatorService {
+  private readonly logger = new Logger(StrategyValidatorService.name);
+
   constructor(
     private readonly defiPairsService: DefiPairsService,
     private readonly defiTokenService: DefiTokenService,
   ) {}
 
+  /**
+   * Validates a complete strategy with all its steps.
+   * 
+   * @param steps - Array of strategy steps to validate
+   * @returns Validation result with errors and warnings
+   */
   async validateSteps(steps: StrategyStepResponseDto[]): Promise<{
     isValid: boolean;
     errors: string[];
     warnings: string[];
   }> {
+    this.logger.log('Starting strategy validation', { stepCount: steps.length });
+    
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -62,11 +86,25 @@ export class StrategyValidatorService {
 
     // Validate overall strategy
     const strategyValidation = this.validateOverallStrategy(steps);
-    errors.push(...strategyValidation.errors);
-    warnings.push(...strategyValidation.warnings);
+    const flowValidation = this.validateStrategyFlow(steps);
+    
+    errors.push(...strategyValidation.errors, ...flowValidation.errors);
+    warnings.push(...strategyValidation.warnings, ...flowValidation.warnings);
+
+    const isValid = errors.length === 0;
+    
+    this.logger.log('Strategy validation completed', {
+      isValid,
+      errorCount: errors.length,
+      warningCount: warnings.length,
+    });
+
+    if (!isValid) {
+      this.logger.warn('Strategy validation failed', { errors });
+    }
 
     return {
-      isValid: errors.length === 0,
+      isValid,
       errors,
       warnings,
     };
@@ -210,11 +248,57 @@ export class StrategyValidatorService {
       }
     }
 
-    // Check for logical sequence issues
-    if (currentStep.type === 'BORROW' && prevStep.type !== 'SUPPLY' && prevStep.type !== 'JOIN_STRATEGY') {
+    // Validate business rules for step sequences
+    const sequenceValidation = this.validateStepSequenceRules(prevStep.type, currentStep.type);
+    if (!sequenceValidation.isValid) {
+      return sequenceValidation;
+    }
+
+    return { isValid: true };
+  }
+
+  /**
+   * Validates business rules for step sequences.
+   * 
+   * Business Rules:
+   * - SWAP can be followed by: SUPPLY, SWAP, JOIN_STRATEGY
+   * - JOIN_STRATEGY can be followed by: SWAP, BORROW
+   * - SUPPLY can be followed by: BORROW
+   * - BORROW can be followed by: SWAP, JOIN_STRATEGY, SUPPLY
+   * 
+   * @param prevStepType - Previous step type
+   * @param currentStepType - Current step type
+   * @returns Validation result
+   */
+  private validateStepSequenceRules(
+    prevStepType: string,
+    currentStepType: string,
+  ): { isValid: boolean; warning?: string } {
+    // Skip validation for ENABLE_E_MODE as it can appear anywhere
+    if (prevStepType === 'ENABLE_E_MODE' || currentStepType === 'ENABLE_E_MODE') {
+      return { isValid: true };
+    }
+
+    // Define allowed next steps for each operation type
+    const allowedNextSteps: Record<string, string[]> = {
+      'SWAP': ['SUPPLY', 'SWAP', 'JOIN_STRATEGY'],
+      'JOIN_STRATEGY': ['SWAP', 'BORROW'],
+      'SUPPLY': ['BORROW'],
+      'BORROW': ['SWAP', 'JOIN_STRATEGY', 'SUPPLY'],
+    };
+
+    const allowedNext = allowedNextSteps[prevStepType];
+    
+    // If no rules defined for previous step type, allow any next step
+    if (!allowedNext) {
+      return { isValid: true };
+    }
+
+    // Check if current step type is allowed after previous step type
+    if (!allowedNext.includes(currentStepType)) {
       return {
         isValid: false,
-        warning: 'BORROW should typically follow SUPPLY or JOIN_STRATEGY',
+        warning: `Invalid sequence: ${currentStepType} cannot follow ${prevStepType}. Allowed next steps after ${prevStepType}: ${allowedNext.join(', ')}`,
       };
     }
 
@@ -262,5 +346,99 @@ export class StrategyValidatorService {
     }
 
     return { errors, warnings };
+  }
+
+  /**
+   * Validates the entire strategy flow for business rule compliance.
+   * 
+   * This method checks if the complete sequence of operations makes sense
+   * from a DeFi strategy perspective.
+   * 
+   * @param steps - Complete strategy steps
+   * @returns Validation result with detailed feedback
+   */
+  private validateStrategyFlow(steps: StrategyStepResponseDto[]): {
+    errors: string[];
+    warnings: string[];
+  } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // Check for proper strategy initialization
+    const nonEModeSteps = steps.filter(step => step.type !== 'ENABLE_E_MODE');
+    if (nonEModeSteps.length === 0) {
+      errors.push('Strategy must contain at least one operational step besides ENABLE_E_MODE');
+      return { errors, warnings };
+    }
+
+    // Validate strategy patterns
+    const stepTypes = nonEModeSteps.map(step => step.type);
+    
+    // Check for orphaned operations
+    const hasSupply = stepTypes.includes('SUPPLY') || stepTypes.includes('JOIN_STRATEGY');
+    const hasBorrow = stepTypes.includes('BORROW');
+    
+    if (hasBorrow && !hasSupply) {
+      errors.push('Cannot borrow without first supplying collateral (SUPPLY or JOIN_STRATEGY)');
+    }
+
+    // Check for incomplete loops
+    const borrowCount = stepTypes.filter(type => type === 'BORROW').length;
+    const supplyCount = stepTypes.filter(type => type === 'SUPPLY').length;
+    const joinCount = stepTypes.filter(type => type === 'JOIN_STRATEGY').length;
+    
+    if (borrowCount > (supplyCount + joinCount)) {
+      warnings.push('More BORROW operations than collateral operations - strategy may be unbalanced');
+    }
+
+    // Check for excessive complexity
+    if (stepTypes.length > 20) {
+      warnings.push('Strategy is very complex with many steps - consider simplifying for better execution');
+    }
+
+    // Validate business rule sequences for the entire flow
+    for (let i = 1; i < nonEModeSteps.length; i++) {
+      const prevStep = nonEModeSteps[i - 1];
+      const currentStep = nonEModeSteps[i];
+      
+      const sequenceValidation = this.validateStepSequenceRules(prevStep.type, currentStep.type);
+      if (!sequenceValidation.isValid) {
+        errors.push(`Flow validation: ${sequenceValidation.warning}`);
+      }
+    }
+
+    return { errors, warnings };
+  }
+
+  /**
+   * Gets the business rules for strategy step sequences.
+   * 
+   * @returns Object mapping each step type to its allowed next steps
+   */
+  getBusinessRules(): Record<string, string[]> {
+    return {
+      'SWAP': ['SUPPLY', 'SWAP', 'JOIN_STRATEGY'],
+      'JOIN_STRATEGY': ['SWAP', 'BORROW'],
+      'SUPPLY': ['BORROW'],
+      'BORROW': ['SWAP', 'JOIN_STRATEGY', 'SUPPLY'],
+    };
+  }
+
+  /**
+   * Checks if a step sequence is valid according to business rules.
+   * 
+   * @param fromStep - Previous step type
+   * @param toStep - Next step type
+   * @returns Whether the sequence is valid
+   */
+  isValidSequence(fromStep: string, toStep: string): boolean {
+    const rules = this.getBusinessRules();
+    const allowedNext = rules[fromStep];
+    
+    if (!allowedNext) {
+      return true; // No restrictions if no rules defined
+    }
+    
+    return allowedNext.includes(toStep);
   }
 }
