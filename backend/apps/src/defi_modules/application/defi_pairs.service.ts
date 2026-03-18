@@ -58,7 +58,7 @@ export class DefiPairsService {
       case OperationType.SWAP:
         return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
       case OperationType.JOIN_STRATEGY:
-        return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
+        return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in, true);
       case OperationType.SUPPLY:
         return this.estimateSupply(dto.token_in_id, dto.amount_in);
       case OperationType.BORROW:
@@ -72,6 +72,7 @@ export class DefiPairsService {
     tokenInId: string,
     tokenOutId: string,
     amountIn: number,
+    isJoinStrategy = false,
   ): Promise<EstimateDefiPairResponseDto> {
     const [tokenIn, tokenOut] = await Promise.all([
       this.defiTokenService.getDefiTokenById(tokenInId),
@@ -121,7 +122,7 @@ export class DefiPairsService {
       }
 
       return {
-        operation_type: OperationType.SWAP,
+        operation_type: isJoinStrategy ? OperationType.JOIN_STRATEGY : OperationType.SWAP,
         token_in_id: tokenInId,
         token_out_id: tokenOutId,
         amount_in: amountIn,
