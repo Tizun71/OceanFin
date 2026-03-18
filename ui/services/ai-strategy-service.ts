@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// Create axios instance directly instead of importing from api-client
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
-  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
