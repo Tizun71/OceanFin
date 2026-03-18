@@ -24,7 +24,7 @@ export default function DefiNodeSwap({ data }: Props) {
         {/* LEFT */}
         <div className="flex flex-col items-start">
           <div className="text-[28px] font-semibold leading-none text-white">
-            {formatAmount(data.amountIn)}
+            {formatAmount(data.amount)}
           </div>
           <div className="mt-4">
             <TokenIcon symbol={data.tokenInSymbol} />

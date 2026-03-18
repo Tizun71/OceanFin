@@ -1,3 +1,4 @@
+import { DefiOperationType } from "@/app/builder/components/nodes/defi-node.types";
 import { CreateStrategyPayload } from "@/types/defi";
 import { DefiStrategy } from "@/types/defi.strategy";
 
@@ -56,7 +57,7 @@ export const createStrategy = async (payload: CreateStrategyPayload) => {
 };
 
 export type EstimateDefiOperationPayload = {
-  operation_type: string;
+  operation_type: DefiOperationType;
   token_in_id?: string;
   token_out_id?: string;
   amount_in?: number;
@@ -64,14 +65,7 @@ export type EstimateDefiOperationPayload = {
   action_id?: string;
 };
 
-export const estimateDefiOperation = async (data: {
-  operation_type: string;
-  token_in_id?: string;
-  token_out_id?: string;
-  amount_in?: number;
-  module_id?: string;
-  action_id?: string;
-}) => {
+export const estimateDefiOperation = async (data: EstimateDefiOperationPayload) => {
   const res = await fetch(`${BASE_URL}/defi-modules/pairs/estimate`, {
     method: "POST",
     headers: {

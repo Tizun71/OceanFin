@@ -1,11 +1,11 @@
 export const ALLOWED_NEXT_ACTIONS: Record<string, string[]> = {
-  "JOIN STRATEGY": ["JOIN STRATEGY", "SWAP"],
-  SWAP: ["JOIN STRATEGY", "SWAP"],
+  SWAP: ["SUPPLY", "SWAP", "JOIN_STRATEGY"],
+  JOIN_STRATEGY: ["SWAP", "BORROW"],
   SUPPLY: ["BORROW"],
-  BORROW: [],
+  BORROW: ["SWAP", "JOIN_STRATEGY", "SUPPLY"],
 };
 
-export const ALLOWED_FIRST_ACTIONS = ["JOIN STRATEGY", "SWAP", "SUPPLY"];
+export const ALLOWED_FIRST_ACTIONS = ["SWAP", "JOIN_STRATEGY", "SUPPLY"];
 
 export const canBeFirstStep = (operationType?: string) => {
   if (!operationType) {
@@ -15,13 +15,14 @@ export const canBeFirstStep = (operationType?: string) => {
     };
   }
 
-  const valid = ALLOWED_FIRST_ACTIONS.includes(operationType);
+  const normalizedType = operationType.toUpperCase();
+  const valid = ALLOWED_FIRST_ACTIONS.includes(normalizedType);
 
   return {
     valid,
     message: valid
       ? ""
-      : "This action cannot be the first step. Borrow must come after Supply.",
+      : "BORROW cannot be the first step. Please start with SWAP, JOIN_STRATEGY, or SUPPLY.",
   };
 };
 
@@ -36,8 +37,11 @@ export const validateConnection = (
     };
   }
 
-  const allowedTargets = ALLOWED_NEXT_ACTIONS[sourceType] || [];
-  const valid = allowedTargets.includes(targetType);
+  const normalizedSource = sourceType.toUpperCase();
+  const normalizedTarget = targetType.toUpperCase();
+
+  const allowedTargets = ALLOWED_NEXT_ACTIONS[normalizedSource] || [];
+  const valid = allowedTargets.includes(normalizedTarget);
 
   if (valid) {
     return {
@@ -48,6 +52,6 @@ export const validateConnection = (
 
   return {
     valid: false,
-    message: `Invalid connection: ${sourceType} cannot connect to ${targetType}.`,
+    message: `Invalid connection: ${normalizedSource} cannot connect to ${normalizedTarget}.`,
   };
 };

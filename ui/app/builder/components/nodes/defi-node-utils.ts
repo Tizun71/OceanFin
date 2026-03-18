@@ -1,257 +1,214 @@
-import {
+"use client";
+
+import type {
   DefiNodeData,
   DefiOperationType,
   NormalizedDefiNodeData,
 } from "./defi-node.types";
 
-const formatTitle = (type?: string) => {
-  switch (type) {
-    case "SWAP":
-      return "Swap";
-    case "JOIN_STRATEGY":
-      return "Join strategy";
-    case "SUPPLY":
-      return "Supply";
-    case "BORROW":
-      return "Borrow";
-    default:
-      return "Defi Action";
-  }
-};
-
 const VALID_TYPES: DefiOperationType[] = [
   "SWAP",
-  "JOIN_STRATEGY",
   "SUPPLY",
   "BORROW",
+  "JOIN_STRATEGY",
 ];
 
-const isValidType = (value?: string): value is DefiOperationType => {
-  return !!value && VALID_TYPES.includes(value as DefiOperationType);
-};
+function isValidType(value: unknown): value is DefiOperationType {
+  return typeof value === "string" && VALID_TYPES.includes(value as DefiOperationType);
+}
 
-const resolveTypeFromName = (name?: string): DefiOperationType | undefined => {
+function resolveTypeFromName(name?: string): DefiOperationType | undefined {
   if (!name) return undefined;
 
-  const normalizedName = name.trim().toUpperCase().replace(/\s+/g, "_");
+  const upper = name.toUpperCase();
 
-  if (normalizedName.includes("JOIN_STRATEGY")) return "JOIN_STRATEGY";
-  if (normalizedName.includes("JOIN") && normalizedName.includes("STRATEGY")) {
-    return "JOIN_STRATEGY";
-  }
-
-  if (normalizedName.includes("SUPPLY")) return "SUPPLY";
-  if (normalizedName.includes("BORROW")) return "BORROW";
-  if (normalizedName.includes("SWAP")) return "SWAP";
+  if (upper.includes("JOIN")) return "JOIN_STRATEGY";
+  if (upper.includes("SUPPLY") || upper.includes("DEPOSIT")) return "SUPPLY";
+  if (upper.includes("BORROW") || upper.includes("LOAN")) return "BORROW";
+  if (upper.includes("SWAP") || upper.includes("EXCHANGE")) return "SWAP";
 
   return undefined;
-};
+}
 
-export function formatAmount(value?: number | string, digits = 2) {
-  if (value === undefined || value === null || value === "") return "--";
+function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
 
-  const num = typeof value === "string" ? Number(value) : value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
 
-  if (Number.isNaN(num)) return "--";
+  return fallback;
+}
+
+function getApy(
+  type: DefiOperationType,
+  configApy?: number,
+  estimate?: DefiNodeData["config"] extends infer C
+    ? C extends { estimate?: infer E }
+      ? E
+      : never
+    : never
+): number {
+  if (typeof configApy === "number" && Number.isFinite(configApy)) {
+    return configApy;
+  }
+
+  if (!estimate) return 0;
+
+  switch (type) {
+    case "SUPPLY":
+      return toNumber((estimate as any)?.supply_apy ?? (estimate as any)?.apy, 0);
+
+    case "BORROW":
+      return toNumber((estimate as any)?.borrow_apy ?? (estimate as any)?.apy, 0);
+
+    case "JOIN_STRATEGY":
+      return toNumber((estimate as any)?.apy, 0);
+
+    case "SWAP":
+    default:
+      return toNumber((estimate as any)?.apy, 0);
+  }
+}
+
+export function formatAmount(
+  value?: number | string,
+  fractionDigits = 2
+): string {
+  const num =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+      ? Number(value)
+      : NaN;
+
+  if (!Number.isFinite(num)) return "-";
 
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: digits,
+    maximumFractionDigits: fractionDigits,
   }).format(num);
 }
 
-export function formatPercent(value?: number, digits = 0) {
-  if (value === undefined || value === null || Number.isNaN(value)) return "--";
+export function formatPercent(
+  value?: number,
+  fractionDigits = 2
+): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "-";
 
-  return `${Number(value).toFixed(digits)}%`;
+  return `${value.toFixed(fractionDigits)}%`;
 }
 
-/**
- * Helpers: normalize estimate fields because BE can return different shapes
- */
-const getEstimateApy = (est: any): number | undefined => {
-  const value =
-    est?.apy ??
-    est?.supply_apy ??
-    est?.borrow_apy ??
-    est?.estimated_apy ??
-    est?.data?.apy ??
-    est?.data?.supply_apy ??
-    est?.data?.borrow_apy ??
-    est?.result?.apy ??
-    est?.result?.supply_apy ??
-    est?.result?.borrow_apy;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-const getEstimateBorrowApy = (est: any): number | undefined => {
-  const value =
-    est?.borrow_apy ??
-    est?.apy ??
-    est?.estimated_apy ??
-    est?.data?.borrow_apy ??
-    est?.data?.apy ??
-    est?.result?.borrow_apy ??
-    est?.result?.apy;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-const getEstimateSupplyApy = (est: any): number | undefined => {
-  const value =
-    est?.supply_apy ??
-    est?.apy ??
-    est?.estimated_apy ??
-    est?.data?.supply_apy ??
-    est?.data?.apy ??
-    est?.result?.supply_apy ??
-    est?.result?.apy;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-const getEstimateLtv = (est: any): number | undefined => {
-  const value =
-    est?.ltv ??
-    est?.max_ltv ??
-    est?.borrow_ltv ??
-    est?.estimated_ltv ??
-    est?.data?.ltv ??
-    est?.data?.max_ltv ??
-    est?.data?.borrow_ltv ??
-    est?.result?.ltv ??
-    est?.result?.max_ltv ??
-    est?.result?.borrow_ltv;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-const getEstimateAmountIn = (est: any): number | undefined => {
-  const value =
-    est?.amount_in ??
-    est?.amountIn ??
-    est?.data?.amount_in ??
-    est?.result?.amount_in;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-const getEstimateAmountOut = (est: any): number | undefined => {
-  const value =
-    est?.amount_out ??
-    est?.estimated_amount_out ??
-    est?.amountOut ??
-    est?.data?.amount_out ??
-    est?.result?.amount_out;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-const getEstimateSlippage = (est: any): number | undefined => {
-  const value =
-    est?.slippage ??
-    est?.estimated_slippage ??
-    est?.data?.slippage ??
-    est?.result?.slippage;
-
-  return value !== undefined && value !== null ? Number(value) : undefined;
-};
-
-function resolveDefiOperationType(data: DefiNodeData): DefiOperationType {
+export function resolveDefiOperationType(
+  data: DefiNodeData
+): DefiOperationType | undefined {
   const config = data?.config;
   const estimate = config?.estimate;
 
   const configType = isValidType(config?.type) ? config.type : undefined;
-  const actionType = isValidType(data.action?.type) ? data.action.type : undefined;
+
+  const actionOperationType = isValidType(data.action?.operation_type)
+    ? data.action.operation_type
+    : undefined;
+
   const estimateType = isValidType(estimate?.operation_type)
     ? estimate.operation_type
     : undefined;
+
   const nameType = resolveTypeFromName(data.action?.name);
 
-  /**
-   * Priority:
-   * 1. action.name (BE may return wrong type)
-   * 2. config.type (saved from ConfigPanel)
-   * 3. action.type
-   * 4. estimate.operation_type
-   */
-  return nameType || configType || actionType || estimateType || "SWAP";
+  return configType || actionOperationType || estimateType || nameType;
 }
 
-export function normalizeDefiNodeData(
-  data: DefiNodeData
-): NormalizedDefiNodeData {
+export function normalizeDefiNodeData(data: DefiNodeData): NormalizedDefiNodeData {
   const config = data?.config;
   const estimate = config?.estimate;
 
-  console.log("RAW NODE DATA:", data);
-  console.log("RAW CONFIG:", config);
-  console.log("RAW ESTIMATE:", estimate);
+  const resolvedType = resolveDefiOperationType(data);
+  const type: DefiOperationType = resolvedType ?? "SWAP";
 
-  const type = resolveDefiOperationType(data);
+  const tokenInSymbol =
+    config?.tokenInSymbol ||
+    data?.action?.defi_pairs?.[0]?.token_in?.name ||
+    "-";
 
-  console.log("RESOLVED TYPE:", type);
-  console.log("ESTIMATE PAYLOAD:", estimate);
+  const tokenOutSymbol =
+    config?.tokenOutSymbol ||
+    data?.action?.defi_pairs?.[0]?.token_out?.name ||
+    "-";
 
-  const title = data.action?.name || formatTitle(type);
-  const protocolName = data.module?.name || "Hydration";
+  const amount =
+    toNumber(config?.amount, NaN) ||
+    toNumber(estimate?.amount_in, 0);
 
-  const tokenInSymbol = config?.tokenInSymbol || "HDX";
-  const tokenOutSymbol = config?.tokenOutSymbol || "HDX";
+  const amountOut =
+    toNumber(config?.amountOut, NaN) ||
+    toNumber(estimate?.amount_out, 0);
 
-  const amountIn = config?.amount ?? getEstimateAmountIn(estimate);
-  const amountOut = config?.amountOut ?? getEstimateAmountOut(estimate);
+  const slippage =
+    toNumber(config?.slippage, NaN) ||
+    toNumber(estimate?.slippage, 0);
 
-  let apy: number | undefined;
-  let slippage: number | undefined;
-  let ltv: number | undefined;
+  const apy = getApy(type, config?.apy, estimate);
 
-  if (type === "SWAP") {
-    slippage = config?.slippage ?? getEstimateSlippage(estimate);
+  const ltv =
+    toNumber(config?.ltv, NaN) ||
+    toNumber(estimate?.ltv, 0);
+
+  const title =
+    data?.title ||
+    data?.label ||
+    data?.action?.name ||
+    data?.module?.name ||
+    "DeFi Action";
+
+  const protocolName =
+    data?.module?.protocol ||
+    data?.module?.name ||
+    "Unknown Protocol";
+
+  const hasBaseContext = Boolean(data?.action || data?.module);
+  const hasResolvedType = Boolean(resolvedType);
+
+  let isConfigured = hasBaseContext && hasResolvedType;
+
+  switch (type) {
+    case "SWAP":
+      isConfigured = hasBaseContext && hasResolvedType;
+      break;
+
+    case "SUPPLY":
+      isConfigured = hasBaseContext && hasResolvedType;
+      break;
+
+    case "BORROW":
+      isConfigured = hasBaseContext && hasResolvedType;
+      break;
+
+    case "JOIN_STRATEGY":
+      isConfigured = hasBaseContext && hasResolvedType;
+      break;
+
+    default:
+      isConfigured = false;
   }
-
-  if (type === "SUPPLY") {
-    apy = config?.apy ?? getEstimateSupplyApy(estimate) ?? getEstimateApy(estimate);
-  }
-
-  if (type === "BORROW") {
-    apy = config?.apy ?? getEstimateBorrowApy(estimate) ?? getEstimateApy(estimate);
-    ltv = config?.ltv ?? getEstimateLtv(estimate);
-  }
-
-  if (type === "JOIN_STRATEGY") {
-    apy = config?.apy ?? getEstimateApy(estimate);
-  }
-
-  /**
-   * Node configured check
-   * IMPORTANT: do not use old SWAP-only assumptions
-   */
-  const isConfigured = (() => {
-    if (!config) return false;
-    if (!config.tokenInId) return false;
-    if (config.amount === undefined || config.amount === null) return false;
-    if (!estimate) return false;
-
-    if (type === "SWAP") {
-      return !!config.tokenOutId;
-    }
-
-    return true;
-  })();
 
   return {
     type,
+    isConfigured,
+
     title,
     protocolName,
+
     tokenInSymbol,
     tokenOutSymbol,
-    amountIn,
+
+    amount,
     amountOut,
+
     slippage,
     apy,
     ltv,
-    isConfigured,
   };
 }

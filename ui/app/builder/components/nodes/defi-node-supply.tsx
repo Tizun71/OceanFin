@@ -24,7 +24,7 @@ export default function DefiNodeSupply({ data }: Props) {
       <div className="flex min-h-[88px] items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="text-[30px] font-semibold leading-none text-white">
-            {formatAmount(data.amountIn)}
+            {formatAmount(data.amount)}
           </div>
 
           <TokenIcon

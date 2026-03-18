@@ -20,11 +20,11 @@ export function JoinStrategyRightLabel({ apy }: { apy?: number }) {
 export default function DefiNodeJoinStrategy({ data }: Props) {
   return (
     <div className="pt-3">
-      <div className="grid grid-cols-[1fr_90px_1fr] items-center min-h-[92px]">
+      <div className="grid min-h-[92px] grid-cols-[1fr_90px_1fr] items-center">
         {/* LEFT */}
         <div className="flex flex-col items-start">
           <div className="text-[28px] font-semibold leading-none text-white">
-            {formatAmount(data.amountIn)}
+            {formatAmount(data.amount)}
           </div>
           <div className="mt-4">
             <TokenIcon symbol={data.tokenInSymbol} />

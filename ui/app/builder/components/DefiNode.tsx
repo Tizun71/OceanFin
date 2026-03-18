@@ -1,5 +1,8 @@
 "use client";
-import { normalizeDefiNodeData } from "./nodes/defi-node-utils";
+import {
+  normalizeDefiNodeData,
+  resolveDefiOperationType,
+} from "./nodes/defi-node-utils";
 
 import DefiNodeShell from "./nodes/defi-node-shell";
 import DefiNodeDefault from "./nodes/defi-node-default";
@@ -13,8 +16,7 @@ import DefiNodeJoinStrategy, {
 import { DefiNodeProps } from "./nodes/defi-node.types";
 
 export default function DefiNode({ data, selected }: DefiNodeProps) {
-
-  
+  const resolvedType = resolveDefiOperationType(data);
   const normalized = normalizeDefiNodeData(data);
 
   const commonProps = {
@@ -33,7 +35,7 @@ export default function DefiNode({ data, selected }: DefiNodeProps) {
     );
   }
 
-  switch (normalized.type) {
+  switch (resolvedType) {
     case "SUPPLY":
       return (
         <DefiNodeShell
@@ -65,13 +67,19 @@ export default function DefiNode({ data, selected }: DefiNodeProps) {
       );
 
     case "SWAP":
-    default:
       return (
         <DefiNodeShell
           {...commonProps}
           rightLabel={<SwapRightLabel slippage={normalized.slippage} />}
         >
           <DefiNodeSwap data={normalized} />
+        </DefiNodeShell>
+      );
+
+    default:
+      return (
+        <DefiNodeShell {...commonProps}>
+          <DefiNodeDefault />
         </DefiNodeShell>
       );
   }
