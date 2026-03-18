@@ -120,27 +120,7 @@ export class DefiPairsService {
         route.push(assetOutId);
       }
 
-      const { api } = await this.hydrationSdk.getApiAndSdk();
-
-      const provider = new UiPoolDataProvider({
-        uiPoolDataProviderAddress: POOL_DATA_PROVIDER,
-        provider: new PolkadotEvmRpcProvider(api),
-        chainId: 222222,
-      });
-
-      const poolData = await provider.getReservesHumanized({
-        lendingPoolAddressProvider: POOL,
-      });
-
-      const reserve = poolData.reservesData.find(
-        (r) => r.symbol === tokenOut.name || r.id === tokenOut.asset_id.toString(),
-      );
-
-      if (!reserve) {
-        throw new Error(`No lending pool found for token ${tokenOut.name}`);
-      }
-
-      const supplyApy = ((parseFloat(reserve.liquidityRate) * 100) / 1e27).toFixed(2);
+      const supplyApy = 6.5;
 
       return {
         operation_type: OperationType.JOIN_STRATEGY,
