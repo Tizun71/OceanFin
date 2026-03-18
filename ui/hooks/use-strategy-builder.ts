@@ -21,6 +21,7 @@ import {
 } from "@/lib/defi-node-factory";
 import { buildWorkflowJson } from "@/lib/defi-workflow-builder";
 import { submitStrategy } from "@/services/defi-strategy-builder";
+import { estimateDefiOperation } from "@/services/defi-module-service";
 
 export function useDefiBuilder() {
   const { user } = useUser();
@@ -159,35 +160,92 @@ export function useDefiBuilder() {
   /*
    * SAVE CONFIG
    */
-  const saveConfig = useCallback((payload: CreateStrategyPayload) => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === payload.nodeId
+  const saveConfig = useCallback(
+    async (payload: CreateStrategyPayload) => {
+      const currentNode = nodes.find((node) => node.id === payload.nodeId);
+      const actionName = currentNode?.data?.action?.name?.toUpperCase?.() || "SWAP";
+
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === payload.nodeId
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  config: payload,
+                  estimate: undefined,
+                },
+              }
+            : node,
+        ),
+      );
+
+      setSelectedNode((prev: any) =>
+        prev && prev.id === payload.nodeId
           ? {
-              ...node,
+              ...prev,
               data: {
-                ...node.data,
+                ...prev.data,
                 config: payload,
+                estimate: undefined,
               },
             }
-          : node,
-      ),
-    );
+          : prev,
+      );
 
-    setSelectedNode((prev: any) =>
-      prev
-        ? {
-            ...prev,
-            data: {
-              ...prev.data,
-              config: payload,
-            },
-          }
-        : prev,
-    );
+      try {
+        const estimatePayload = {
+          operation_type: actionName,
+          token_in_id: payload.tokenInId,
+          token_out_id: payload.tokenOutId,
+          amount_in: payload.amount,
+          module_id: payload.moduleId,
+          action_id: payload.actionId,
+        };
 
-    displayToast("success", "Configuration saved successfully.");
-  }, [setNodes]);
+        console.log("ESTIMATE PAYLOAD:", estimatePayload);
+
+        const estimate = await estimateDefiOperation(estimatePayload);
+
+        console.log("ESTIMATE RESPONSE:", estimate);
+
+        setNodes((nds) =>
+          nds.map((node) =>
+            node.id === payload.nodeId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    config: payload,
+                    estimate,
+                  },
+                }
+              : node,
+          ),
+        );
+
+        setSelectedNode((prev: any) =>
+          prev && prev.id === payload.nodeId
+            ? {
+                ...prev,
+                data: {
+                  ...prev.data,
+                  config: payload,
+                  estimate,
+                },
+              }
+            : prev,
+        );
+
+        displayToast("success", "Configuration saved successfully.");
+      } catch (error) {
+        console.error("ESTIMATE ERROR:", error);
+        displayToast("success", "Configuration saved successfully.");
+        displayToast("error", "Failed to estimate node data.");
+      }
+    },
+    [nodes, setNodes],
+  );
 
   /*
    * CREATE STRATEGY

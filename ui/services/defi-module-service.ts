@@ -55,10 +55,22 @@ export const createStrategy = async (payload: CreateStrategyPayload) => {
   return res.json();
 };
 
-export const estimateSwap = async (data: {
-  token_in_id: string;
-  token_out_id: string;
-  amount_in: number;
+export type EstimateDefiOperationPayload = {
+  operation_type: string;
+  token_in_id?: string;
+  token_out_id?: string;
+  amount_in?: number;
+  module_id?: string;
+  action_id?: string;
+};
+
+export const estimateDefiOperation = async (data: {
+  operation_type: string;
+  token_in_id?: string;
+  token_out_id?: string;
+  amount_in?: number;
+  module_id?: string;
+  action_id?: string;
 }) => {
   const res = await fetch(`${BASE_URL}/defi-modules/pairs/estimate`, {
     method: "POST",
@@ -66,16 +78,17 @@ export const estimateSwap = async (data: {
       "Content-Type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify({
-      operation_type: "SWAP",
-      ...data,
-    }),
+    body: JSON.stringify(data),
   });
+
+  const result = await res.json().catch(() => null);
+
   if (!res.ok) {
-    throw new Error("Failed to estimate swap");
+    console.error("ESTIMATE API ERROR:", result);
+    throw new Error(result?.message || "Failed to estimate defi operation");
   }
 
-  return res.json();
+  return result;
 };
 
 export const createStrategyWorkflow = async (payload: any) => {

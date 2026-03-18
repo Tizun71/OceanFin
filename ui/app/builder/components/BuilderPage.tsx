@@ -93,6 +93,7 @@ function Builder() {
   };
 
   const getOperationType = (node: any) => {
+    
     return (
       node?.data?.action?.operation_type ||
       node?.data?.module?.operation_type ||
@@ -107,6 +108,7 @@ function Builder() {
 
     if (!sourceNode || !targetNode) return false;
 
+   
     if (connection.source === connection.target) return false;
 
     const sourceType = getOperationType(sourceNode);
@@ -126,11 +128,13 @@ function Builder() {
       return;
     }
 
+    
     if (connection.source === connection.target) {
       displayToast("error", "A step cannot connect to itself.");
       return;
     }
 
+    
     const edgeExists = edges.some(
       (edge) =>
         edge.source === connection.source && edge.target === connection.target

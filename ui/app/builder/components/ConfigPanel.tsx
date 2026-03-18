@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { estimateSwap, getRequiredActionData } from "@/services/defi-module-service";
+import {
+  estimateDefiOperation,
+  getRequiredActionData,
+  type EstimateDefiOperationPayload,
+} from "@/services/defi-module-service";
 import { useEdges, Node } from "reactflow";
 
 interface Props {
@@ -30,6 +34,15 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
   const incomingEdge = edges.find((e) => e.target === node.id);
   const prevNode = nodes.find((n) => n.id === incomingEdge?.source);
   const prevConfig = prevNode?.data?.config;
+
+  // ✅ derive operation type from action name
+  const resolvedType = useMemo(() => {
+    return node?.data?.action?.name?.toUpperCase?.() || "SWAP";
+  }, [node?.data?.action?.name]);
+
+  const isSwap = resolvedType === "SWAP";
+  const isSupply = resolvedType === "SUPPLY";
+  const isBorrow = resolvedType === "BORROW";
 
   // fetch action required data
   useEffect(() => {
@@ -65,7 +78,7 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
     const map = new Map();
 
     pairs.forEach((p: any) => {
-      if (!map.has(p.token_in.id)) {
+      if (p?.token_in?.id && !map.has(p.token_in.id)) {
         map.set(p.token_in.id, p.token_in);
       }
     });
@@ -76,7 +89,7 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
   // tokenOut options based on selected tokenIn
   const tokenOutOptions = useMemo(() => {
     return pairs
-      .filter((p: any) => p.token_in.id === tokenIn)
+      .filter((p: any) => p?.token_in?.id === tokenIn && p?.token_out?.id)
       .map((p: any) => p.token_out);
   }, [pairs, tokenIn]);
 
@@ -90,23 +103,22 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
     if (config?.tokenInId) {
       const matchedPair = pairs.find(
         (p: any) =>
-          p.token_in.asset_id === config.tokenInId &&
-          p.token_out.asset_id === config.tokenOutId
+          p?.token_in?.asset_id === config.tokenInId &&
+          (!config.tokenOutId || p?.token_out?.asset_id === config.tokenOutId)
       );
 
-      if (matchedPair) {
-        setTokenIn(matchedPair.token_in.id);
-        setTokenOut(matchedPair.token_out.id);
-      } else {
-        setTokenIn(pairs[0].token_in.id);
-        setTokenOut(pairs[0].token_out.id);
+      const fallbackPair = matchedPair || pairs[0];
+
+      if (fallbackPair?.token_in?.id) {
+        setTokenIn(fallbackPair.token_in.id);
+      }
+
+      if (fallbackPair?.token_out?.id) {
+        setTokenOut(fallbackPair.token_out.id);
       }
 
       setAmount(config.amount?.toString() || "");
-      setEstimate({
-        amount_out: config.amountOut,
-        slippage: config.slippage,
-      });
+      setEstimate(config.estimate || null);
 
       return;
     }
@@ -114,7 +126,7 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
     // autofill from previous node if connected
     if (prevConfig?.tokenOutId) {
       let pair = pairs.find(
-        (p: any) => p.token_in.asset_id === prevConfig.tokenOutId
+        (p: any) => p?.token_in?.asset_id === prevConfig.tokenOutId
       );
 
       if (!pair) {
@@ -122,42 +134,46 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
         pair = pairs[0];
       }
 
-      setTokenIn(pair.token_in.id);
-      setTokenOut(pair.token_out.id);
+      if (pair?.token_in?.id) setTokenIn(pair.token_in.id);
+      if (pair?.token_out?.id) setTokenOut(pair.token_out.id);
+
       setAmount(prevConfig.amountOut?.toString() || "");
       return;
     }
 
     // default first pair
-    setTokenIn(pairs[0].token_in.id);
-    setTokenOut(pairs[0].token_out.id);
+    if (pairs[0]?.token_in?.id) setTokenIn(pairs[0].token_in.id);
+    if (pairs[0]?.token_out?.id) setTokenOut(pairs[0].token_out.id);
   }, [pairs, node?.data?.config, prevConfig]);
 
-  // keep tokenOut valid when tokenIn changes
+  // keep tokenOut valid when tokenIn changes (SWAP only)
   useEffect(() => {
-    if (!tokenIn) return;
+    if (!tokenIn || !isSwap) return;
 
     const validPair = pairs.find(
-      (p: any) => p.token_in.id === tokenIn && p.token_out.id === tokenOut
+      (p: any) => p?.token_in?.id === tokenIn && p?.token_out?.id === tokenOut
     );
 
     if (!validPair) {
-      const firstPair = pairs.find((p: any) => p.token_in.id === tokenIn);
-      if (firstPair) {
+      const firstPair = pairs.find((p: any) => p?.token_in?.id === tokenIn);
+      if (firstPair?.token_out?.id) {
         setTokenOut(firstPair.token_out.id);
       }
     }
-  }, [tokenIn, tokenOut, pairs]);
+  }, [tokenIn, tokenOut, pairs, isSwap]);
 
-  const selectedPair = pairs.find(
-    (p: any) => p.token_in.id === tokenIn && p.token_out.id === tokenOut
-  );
+  const selectedPair = useMemo(() => {
+    return pairs.find(
+      (p: any) => p?.token_in?.id === tokenIn && p?.token_out?.id === tokenOut
+    );
+  }, [pairs, tokenIn, tokenOut]);
 
+  // tokenOut is only required for SWAP
   const isValid =
     amount !== "" &&
     Number(amount) > 0 &&
-    tokenIn &&
-    tokenOut &&
+    !!tokenIn &&
+    (!isSwap || !!tokenOut) &&
     estimate !== null;
 
   const handleAmountChange = (value: string) => {
@@ -180,7 +196,12 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
   };
 
   const handleEstimate = async () => {
-    if (!amount || !selectedPair) {
+    if (!amount || !tokenIn) {
+      setEstimate(null);
+      return;
+    }
+
+    if (isSwap && !tokenOut) {
       setEstimate(null);
       return;
     }
@@ -188,43 +209,118 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
     try {
       setEstimating(true);
 
-      const res = await estimateSwap({
-        token_in_id: tokenIn,
-        token_out_id: tokenOut,
-        amount_in: Number(amount),
-      });
+      let payload: EstimateDefiOperationPayload;
+
+      switch (resolvedType) {
+        case "SWAP":
+          payload = {
+            operation_type: "SWAP",
+            token_in_id: tokenIn,
+            token_out_id: tokenOut,
+            amount_in: Number(amount),
+            module_id: node?.data?.module?.id,
+            action_id: node?.data?.action?.id,
+          };
+          break;
+
+        case "SUPPLY":
+          payload = {
+            operation_type: "SUPPLY",
+            token_in_id: tokenIn,
+            amount_in: Number(amount),
+            module_id: node?.data?.module?.id,
+            action_id: node?.data?.action?.id,
+          };
+          break;
+
+        case "BORROW":
+          payload = {
+            operation_type: "BORROW",
+            token_in_id: tokenIn,
+            amount_in: Number(amount),
+            module_id: node?.data?.module?.id,
+            action_id: node?.data?.action?.id,
+          };
+          break;
+
+        default:
+          payload = {
+            operation_type: resolvedType,
+            token_in_id: tokenIn,
+            token_out_id: tokenOut || undefined,
+            amount_in: Number(amount),
+            module_id: node?.data?.module?.id,
+            action_id: node?.data?.action?.id,
+          };
+          break;
+      }
+
+      console.log("RESOLVED TYPE:", resolvedType);
+      console.log("ESTIMATE PAYLOAD:", payload);
+
+      const res = await estimateDefiOperation(payload);
+
+      console.log("ESTIMATE RESPONSE:", res);
 
       setEstimate(res);
     } catch (err) {
-      console.error(err);
+      console.error("ESTIMATE ERROR:", err);
       setEstimate(null);
     } finally {
       setEstimating(false);
     }
   };
 
+  // auto estimate when enough data
   useEffect(() => {
-    if (!amount || !selectedPair) return;
+    if (!amount || Number(amount) <= 0 || !tokenIn) {
+      setEstimate(null);
+      return;
+    }
+
+    if (isSwap && !tokenOut) {
+      setEstimate(null);
+      return;
+    }
+
     handleEstimate();
-  }, [amount, tokenIn, tokenOut]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, tokenIn, tokenOut, resolvedType]);
 
   const handleSubmit = async () => {
-    if (!isValid || !selectedPair) return;
+    if (!isValid) return;
 
     const payload = {
       nodeId: node.id,
       moduleId: node.data.module.id,
       actionId: node.data.action.id,
 
-      tokenInId: selectedPair.token_in.asset_id,
-      tokenOutId: selectedPair.token_out.asset_id,
+      // store asset ids if possible, fallback to selected ids
+      tokenInId: selectedPair?.token_in?.asset_id || tokenIn,
+      tokenOutId: isSwap
+        ? selectedPair?.token_out?.asset_id || tokenOut
+        : undefined,
 
-      tokenInSymbol: selectedPair.token_in.name,
-      tokenOutSymbol: selectedPair.token_out.name,
+      tokenInSymbol:
+        selectedPair?.token_in?.name ||
+        tokenInOptions.find((t: any) => t.id === tokenIn)?.name ||
+        "",
+      tokenOutSymbol: isSwap
+        ? selectedPair?.token_out?.name ||
+          tokenOutOptions.find((t: any) => t.id === tokenOut)?.name ||
+          ""
+        : "",
 
       amount: Number(amount),
-      amountOut: estimate.amount_out,
-      slippage: estimate.slippage,
+
+      // keep raw estimate for node UI
+      estimate,
+
+      // backward compatibility for existing UI
+      amountOut: estimate?.amount_out,
+      slippage: estimate?.slippage,
+      apy: estimate?.apy ?? estimate?.supply_apy ?? estimate?.borrow_apy,
+      ltv: estimate?.ltv ?? estimate?.max_ltv,
     };
 
     try {
@@ -236,6 +332,118 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderEstimate = () => {
+    if (!estimate) return null;
+
+    if (isSwap) {
+      return (
+        <div
+          className="
+            bg-gradient-to-br
+            from-indigo-500/10
+            to-pink-500/10
+            border border-indigo-500/20
+            p-5
+            rounded-xl
+          "
+        >
+          <p className="text-xs text-neutral-400">Estimated Output</p>
+
+          <p className="text-2xl font-bold text-white mt-1">
+            {Number(estimate?.amount_out || 0).toFixed(6)}{" "}
+            {selectedPair?.token_out?.name || ""}
+          </p>
+
+          <p className="text-xs text-neutral-500 mt-1">
+            Slippage: {((estimate?.slippage || 0) * 100).toFixed(2)}%
+          </p>
+        </div>
+      );
+    }
+
+    if (isSupply) {
+      return (
+        <div
+          className="
+            bg-gradient-to-br
+            from-emerald-500/10
+            to-cyan-500/10
+            border border-emerald-500/20
+            p-5
+            rounded-xl
+          "
+        >
+          <p className="text-xs text-neutral-400">Supply Estimate</p>
+
+          <p className="text-2xl font-bold text-white mt-1">
+            {Number(
+              estimate?.apy ?? estimate?.supply_apy ?? 0
+            ).toFixed(2)}
+            %
+          </p>
+
+          <p className="text-xs text-neutral-500 mt-1">Estimated APY</p>
+        </div>
+      );
+    }
+
+    if (isBorrow) {
+      return (
+        <div
+          className="
+            bg-gradient-to-br
+            from-amber-500/10
+            to-orange-500/10
+            border border-amber-500/20
+            p-5
+            rounded-xl
+          "
+        >
+          <p className="text-xs text-neutral-400">Borrow Estimate</p>
+
+          <p className="text-sm text-white mt-1">
+            APY:{" "}
+            <span className="font-semibold">
+              {Number(
+                estimate?.apy ?? estimate?.borrow_apy ?? 0
+              ).toFixed(2)}
+              %
+            </span>
+          </p>
+
+          <p className="text-sm text-white mt-1">
+            LTV:{" "}
+            <span className="font-semibold">
+              {Number(
+                estimate?.ltv ?? estimate?.max_ltv ?? 0
+              ).toFixed(2)}
+              %
+            </span>
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="
+          bg-gradient-to-br
+          from-indigo-500/10
+          to-pink-500/10
+          border border-indigo-500/20
+          p-5
+          rounded-xl
+        "
+      >
+        <p className="text-xs text-neutral-400">Estimate Result</p>
+
+        <pre className="text-xs text-white mt-2 overflow-x-auto">
+          {JSON.stringify(estimate, null, 2)}
+        </pre>
+      </div>
+    );
   };
 
   return (
@@ -359,30 +567,32 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
                 {error && <p className="text-red-400 text-xs">{error}</p>}
               </div>
 
-              {/* Token Out */}
-              <div className="space-y-3">
-                <label className="text-xs text-neutral-400">Token Out</label>
+              {/* Token Out (SWAP only) */}
+              {isSwap && (
+                <div className="space-y-3">
+                  <label className="text-xs text-neutral-400">Token Out</label>
 
-                <select
-                  value={tokenOut}
-                  onChange={(e) => setTokenOut(e.target.value)}
-                  className="
-                    w-full
-                    px-4 py-3
-                    rounded-xl
-                    bg-[#141420]
-                    border border-white/10
-                    focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500
-                  "
-                >
-                  {tokenOutOptions.map((token: any) => (
-                    <option key={token.id} value={token.id}>
-                      {token.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <select
+                    value={tokenOut}
+                    onChange={(e) => setTokenOut(e.target.value)}
+                    className="
+                      w-full
+                      px-4 py-3
+                      rounded-xl
+                      bg-[#141420]
+                      border border-white/10
+                      focus:outline-none
+                      focus:ring-2 focus:ring-indigo-500
+                    "
+                  >
+                    {tokenOutOptions.map((token: any) => (
+                      <option key={token.id} value={token.id}>
+                        {token.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Estimating */}
               {estimating && (
@@ -400,42 +610,7 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
               )}
 
               {/* Result */}
-              {estimate && selectedPair && (
-                <div
-                  className="
-                    bg-gradient-to-br
-                    from-indigo-500/10
-                    to-pink-500/10
-                    border border-indigo-500/20
-                    p-5
-                    rounded-xl
-                  "
-                >
-                  <p className="text-xs text-neutral-400">Estimated Output</p>
-
-                  <p
-                    className="
-                      text-2xl
-                      font-bold
-                      text-white
-                      mt-1
-                    "
-                  >
-                    {Number(estimate.amount_out).toFixed(6)}{" "}
-                    {selectedPair.token_out.name}
-                  </p>
-
-                  <p
-                    className="
-                      text-xs
-                      text-neutral-500
-                      mt-1
-                    "
-                  >
-                    Slippage: {(estimate.slippage * 100).toFixed(2)}%
-                  </p>
-                </div>
-              )}
+              {renderEstimate()}
             </>
           )}
         </div>
