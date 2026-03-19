@@ -11,6 +11,7 @@ export async function supply(
   amountSupply: string,
   userAddress: string,
 ) {
+  console.log(`Preparing supply transaction for ${amountSupply} of asset ${assetSupply} by user ${userAddress}`);
   const { api, sdk } = await getHydrationSDK();
 
   if (assetSupply === ASSET_ID.VDOT) {
@@ -31,6 +32,8 @@ export async function supply(
 
     const gasPrice = await getGasPrice();
 
+    console.log("Built supply transaction:", builtTx);
+
     const evmTx = api.tx.evm.call(
       H160.fromAny(userAddress), // source
       builtTx.to as string, // target
@@ -43,10 +46,50 @@ export async function supply(
       [] // access_list
     );
 
+    console.log("Built EVM transaction for vDOT supply:", evmTx);
+
     return evmTx;
   }
+  console.log(assetSupply, ASSET_ID.DOT);
+  if (assetSupply.toString() === ASSET_ID.DOT) {
+    console.log("Building supply transaction for DOT...");
+    const builtTx = await buildSupplyTx(
+      {
+        amount: parseUnits(amountSupply, 10).toString(),
+        reserve: "0x0000000000000000000000000000000100000005",
+        onBehalfOf: H160.fromAny(userAddress),
+        referralCode: "0",
+      },
+      userAddress,
+    );
 
-  throw new Error(`Supply ${assetSupply} not supported`);
+    console.log("Built supply transaction:", builtTx);
+
+    const gasPrice = await getGasPrice();
+
+    try {
+      const evmTx = api.tx.evm.call(
+        H160.fromAny(userAddress), // source
+        builtTx.to as string, // target
+        builtTx.data as string, // input
+        '0', // value
+        Number(builtTx.gasLimit), // gas_limit
+        gasPrice, // max_fee_per_gas
+        gasPrice, // max_priority_fee_per_gas
+        null, // nonce
+        [], // access_list
+        []
+      );
+      console.log("Built EVM transaction for DOT supply:", evmTx);
+
+      return evmTx;
+    }
+    catch (error) {
+      console.error("Error building EVM transaction for DOT supply:", error);
+      throw error;
+    }
+
+  }
 }
 
 // --- INTERNAL HELPER ---

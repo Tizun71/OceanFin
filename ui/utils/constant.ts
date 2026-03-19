@@ -6,7 +6,8 @@ export enum ASSET_ID {
     DOT = '5',
     USDT = '10',
     VDOT = '15',
-    GDOT = '69'
+    GDOT = '69',
+    USDC = '22'
 }
 
 export enum ASSET_SYMBOL {
@@ -36,4 +37,4 @@ export enum EMODE_CATEGORY {
 };
 
 // CONSTANTS
-export const SLIPPAGE_TOLERANCE = 0.01; // 1%
+export const SLIPPAGE_TOLERANCE = 0.03; // 3%

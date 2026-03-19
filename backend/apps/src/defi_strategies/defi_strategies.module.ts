@@ -22,13 +22,10 @@ import { DefiExecutionStepResultService } from './application/defi_execution_ste
 import { DefiExecutionStepResultController } from './interfaces/defi_execution_step_result.controller';
 import { StrategySimulationService } from './application/strategy-simulation.service';
 import { SwapSimulator } from './application/simulators/swap-simulator';
-import { BridgeSimulator } from './application/simulators/bridge-simulator';
-import { StakeSimulator } from './application/simulators/stake-simulator';
 import { JoinStrategySimulator } from './application/simulators/join-strategy-simulator';
 import { BorrowSimulator } from './application/simulators/borrow-simulator';
 import { SupplySimulator } from './application/simulators/supply-simulator';
 import { EnableEModeSimulator } from './application/simulators/enable-e-mode-simulator';
-import { EnableBorrowingSimulator } from './application/simulators/enable-borrowing-simulator';
 import { HydrationStrategyService } from 'src/strategies/application/hydration-strategy.service';
 import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.service';
 
@@ -48,13 +45,10 @@ import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.ser
     DefiExecutionStepResultService,
     StrategySimulationService,
     SwapSimulator,
-    BridgeSimulator,
-    StakeSimulator,
     JoinStrategySimulator,
     BorrowSimulator,
     SupplySimulator,
     EnableEModeSimulator,
-    EnableBorrowingSimulator,
     HydrationStrategyService,
     HydrationSdkService,
     {

@@ -233,6 +233,7 @@ export class DefiPairsService {
       return {
         operation_type: OperationType.SUPPLY,
         token_in_id: tokenInId,
+        token_out_id: tokenInId,
         amount_in: amountIn,
         supply_apy: Number(supplyApy),
       };

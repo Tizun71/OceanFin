@@ -4,23 +4,37 @@ import {
   SimulationContext,
   SimulationStepResult,
 } from '../../domain/simulation-engine.interface';
+import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.service';
+import { HydrationStrategyService } from 'src/strategies/application/hydration-strategy.service';
 
 @Injectable()
 export class BorrowSimulator extends BaseSimulator {
+  constructor(
+    private readonly hydrationSdk: HydrationSdkService,
+    private readonly hydrationStrategyService: HydrationStrategyService,
+  ) {
+    super();
+  }
+
   async simulate(
     step: any,
     context: SimulationContext,
   ): Promise<SimulationStepResult> {
     const inputAmount = context.current_amount;
 
-    // Borrow fee (origination fee)
-    const feePercentage = 0.05; // 0.05% origination fee
-    const fee = this.calculateFee(inputAmount, feePercentage);
+    const fee = 0;
+
+    console.log(step);
 
     const interestRate = this.getInterestRate(step.tokenOut?.assetId);
 
-    const collateralRatio = step.collateralRatio || 0.75;
+    const collateralRatio = step.collateralRatio || 0.7;
     const borrowAmount = inputAmount * collateralRatio;
+
+    const exchangeRate = await this.getExchangeRate(
+      step.tokenIn.assetId,
+      step.tokenOut.assetId,
+    );
 
     if (collateralRatio > 0.8) {
       this.addWarning(
@@ -36,7 +50,7 @@ export class BorrowSimulator extends BaseSimulator {
       );
     }
 
-    const outputAmount = borrowAmount - fee;
+    const outputAmount = (borrowAmount - fee) * exchangeRate;
 
     context.current_amount = outputAmount;
     context.total_fee += fee;
@@ -71,5 +85,13 @@ export class BorrowSimulator extends BaseSimulator {
     };
 
     return rates[assetId] || 6.0;
+  }
+
+  private async getExchangeRate(
+    assetIdIn: string,
+    assetIdOut: string,
+  ): Promise<number> {
+    const exchangeRate = await this.hydrationStrategyService.getAssetPrice(assetIdIn, assetIdOut);
+    return exchangeRate;
   }
 }

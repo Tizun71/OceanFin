@@ -13,15 +13,12 @@ export class SupplySimulator extends BaseSimulator {
   ): Promise<SimulationStepResult> {
     const inputAmount = context.current_amount;
 
-    const feePercentage = 0.02;
-    const fee = this.calculateFee(inputAmount, feePercentage);
-
     const supplyApy = this.getSupplyApy(step.tokenIn?.assetId);
 
-    const outputAmount = inputAmount - fee;
+    const outputAmount = inputAmount;
 
     context.current_amount = outputAmount;
-    context.total_fee += fee;
+    context.total_fee += 0;
 
     if (supplyApy < 2) {
       this.addWarning(
@@ -42,9 +39,9 @@ export class SupplySimulator extends BaseSimulator {
       token_out: {
         asset_id: step.tokenOut?.assetId || step.tokenIn?.assetId || 'unknown',
         symbol: step.tokenOut?.symbol || `a${step.tokenIn?.symbol}` || 'aSUPPLIED',
-        amount: outputAmount,
+        amount: inputAmount,
       },
-      fee,
+      fee: 0,
       slippage: 0, 
       price_impact: 0, 
       apy: supplyApy,
