@@ -286,22 +286,23 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
     estimate !== null;
 
   const handleAmountChange = (value: string) => {
-    if (!value) {
+    
+    if (value === "") {
       setAmount("");
       setEstimate(null);
       setError("");
       return;
     }
 
-    if (Number(value) <= 0) {
-      setError("Amount must be greater than 0");
-      setAmount("");
-      setEstimate(null);
-      return;
-    }
-
-    setError("");
     setAmount(value);
+
+    const numericValue = Number(value);
+    if (!isNaN(numericValue) && numericValue <= 0 && value !== "0" && !value.startsWith("0.")) {
+      setError("Amount must be greater than 0");
+      setEstimate(null);
+    } else {
+      setError("");
+    }
   };
 
   /**
@@ -645,11 +646,15 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
                 </select>
 
                 <input
-                  type="number"
+                  type="text"
                   value={amount}
                   disabled={!!incomingEdge}
                   placeholder="0.00"
-                  onChange={(e) => handleAmountChange(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    if (val.split('.').length > 2) return;
+                    handleAmountChange(val);
+                  }}
                   className="
                     w-full px-4 py-3 rounded-xl 
                     bg-white/5 border border-white/10 
