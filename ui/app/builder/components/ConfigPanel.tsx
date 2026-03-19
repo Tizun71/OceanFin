@@ -118,10 +118,7 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
    * Pairs from API -> fallback node data
    */
   const pairs = useMemo<DefiPair[]>(() => {
-    const apiPairs =
-      requiredData?.[0]?.defi_module_actions?.[0]?.defi_pairs || [];
-
-    return apiPairs.length > 0 ? apiPairs : fallbackPairs;
+    return fallbackPairs;
   }, [requiredData, fallbackPairs]);
 
   /**
@@ -129,7 +126,6 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
    */
   const tokenInOptions = useMemo(() => {
     const map = new Map<string, NonNullable<DefiPair["token_in"]>>();
-
     pairs.forEach((p: DefiPair) => {
       if (p?.token_in?.id && !map.has(p.token_in.id)) {
         map.set(p.token_in.id, p.token_in);
@@ -144,7 +140,6 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
    */
   const tokenOutOptions = useMemo(() => {
     const map = new Map<string, NonNullable<DefiPair["token_out"]>>();
-
     pairs
       .filter((p: DefiPair) => p?.token_in?.id === tokenIn && p?.token_out?.id)
       .forEach((p: DefiPair) => {
@@ -152,6 +147,8 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           map.set(p.token_out.id, p.token_out);
         }
       });
+
+    console.log(pairs);
 
     return Array.from(map.values());
   }, [pairs, tokenIn]);
@@ -806,7 +803,6 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
         <div className="p-6 border-t border-white/10 bg-white/[0.02]">
           <button
             onClick={handleSubmit}
-            disabled={!isValid || loading || pairs.length === 0}
             className="
               defi-btn-glass w-full py-4 ocean-glow
               hover:scale-[1.02] active:scale-[0.98]

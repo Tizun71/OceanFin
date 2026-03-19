@@ -20,7 +20,7 @@ export class DefiPairsService {
     private readonly defiTokenService: DefiTokenService,
     private readonly hydrationSdk: HydrationSdkService,
     private readonly hydrationStrategyService: HydrationStrategyService,
-  ) {}
+  ) { }
 
   async createDefiPair(defiPair: DefiPair): Promise<DefiPair> {
     if (defiPair.token_in_id) {
@@ -282,10 +282,17 @@ export class DefiPairsService {
       const ltv = parseFloat(collateralReserve.baseLTVasCollateral) / 10000;
       const borrowApy = (parseFloat(borrowReserve.variableBorrowRate) * 100) / 1e27;
 
-      const spotPrice = await this.hydrationStrategyService.getAssetPrice(
-        collateralToken.asset_id.toString(),
-        borrowToken.asset_id.toString(),
-      );
+      let spotPrice = 1;
+      if (collateralTokenId === borrowTokenId) {
+        spotPrice = 1;
+      }
+      else {
+        spotPrice = await this.hydrationStrategyService.getAssetPrice(
+          collateralToken.asset_id.toString(),
+          borrowToken.asset_id.toString(),
+        );
+      }
+
       console.log("Step Borrow: ", ltv, borrowApy, spotPrice);
       const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
 
