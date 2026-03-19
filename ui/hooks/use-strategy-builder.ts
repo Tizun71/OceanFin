@@ -21,6 +21,7 @@ import {
 } from "@/lib/defi-node-factory";
 import { buildWorkflowJson } from "@/lib/defi-workflow-builder";
 import { submitStrategy } from "@/services/defi-strategy-builder";
+import { useRouter } from "next/navigation";
 
 type SaveConfigPayload = CreateStrategyPayload & {
   operationType?: string;
@@ -81,6 +82,7 @@ const getEstimateOutputSymbol = (est: any, payload: SaveConfigPayload) => {
 
 export function useDefiBuilder() {
   const { user } = useUser();
+  const router = useRouter();
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -319,6 +321,9 @@ export function useDefiBuilder() {
 
         displayToast("success", "Strategy created successfully.");
         setShowModal(false);
+
+        router.push("/strategy");
+
       } catch (error) {
         console.error(error);
         displayToast("error", "Failed to create strategy.");
@@ -326,7 +331,7 @@ export function useDefiBuilder() {
         setCreating(false);
       }
     },
-    [user, nodes],
+    [user, nodes, router],
   );
 
   return {

@@ -166,20 +166,21 @@ function Builder() {
   return (
     <div className="flex flex-1 text-white px-6 pb-6 pt-4 min-h-0 gap-6">
       {/* Sidebar */}
-      <div className="w-72 border-r border-white/10">
+      <div className="w-80 custom-scroll pr-2">
         <Sidebar modules={modules} onSelect={handleAddNode} />
       </div>
 
       {/* Canvas */}
       <div
         className="
-        flex-1
-        relative
-        bg-white/15
-        backdrop-blur-md
-        border border-white/20
-        rounded-2xl
-        overflow-hidden
+          flex-1
+          relative
+          glass
+          ocean-gradient
+          rounded-3xl
+          overflow-hidden
+          border border-white/10
+          shadow-2xl
         "
       >
         <ReactFlow
@@ -199,7 +200,7 @@ function Builder() {
               if (!validateWorkflow()) return;
               setShowModal(true);
             }}
-            className="defi-btn-glass defi-create-btn"
+            className="defi-btn-glass defi-create-btn ocean-glow hover:scale-105 active:scale-95 transition-transform"
           >
             Create Strategy
           </button>
@@ -216,9 +217,9 @@ function Builder() {
 
           <Background
             variant={BackgroundVariant.Dots}
-            gap={20}
-            size={1}
-            color="rgba(255,255,255,0.1)"
+            gap={25}
+            size={1.5}
+            color="rgba(0, 194, 203, 0.15)" 
           />
         </ReactFlow>
       </div>

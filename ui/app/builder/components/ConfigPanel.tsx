@@ -467,117 +467,94 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
   const renderEstimate = () => {
     if (!estimate) return null;
 
+    const cardBaseStyle = "glass border p-5 rounded-2xl relative overflow-hidden group animate-in zoom-in-95 duration-300";
+
     if (isSwap) {
       return (
-        <div className="bg-gradient-to-br from-indigo-500/10 to-pink-500/10 border border-indigo-500/20 p-5 rounded-xl">
-          <p className="text-xs text-neutral-400">Estimated Output</p>
-
-          <p className="text-2xl font-bold text-white mt-1">
-            {Number(
-              estimate?.amount_out ??
-                estimate?.output_amount ??
-                estimate?.result_amount ??
-                estimate?.received_amount ??
-                0,
-            ).toFixed(6)}{" "}
-            {selectedPair?.token_out?.name || ""}
-          </p>
-
-          <p className="text-xs text-neutral-500 mt-1">
-            Slippage: {((estimate?.slippage || 0) * 100).toFixed(2)}%
-          </p>
+        <div className={`${cardBaseStyle} bg-primary/5 border-primary/20`}>
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <div className="w-12 h-12 rounded-full bg-primary blur-xl" />
+          </div>
+          <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Estimated Output</p>
+          <div className="flex items-baseline gap-2 mt-2">
+            <p className="text-3xl font-bold text-white leading-none">
+              {Number(estimate?.amount_out ?? estimate?.output_amount ?? 0).toFixed(6)}
+            </p>
+            <p className="text-sm font-medium text-primary/80">{selectedPair?.token_out?.name}</p>
+          </div>
+          <div className="flex justify-between mt-4 pt-3 border-t border-white/5 text-[11px]">
+            <span className="text-muted">Max Slippage</span>
+            <span className="text-white font-mono">{((estimate?.slippage || 0) * 100).toFixed(2)}%</span>
+          </div>
         </div>
       );
     }
 
     if (isSupply) {
       return (
-        <div className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 p-5 rounded-xl">
-          <p className="text-xs text-neutral-400">Supply Estimate</p>
-
-          <p className="text-2xl font-bold text-white mt-1">
-            {Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%
-          </p>
-
-          <p className="text-xs text-neutral-500 mt-1">Estimated APY</p>
+        <div className={`${cardBaseStyle} bg-primary/5 border-primary/20`}>
+          <div className="absolute -bottom-2 -right-2 p-3 opacity-10">
+            <div className="w-16 h-16 rounded-full bg-primary blur-2xl" />
+          </div>
+          <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Supply Strategy</p>
+          <div className="mt-2">
+            <p className="text-3xl font-bold text-white leading-none">
+              {Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%
+            </p>
+            <p className="text-xs text-muted mt-2 tracking-wide font-medium">ESTIMATED NET APY</p>
+          </div>
         </div>
       );
     }
 
     if (isBorrow) {
       return (
-        <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-5 rounded-xl">
-          <p className="text-xs text-neutral-400">Borrow Estimate</p>
-
-          <p className="text-sm text-white mt-1">
-            Amount Out:{" "}
-            <span className="font-semibold">
-              {Number(
-                estimate?.borrow_amount ??
-                  estimate?.amount_out ??
-                  estimate?.output_amount ??
-                  estimate?.received_amount ??
-                  0,
-              ).toFixed(6)}{" "}
-              {selectedPair?.token_out?.name || ""}
-            </span>
-          </p>
-
-          <p className="text-sm text-white mt-1">
-            APY:{" "}
-            <span className="font-semibold">
-              {Number(estimate?.borrow_apy ?? estimate?.apy ?? 0).toFixed(2)}%
-            </span>
-          </p>
-
-          <p className="text-sm text-white mt-1">
-            LTV:{" "}
-            <span className="font-semibold">
-              {Number(estimate?.ltv ?? estimate?.max_ltv ?? 0).toFixed(2)}%
-            </span>
-          </p>
+        <div className={`${cardBaseStyle} bg-secondary/10 border-secondary/30`}>
+          <p className="text-[10px] uppercase tracking-widest text-secondary-light font-bold">Borrow Details</p>
+          
+          <div className="space-y-3 mt-3">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted">Amount Out</span>
+              <span className="text-sm font-bold text-white">
+                {Number(estimate?.borrow_amount ?? estimate?.amount_out ?? 0).toFixed(4)} {selectedPair?.token_out?.name}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted">Borrow APY</span>
+              <span className="text-sm font-bold text-red-400">
+                {Number(estimate?.borrow_apy ?? estimate?.apy ?? 0).toFixed(2)}%
+              </span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-white/5">
+              <span className="text-xs text-muted">LTV Ratio</span>
+              <span className="text-sm font-bold text-primary">
+                {Number(estimate?.ltv ?? estimate?.max_ltv ?? 0).toFixed(2)}%
+              </span>
+            </div>
+          </div>
         </div>
       );
     }
 
     if (isJoinStrategy) {
       return (
-        <div className="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20 p-5 rounded-xl">
-          <p className="text-xs text-neutral-400">Join Strategy Estimate</p>
-
-          <p className="text-2xl font-bold text-white mt-1">
-            {Number(
-              estimate?.amount_out ??
-                estimate?.output_amount ??
-                estimate?.result_amount ??
-                estimate?.received_amount ??
-                0,
-            ).toFixed(6)}{" "}
-            {selectedPair?.token_out?.name || ""}
-          </p>
-
-          <div className="mt-3 space-y-1 text-sm text-white">
-            <p>
-              Input:{" "}
-              <span className="font-semibold">
-                {Number(estimate?.amount_in ?? amount ?? 0).toFixed(6)}{" "}
-                {selectedPair?.token_in?.name || ""}
-              </span>
-            </p>
-
-            <p>
-              Slippage:{" "}
-              <span className="font-semibold">
-                {((estimate?.slippage ?? 0) * 100).toFixed(2)}%
-              </span>
-            </p>
-
-            <p>
-              Supply APY:{" "}
-              <span className="font-semibold">
-                {Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%
-              </span>
-            </p>
+        <div className={`${cardBaseStyle} bg-primary/10 border-primary/30 ocean-glow`}>
+          <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Strategy Entry</p>
+          <div className="mt-3">
+             <div className="text-2xl font-bold text-white">
+               {Number(estimate?.amount_out ?? 0).toFixed(6)}
+               <span className="text-xs ml-2 text-primary/70">SHARES</span>
+             </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] pt-3 border-t border-white/5">
+            <div>
+              <p className="text-muted uppercase">APY</p>
+              <p className="text-white font-bold">{Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%</p>
+            </div>
+            <div>
+              <p className="text-muted uppercase">Slippage</p>
+              <p className="text-white font-bold">{((estimate?.slippage ?? 0) * 100).toFixed(2)}%</p>
+            </div>
           </div>
         </div>
       );
@@ -601,12 +578,13 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
           w-[360px]
           h-[600px]
           rounded-2xl
-          bg-gradient-to-br from-[#18182a] to-[#0f0f1a]
+          glass
           border border-white/10
-          shadow-[0_0_40px_rgba(0,0,0,0.6)]
+          shadow-[0_20px_50px_rgba(0,0,0,0.5)]
           z-50
           flex flex-col
           overflow-hidden
+          animate-in fade-in slide-in-from-right-10 duration-300
         "
       >
         <div className="px-6 py-5 border-b border-white/10 flex justify-between items-start">
@@ -628,7 +606,7 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scroll">
           {pairsLoading && (
             <div className="text-sm text-neutral-500 bg-[#141420] p-4 rounded-xl border border-white/10">
               Loading action requirements...
@@ -650,7 +628,14 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
                   value={tokenIn}
                   disabled={!!incomingEdge}
                   onChange={(e) => setTokenIn(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-[#141420] border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="
+                    w-full px-4 py-3 rounded-xl 
+                    bg-white/5 border border-white/10 
+                    text-white text-sm
+                    focus:outline-none focus:ring-2 focus:ring-primary/50
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    transition-all
+                  "
                 >
                   {tokenInOptions.map((token: any) => (
                     <option key={token.id} value={token.id}>
@@ -663,9 +648,17 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
                   type="number"
                   value={amount}
                   disabled={!!incomingEdge}
-                  placeholder="Enter amount"
+                  placeholder="0.00"
                   onChange={(e) => handleAmountChange(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-[#141420] border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="
+                    w-full px-4 py-3 rounded-xl 
+                    bg-white/5 border border-white/10 
+                    text-white text-lg font-medium
+                    placeholder:text-muted/50
+                    focus:outline-none focus:ring-2 focus:ring-primary/50
+                    disabled:opacity-50
+                    transition-all
+                  "
                 />
 
                 {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -678,7 +671,14 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
                   <select
                     value={tokenOut}
                     onChange={(e) => setTokenOut(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#141420] border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="
+                    w-full px-4 py-3 rounded-xl 
+                    bg-white/5 border border-white/10 
+                    text-white text-sm
+                    focus:outline-none focus:ring-2 focus:ring-primary/50
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    transition-all
+                  "
                   >
                     {tokenOutOptions.map((token: any) => (
                       <option key={token.id} value={token.id}>
@@ -700,13 +700,19 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
           )}
         </div>
 
-        <div className="p-6 border-t border-white/10">
+        <div className="p-6 border-t border-white/10 bg-white/[0.02]">
           <button
             onClick={handleSubmit}
             disabled={!isValid || loading || pairs.length === 0}
-            className="defi-btn-glass w-full"
+            className="
+              defi-btn-glass w-full py-4 ocean-glow
+              hover:scale-[1.02] active:scale-[0.98]
+              disabled:opacity-30 disabled:hover:scale-100
+              transition-all duration-300
+              text-base
+            "
           >
-            {loading ? "Saving..." : "Save Strategy"}
+            {loading ? "Processing..." : "Confirm & Save"}
           </button>
         </div>
       </div>
