@@ -9,12 +9,13 @@ export async function swap(assetIn: string, assetOut: string, amountIn: string, 
   const poolService = new PoolService(api, evmClient);
   const tradeRouter = new TradeRouter(poolService);
 
-  if (assetIn === ASSET_ID.DOT && assetOut === ASSET_ID.GDOT) {
+  // if (assetIn === ASSET_ID.DOT && assetOut === ASSET_ID.GDOT) {
     const bestRoute = await sdk.api.router.getBestSell(
-      assetIn,
-      assetOut,
+      assetIn.toString(),
+      assetOut.toString(),
       amountIn
     )
+    console.log("Best route:", bestRoute);
 
     const builtTx = await sdk.tx
       .trade(bestRoute)
@@ -25,24 +26,31 @@ export async function swap(assetIn: string, assetOut: string, amountIn: string, 
     const swapTx = api.tx(builtTx.hex)
 
     return swapTx;
-  }
-  else {
-    const assetDetails = await api.query.assetRegistry.assets(assetIn);
-    const asset = assetDetails.toJSON();
-    console.log("Available pools:", await tradeRouter.getPools());
-    if (!asset) {
-      throw new Error(`Asset details for ${assetIn} not found`);
-    }
-    console.log(`Asset details for ${assetIn}:`, asset);
-    const parseAmountIn = parseUnits(amountIn, asset.decimals).toString();
-    try {
-    const trade = await sdk.api.router.getBestSell(assetIn, assetOut, parseAmountIn);
-          console.log(trade);
-    return trade;
-    }
-    catch (error) {
-      console.error("Error fetching best sell route:", error);
-      throw error;
-    }
-  }
+  // }
+//   else {
+//     const route = [
+//   { pool: { Aave: null },        assetIn: 5,    assetOut: 1001 },
+//   { pool: { Omnipool: null },    assetIn: 1001, assetOut: 222  },
+//   { pool: { Stableswap: 110 },   assetIn: 222,  assetOut: 1003 },
+//   { pool: { Aave: null },        assetIn: 1003, assetOut: 22   },
+// ];
+//     const assetDetails = await api.query.assetRegistry.assets(assetIn);
+//     const asset = assetDetails.toJSON();
+//     const parseAmountIn = parseUnits(amountIn, asset.decimals).toString();
+//     try {
+//     const builtTx = await sdk.tx
+//       .trade(route as any)
+//       .withSlippage(SLIPPAGE_TOLERANCE)
+//       .withBeneficiary(userAddress)
+//       .build()
+
+//     const swapTx = api.tx(builtTx.hex)
+
+//     return swapTx;
+//     }
+//     catch (error) {
+//       console.error("Error fetching best sell route:", error);
+//       throw error;
+//     }
+//   }
 }

@@ -77,6 +77,7 @@ export class StrategySimulationService implements SimulationEngine {
       gas_price?: number;
     },
   ) {
+    console.log('Starting simulation with workflow:', JSON.stringify(workflow_json, null, 2));
     if (!workflow_json || !workflow_json.steps || !Array.isArray(workflow_json.steps)) {
       throw new Error('Invalid workflow_json: missing or invalid steps array');
     }

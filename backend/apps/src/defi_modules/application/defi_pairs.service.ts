@@ -9,6 +9,7 @@ import { EstimateDefiPairDto } from "../interfaces/dtos/estimate-defi-pair.dto";
 import { OperationType } from "../domain/operation-type.enum";
 import { UiPoolDataProvider } from "@aave/contract-helpers";
 import { PolkadotEvmRpcProvider } from "../../strategies/infrastructure/helpers/hydration/utils/polkadotEVMProvider";
+import { ASSET_ID } from "src/strategies/infrastructure/helpers";
 
 const POOL_DATA_PROVIDER = "0x112b087b60C1a166130d59266363C45F8aa99db0";
 const POOL = "0xf3Ba4D1b50f78301BDD7EAEa9B67822A15FCA691";
@@ -261,6 +262,41 @@ export class DefiPairsService {
         chainId: 222222,
       });
 
+      let spotPrice = 1;
+      if (collateralTokenId === borrowTokenId) {
+        spotPrice = 1;
+      }
+      else {
+        spotPrice = await this.hydrationStrategyService.getAssetPrice(
+          collateralToken.asset_id.toString(),
+          borrowToken.asset_id.toString(),
+        );
+      }
+
+      if (collateralToken.asset_id.toString() === ASSET_ID.GDOT) {
+
+        const ltv = 0.8;
+        const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
+        const poolData = await provider.getReservesHumanized({
+          lendingPoolAddressProvider: POOL,
+        });
+        const borrowReserve = poolData.reservesData.find(
+          (r) => r.symbol === borrowToken.name || r.id === borrowToken.asset_id.toString(),
+        );
+        const borrowApy = borrowReserve?.variableBorrowRate
+          ? (parseFloat(borrowReserve.variableBorrowRate) * 100) / 1e27
+          : 0;
+        return {
+          operation_type: OperationType.BORROW,
+          token_in_id: collateralTokenId,
+          token_out_id: borrowTokenId,
+          amount_in: collateralAmount,
+          amount_out: Number(maxBorrowAmount.toFixed(6)),
+          borrow_apy: Number(borrowApy.toFixed(2)),
+          ltv: ltv * 100,
+        };
+      }
+
       const poolData = await provider.getReservesHumanized({
         lendingPoolAddressProvider: POOL,
       });
@@ -279,19 +315,13 @@ export class DefiPairsService {
         throw new Error(`No lending pool found for borrow token ${borrowToken.name}`);
       }
 
-      const ltv = parseFloat(collateralReserve.baseLTVasCollateral) / 10000;
-      const borrowApy = (parseFloat(borrowReserve.variableBorrowRate) * 100) / 1e27;
+      const ltv = collateralReserve?.baseLTVasCollateral
+        ? parseFloat(collateralReserve.baseLTVasCollateral) / 10000
+        : 0.8;
 
-      let spotPrice = 1;
-      if (collateralTokenId === borrowTokenId) {
-        spotPrice = 1;
-      }
-      else {
-        spotPrice = await this.hydrationStrategyService.getAssetPrice(
-          collateralToken.asset_id.toString(),
-          borrowToken.asset_id.toString(),
-        );
-      }
+      const borrowApy = borrowReserve?.variableBorrowRate
+        ? (parseFloat(borrowReserve.variableBorrowRate) * 100) / 1e27
+        : 0;
 
       console.log("Step Borrow: ", ltv, borrowApy, spotPrice);
       const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
