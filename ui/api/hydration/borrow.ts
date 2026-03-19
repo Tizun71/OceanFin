@@ -33,6 +33,7 @@ export async function borrow(assetBorrow: string, amountBorrow: string, userAddr
             gasPrice,
             gasPrice,
             null,
+            [],
             []
         )
 
