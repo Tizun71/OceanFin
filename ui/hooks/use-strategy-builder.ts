@@ -223,42 +223,45 @@ export function useDefiBuilder() {
   /*
    * SAVE CONFIG
    */
+  
   const saveConfig = useCallback(
     async (payload: SaveConfigPayload) => {
       const currentNode = nodes.find((node) => node.id === payload.nodeId);
+      const action = currentNode?.data?.action;
       const actionName =
         payload.operationType ||
-        currentNode?.data?.action?.name?.toUpperCase?.() ||
+        action?.name?.toUpperCase?.() ||
         "SWAP";
 
       try {
         const finalEstimate = payload.estimate ?? null;
 
-        const normalizedAmountOut = getEstimateAmountOut(
-          finalEstimate,
-          payload.amount,
-        );
+        const rawTokenOutId = getEstimateOutputAssetId(finalEstimate, payload);
 
-        const normalizedTokenOutId =
-          actionName === "SWAP"
-            ? payload.tokenOutId || getEstimateOutputAssetId(finalEstimate, payload)
-            : getEstimateOutputAssetId(finalEstimate, payload);
+        let finalTokenInAssetId = payload.tokenInId;
+        let finalTokenOutAssetId = rawTokenOutId;
 
-        const normalizedTokenOutSymbol =
-          actionName === "SWAP"
-            ? payload.tokenOutSymbol ||
-              getEstimateOutputSymbol(finalEstimate, payload)
-            : getEstimateOutputSymbol(finalEstimate, payload);
+        if (action?.defi_pairs) {
+          
+          const pairForIn = action.defi_pairs.find(
+            (p: any) => p.token_in.id === payload.tokenInId
+          );
+          if (pairForIn) finalTokenInAssetId = pairForIn.token_in.asset_id;
+
+          const pairForOut = action.defi_pairs.find(
+            (p: any) => p.token_out.id === rawTokenOutId
+          );
+          if (pairForOut) finalTokenOutAssetId = pairForOut.token_out.asset_id;
+        }
 
         const finalConfig = {
           ...payload,
+          tokenInId: finalTokenInAssetId,    
+          tokenOutId: finalTokenOutAssetId,  
           operationType: actionName,
           estimate: finalEstimate,
-
-          // normalized chain output for next node
-          amountOut: normalizedAmountOut,
-          tokenOutId: normalizedTokenOutId,
-          tokenOutSymbol: normalizedTokenOutSymbol,
+          amountOut: getEstimateAmountOut(finalEstimate, payload.amount),
+          tokenOutSymbol: getEstimateOutputSymbol(finalEstimate, payload),
         };
 
         setNodes((nds) =>
@@ -272,8 +275,8 @@ export function useDefiBuilder() {
                     estimate: finalEstimate,
                   },
                 }
-              : node,
-          ),
+              : node
+          )
         );
 
         setSelectedNode((prev: any) =>
@@ -286,7 +289,7 @@ export function useDefiBuilder() {
                   estimate: finalEstimate,
                 },
               }
-            : prev,
+            : prev
         );
 
         displayToast("success", "Configuration saved successfully.");
@@ -295,8 +298,9 @@ export function useDefiBuilder() {
         displayToast("error", "Failed to save configuration.");
       }
     },
-    [nodes, setNodes],
+    [nodes, setNodes]
   );
+  
 
   /*
    * CREATE STRATEGY
