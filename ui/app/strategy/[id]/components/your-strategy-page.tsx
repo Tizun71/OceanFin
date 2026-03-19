@@ -65,7 +65,7 @@ export default function StrategyTable() {
      {/* --- HEADER --- */}
       <div className="flex items-center justify-between px-1">
         <div className="flex flex-col items-start gap-1">
-          <h1 className="text-2xl font-bold text-primary flex items-center gap-2 tracking-tight ocean-glow">
+          <h1 className="text-2xl font-bold text-primary flex items-center gap-2 tracking-tight drop-shadow-[0_0_15px_rgba(0,255,255,0.3)]">
             <Target className="w-6 h-6 text-primary" />
             Strategy Hub
           </h1>
@@ -138,7 +138,6 @@ export default function StrategyTable() {
                         </div>
                       </td>
 
-                      {/* WORKFLOW & FLOW */}
                       <td className="px-4 py-5 align-top">
                         <div className="flex flex-col gap-4">
                           {strategy.defi_strategy_versions?.[0]?.workflow_json?.steps && (() => {
@@ -148,11 +147,11 @@ export default function StrategyTable() {
 
                             return (
                               <>
-                                {/* Workflow Capsules */}
+                                {/*  Workflow Capsules  */}
                                 <div className="flex items-center flex-wrap gap-1.5 min-h-[24px]">
                                   {visibleSteps.map((s: any, index: number) => (
                                     <div key={index} className="flex items-center gap-1.5">
-                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/5 border border-accent/10 text-accent-light uppercase">
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/5 border border-accent/10 text-accent-light uppercase tracking-tight">
                                         {s.type}
                                       </span>
                                       {index < visibleSteps.length - 1 && (
@@ -164,34 +163,64 @@ export default function StrategyTable() {
                                   {steps.length > 3 && (
                                     <button
                                       onClick={() => setExpandedStrategy(isExpanded ? null : strategy.id)}
-                                      className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all transform"
+                                      className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
                                     >
                                       {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
                                     </button>
                                   )}
                                 </div>
 
-                                {/* Token Flow: Path Style */}
-                                <div className="flex items-center flex-wrap gap-y-1.5 gap-x-1 p-2 rounded-lg bg-white/[0.02] border border-white/5 w-fit max-w-full">
+                                {/* Token Flow */}
+                                <div className="flex items-center flex-wrap gap-y-2 gap-x-1.5 p-2.5 rounded-xl bg-white/[0.03] border border-white/10 w-fit max-w-full">
                                   {(() => {
                                     const sequence = [
                                       ...steps.map((s: any) => s?.tokenIn?.symbol).filter(Boolean),
                                       steps.at(-1)?.tokenOut?.symbol
                                     ].filter(Boolean);
 
-                                    return sequence.map((symbol, idx) => (
-                                      <div key={idx} className="flex items-center gap-1">
-                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border transition-all ${
-                                          idx === 0 || idx === sequence.length - 1 
-                                          ? "bg-secondary/10 border-secondary-light/20 text-secondary-light shadow-sm" 
-                                          : "bg-white/5 border-white/10 text-neutral-500"
-                                        }`}>
-                                          {symbol}
-                                        </span>
-                                        {idx < sequence.length - 1 && (
-                                          <div className="flex items-center opacity-20">
-                                              <div className="w-1.5 h-[1px] bg-neutral-400" />
-                                              <span className="text-[7px] text-neutral-400">▶</span>
+                                    const uniqueSequence = sequence.filter((sym, i) => sym !== sequence[i - 1]);
+
+                                    return uniqueSequence.map((symbol, idx) => (
+                                      <div key={idx} className="flex items-center gap-1.5">
+                                        {/* Token Badge */}
+                                        <div className="flex items-center gap-1.5 bg-neutral-900/50 pl-0.5 pr-2 py-0.5 rounded-full border border-white/20 shadow-inner group/token">
+                                          <div className="w-5 h-5 rounded-full overflow-hidden border border-white/40 bg-black flex-shrink-0">
+                                            {assetIcons[symbol] ? (
+                                              <Image 
+                                                src={assetIcons[symbol]} 
+                                                alt={symbol} 
+                                                width={20} 
+                                                height={20} 
+                                                className="object-cover"
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center text-[6px] font-black text-white">
+                                                {symbol?.slice(0, 2)}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <span className="text-[9px] font-bold text-white/90 uppercase tracking-tight">
+                                            {symbol}
+                                          </span>
+                                        </div>
+
+                                        {/* Arrow Connector */}
+                                        {idx < uniqueSequence.length - 1 && (
+                                          <div className="flex items-center px-0.5">
+                                            <div className="w-2.5 h-[1.5px] bg-primary/40 rounded-full" />
+                                            <svg 
+                                              width="12" 
+                                              height="12" 
+                                              viewBox="0 0 24 24" 
+                                              fill="none" 
+                                              className="text-primary/70 ml-[-4px]" 
+                                              stroke="currentColor" 
+                                              strokeWidth="4" 
+                                              strokeLinecap="round" 
+                                              strokeLinejoin="round"
+                                            >
+                                              <path d="m9 18 6-6-6-6"/>
+                                            </svg>
                                           </div>
                                         )}
                                       </div>
@@ -206,20 +235,28 @@ export default function StrategyTable() {
 
                       {/* ASSETS ICONS */}
                       <td className="px-4 py-5 align-top">
-                        <div className="flex items-center justify-center -space-x-2 group-hover:space-x-0.5 transition-all">
+                        <div className="flex items-center justify-center -space-x-2 group-hover:space-x-1 transition-all duration-500">
                           {tokens.map((symbol, i) => (
                             <div
-                              key={i}
-                              className="w-8 h-8 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg"
-                              style={{ zIndex: 10 - i }}
-                              title={symbol}
-                            >
-                              {assetIcons[symbol] ? (
-                                <Image src={assetIcons[symbol]} alt={symbol} width={24} height={24} className="object-cover" />
-                              ) : (
-                                <span className="text-[8px] font-black text-muted">{symbol}</span>
-                              )}
-                            </div>
+                            key={i}
+                            className="w-5 h-5 rounded-full border border-white/80 flex items-center justify-center overflow-hidden shadow-[0_0_10px_rgba(255,255,255,0.15)] hover:scale-110 hover:z-50 transition-transform relative"
+                            style={{ zIndex: 10 - i }}
+                            title={symbol}
+                          >
+                            {assetIcons[symbol] ? (
+                              <Image 
+                                src={assetIcons[symbol]} 
+                                alt={symbol} 
+                                fill 
+                                sizes="20px"
+                                className="object-cover scale-110" 
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-neutral-900">
+                                <span className="text-[7px] font-black text-white">{symbol}</span>
+                              </div>
+                            )}
+                          </div>
                           ))}
                         </div>
                       </td>
