@@ -1,9 +1,11 @@
 export default function ProtocolIcon() {
   return (
-    <img
-      src="/chain-icon/hydration.png"
-      alt="Hydration"
-      className="w-5 h-5 rounded-full object-cover shrink-0"
-    />
+    <div className="w-6 h-6 relative rounded-full border border-white/10 bg-neutral-900 overflow-hidden shrink-0">
+      <img
+        src="/chain-icon/hydration.png"
+        alt="Hydration"
+        className="w-full h-full object-cover scale-110"
+      />
+    </div>
   );
 }

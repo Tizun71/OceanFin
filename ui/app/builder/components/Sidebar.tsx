@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { Action, Module } from "@/types/defi";
 
@@ -13,6 +13,13 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
   const [openModules, setOpenModules] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    if (modules && modules.length > 0) {
+      const allModuleIds = modules.map((m) => m.id);
+      setOpenModules(allModuleIds);
+    }
+  }, [modules]);
+  
   const toggleModule = (id: string) => {
     setOpenModules((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
