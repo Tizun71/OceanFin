@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import {
   estimateDefiOperation,
@@ -66,6 +66,10 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState("");
+  const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Use ref to track if we've already fetched for this action ID
+  const fetchedActionIdRef = useRef<string | null>(null);
 
   const edges = useEdges();
   const incomingEdge = edges.find((e) => e.target === node.id);
@@ -92,17 +96,21 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
   const requiresTokenOut = isSwap || isBorrow || isJoinStrategy;
 
   /**
-   * Fetch required action data
+   * Fetch required action data (only once per action ID)
    */
   useEffect(() => {
     const actionId = node?.data?.action?.id;
     if (!actionId) return;
+    
+    // Skip if already fetched this action ID
+    if (fetchedActionIdRef.current === actionId) return;
 
     const fetchRequired = async () => {
       try {
         setPairsLoading(true);
         const res = await getRequiredActionData(actionId);
         setRequiredData(Array.isArray(res) ? res : []);
+        fetchedActionIdRef.current = actionId; // Mark as fetched
       } catch (err) {
         console.error("Failed to fetch required action data:", err);
         setRequiredData([]);
@@ -207,6 +215,9 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
 
       setAmount(config?.amount?.toString?.() || "");
       setEstimate(config?.estimate || null);
+      
+      // Mark initialization complete after restoring config
+      setTimeout(() => setIsInitializing(false), 100);
       return;
     }
 
@@ -240,6 +251,8 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           setAmount(String(prevOutputAmount));
         }
 
+        // Mark initialization complete after autofill
+        setTimeout(() => setIsInitializing(false), 100);
         return;
       }
     }
@@ -256,6 +269,9 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
     } else {
       setTokenOut("");
     }
+
+    // Mark initialization complete after setting defaults
+    setTimeout(() => setIsInitializing(false), 100);
   }, [pairs, node?.data?.config, prevConfig, requiresTokenOut]);
 
   /**
@@ -348,9 +364,14 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
   };
 
   /**
-   * Auto estimate when enough data
+   * Auto estimate when enough data (with debounce and initialization check)
    */
   useEffect(() => {
+    // Skip if still initializing
+    if (isInitializing) {
+      return;
+    }
+
     if (!amount || Number(amount) <= 0 || !tokenIn) {
       setEstimate(null);
       return;
@@ -361,9 +382,36 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
       return;
     }
 
-    handleEstimate();
+    // Debounce: wait 500ms after user stops typing
+    const timeoutId = setTimeout(async () => {
+      try {
+        setEstimating(true);
+
+        const payload: EstimateDefiOperationPayload = {
+          operation_type: resolvedType,
+          token_in_id: tokenIn,
+          amount_in: Number(amount),
+          module_id: node?.data?.module?.id,
+          action_id: node?.data?.action?.id,
+        };
+
+        if (requiresTokenOut && tokenOut) {
+          payload.token_out_id = tokenOut;
+        }
+
+        const res = await estimateDefiOperation(payload);
+        setEstimate(res);
+      } catch (err) {
+        console.error("CONFIG PANEL ESTIMATE ERROR:", err);
+        setEstimate(null);
+      } finally {
+        setEstimating(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
     
-  }, [amount, tokenIn, tokenOut, resolvedType, requiresTokenOut]);
+  }, [amount, tokenIn, tokenOut, resolvedType, requiresTokenOut, isInitializing, node?.data?.module?.id, node?.data?.action?.id]);
 
   const handleSubmit = async () => {
     if (!isValid) return;
