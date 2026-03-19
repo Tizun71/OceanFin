@@ -39,6 +39,32 @@ export async function borrow(assetBorrow: string, amountBorrow: string, userAddr
         return evmTx;
     }
 
+    if (assetBorrow.toString() === ASSET_ID.USDC) {
+
+        const builtTx = await buildBorrowTx({
+            amount: parseUnits(amountBorrow, 6).toString(),
+            reserve: '0x0000000000000000000000000000000100000016',
+            interestRateMode: InterestRate.Variable,
+        }, userAddress);
+
+        const gasPrice = await getGasPrice();
+
+        const evmTx = api.tx.evm.call(
+            H160.fromAny(userAddress),
+            builtTx.to as string,
+            builtTx.data as string,
+            '0',
+            Number(builtTx.gasLimit),
+            gasPrice,
+            gasPrice,
+            null,
+            [],
+            []
+        )
+
+        return evmTx;
+    }
+
     throw new Error(`Borrow ${assetBorrow} not supported`);
 }
 

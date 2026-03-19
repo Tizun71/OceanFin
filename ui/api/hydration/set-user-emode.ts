@@ -25,15 +25,16 @@ export async function setUserEmode(categoryId: number, userAddress: string) {
     const gasPrice = await getGasPrice();
 
     const evmTx = api.tx.evm.call(
-        H160.fromAny(userAddress),
-        builtTx.to as string,
-        builtTx.data as string,
-        '0',
-        1200000,
-        gasPrice,
-        gasPrice,
-        null,
-        []
+        H160.fromAny(userAddress),        // source
+        builtTx.to as string,             // target
+        builtTx.data as string,           // input
+        '0x0',                            // value 
+        1200000,                          // gas_limit
+        gasPrice,                         // max_fee_per_gas
+        gasPrice,                         // max_priority_fee_per_gas
+        null,                             // nonce (Option<U256>)
+        [],                               // access_list Vec<(H160, Vec<H256>)>
+        []                                // authorization_list Vec<EthereumTransactionEip7702AuthorizationListItem>
     )
 
     return evmTx;

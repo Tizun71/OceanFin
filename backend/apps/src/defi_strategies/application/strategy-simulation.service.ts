@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
 import { DefiStrategiesRepository } from '../domain/defi_strategies.repository';
 import {
   SimulationContext,
@@ -8,13 +7,10 @@ import {
   SimulationStepResult,
 } from '../domain/simulation-engine.interface';
 import { SwapSimulator } from './simulators/swap-simulator';
-import { BridgeSimulator } from './simulators/bridge-simulator';
-import { StakeSimulator } from './simulators/stake-simulator';
 import { JoinStrategySimulator } from './simulators/join-strategy-simulator';
 import { BorrowSimulator } from './simulators/borrow-simulator';
 import { SupplySimulator } from './simulators/supply-simulator';
 import { EnableEModeSimulator } from './simulators/enable-e-mode-simulator';
-import { EnableBorrowingSimulator } from './simulators/enable-borrowing-simulator';
 import { SimulationResultDto } from '../interfaces/dtos/simulation-result.dto';
 import { DefiStrategyVersionService } from './defi_strategy_version.service';
 
@@ -26,24 +22,17 @@ export class StrategySimulationService implements SimulationEngine {
     private readonly strategiesRepository: DefiStrategiesRepository,
     private readonly strategyVersionService: DefiStrategyVersionService,
     private readonly swapSimulator: SwapSimulator,
-    private readonly bridgeSimulator: BridgeSimulator,
-    private readonly stakeSimulator: StakeSimulator,
     private readonly joinStrategySimulator: JoinStrategySimulator,
     private readonly borrowSimulator: BorrowSimulator,
     private readonly supplySimulator: SupplySimulator,
     private readonly enableEModeSimulator: EnableEModeSimulator,
-    private readonly enableBorrowingSimulator: EnableBorrowingSimulator,
   ) {
     this.simulators = new Map([
       ['SWAP', this.swapSimulator],
-      ['BRIDGE', this.bridgeSimulator],
-      ['STAKE', this.stakeSimulator],
-      ['UNSTAKE', this.stakeSimulator],
       ['JOIN_STRATEGY', this.joinStrategySimulator],
       ['BORROW', this.borrowSimulator],
       ['SUPPLY', this.supplySimulator],
       ['ENABLE_E_MODE', this.enableEModeSimulator],
-      ['ENABLE_BORROWING', this.enableBorrowingSimulator],
     ]);
   }
 
