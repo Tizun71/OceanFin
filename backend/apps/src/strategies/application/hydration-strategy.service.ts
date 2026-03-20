@@ -9,6 +9,8 @@ export class HydrationStrategyService {
   async getAssetPrice(assetInId: string, assetOutId: string): Promise<number> {
     if (!assetInId || !assetOutId) throw new Error('assetInId and assetOutId are required');
     try {
+      if (assetInId === assetOutId) return 1;
+
       const { sdk } = await this.hydrationSdk.getApiAndSdk();
       const data = await sdk.api.router.getBestSpotPrice(assetInId.toString(), assetOutId.toString());
       if (!data || !data.amount || data.decimals === undefined) {
