@@ -173,10 +173,10 @@ export function ExecutionModal({
       displayToast("error", `Failed to sync activity progress: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
-
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const executeStep = async (stepIndex: number, step: StrategyStep) => {
     updateStepStatus(stepIndex, "processing")
-
+    await sleep(3000);
     const tx = await buildStepTx(step, walletAddress!)
     
     if (!tx) {

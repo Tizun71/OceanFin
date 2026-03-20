@@ -9,17 +9,51 @@ import { getGasPrice } from "./get-gas-price";
 
 export async function borrow(assetBorrow: string, amountBorrow: string, userAddress: string) {
     const { api, sdk } = await getHydrationSDK();
+    assetBorrow = assetBorrow.toString();
     if (assetBorrow === ASSET_ID.DOT) {
-        const poolReverse = await getPoolData(ASSET_SYMBOL.DOT);
-        if (!poolReverse) {
-            throw new Error(`Pool reverse for address ${assetBorrow} not found`);
+        console.log('Borrow Dot')
+        try {
+            const poolReverse = await getPoolData(ASSET_SYMBOL.DOT);
+            if (!poolReverse) {
+                throw new Error(`Pool reverse for address ${assetBorrow} not found`);
+            }
+
+            const builtTx = await buildBorrowTx({
+                amount: parseUnits(amountBorrow, poolReverse.decimals).toString(),
+                reserve: '0x0000000000000000000000000000000100000005',
+                interestRateMode: InterestRate.Variable,
+                debtTokenAddress: poolReverse.variableDebtTokenAddress,
+            }, userAddress);
+
+            const gasPrice = await getGasPrice();
+
+            const evmTx = api.tx.evm.call(
+                H160.fromAny(userAddress),
+                builtTx.to as string,
+                builtTx.data as string,
+                '0',
+                Number(builtTx.gasLimit),
+                gasPrice,
+                gasPrice,
+                null,
+                [],
+                []
+            )
+
+            return evmTx;
         }
+        catch (error) {
+            console.error(`Error building borrow transaction for ${assetBorrow}:`, error);
+            throw new Error(`Failed to build borrow transaction for ${assetBorrow}`);
+        }
+    }
+
+    if (assetBorrow.toString() === ASSET_ID.USDC) {
 
         const builtTx = await buildBorrowTx({
-            amount: parseUnits(amountBorrow, poolReverse.decimals).toString(),
-            reserve: poolReverse.underlyingAsset,
+            amount: parseUnits(amountBorrow, 6).toString(),
+            reserve: '0x0000000000000000000000000000000100000016',
             interestRateMode: InterestRate.Variable,
-            debtTokenAddress: poolReverse.variableDebtTokenAddress,
         }, userAddress);
 
         const gasPrice = await getGasPrice();
@@ -33,17 +67,18 @@ export async function borrow(assetBorrow: string, amountBorrow: string, userAddr
             gasPrice,
             gasPrice,
             null,
+            [],
             []
         )
 
         return evmTx;
     }
 
-    if (assetBorrow.toString() === ASSET_ID.USDC) {
+    if (assetBorrow.toString() === ASSET_ID.USDT) {
 
         const builtTx = await buildBorrowTx({
             amount: parseUnits(amountBorrow, 6).toString(),
-            reserve: '0x0000000000000000000000000000000100000016',
+            reserve: '0x000000000000000000000000000000010000000A',
             interestRateMode: InterestRate.Variable,
         }, userAddress);
 
