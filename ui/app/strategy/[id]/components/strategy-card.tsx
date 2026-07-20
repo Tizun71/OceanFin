@@ -3,12 +3,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { agentIcons, assetIcons, chainIcons } from "@/lib/iconMap";
 import Image from "next/image";
 import { CheckCircle2, CircleOff } from "lucide-react";
-import { usePreloader } from "@/providers/preloader-provider";
-import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
 
 interface Strategy {
   id: string;
@@ -36,33 +32,71 @@ const safeGet = (obj: Record<string, string>, key: string) =>
   obj[key.toLowerCase()] ||
   "/icons/default.png";
 
-export function StrategyCard({ strategy }: StrategyCardProps) {
-  // const isActive = strategy.status === "Active";
-  const isActive = "Active";
-  const router = useRouter();
-  const handleClick = () => {
-    router.push(`/strategy/${strategy.id}`);
-  };
+/** Icon row for assets / agents / chains. Extracted because the three groups
+ *  were identical markup repeated with only the tint token changed. */
+function IconGroup({
+  label,
+  items,
+  tint,
+  max = 2,
+}: {
+  label: string
+  items: string[]
+  tint: string
+  max?: number
+}) {
+  if (!items?.length) return null
+  const overflow = items.length - max
+
   return (
+    <div className="flex items-center gap-2 min-w-0">
+      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        {label}
+      </p>
+      <div className="flex -space-x-1.5">
+        {items.slice(0, max).map((src, idx) => (
+          <div
+            key={`${src}-${idx}`}
+            className={`relative w-7 h-7 rounded-full border ${tint} overflow-hidden bg-white/95 ring-2 ring-background`}
+          >
+            <Image src={src} alt="" aria-hidden fill className="object-cover p-0.5" sizes="28px" />
+          </div>
+        ))}
+        {overflow > 0 && (
+          <div className="w-7 h-7 rounded-full bg-surface-3 text-foreground border border-border-strong ring-2 ring-background flex items-center justify-center text-[10px] font-semibold">
+            +{overflow}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
-    <Card
-      className="group p-4 cursor-default hover:-translate-y-1"
+export function StrategyCard({ strategy }: StrategyCardProps) {
+  const isActive = strategy.status !== "Inactive"
+
+  return (
+    // The whole card is the link. Previously only the small "Try Now" button
+    // navigated, so the card hover-lifted while declaring `cursor-default` and
+    // was unreachable by keyboard except through that one button.
+    <Link
+      href={`/strategy/${strategy.id}`}
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      aria-label={`${strategy.title} by ${strategy.strategistName}, ${strategy.apy.toFixed(2)}% APY`}
     >
-      {/* Hover Glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl" />
+      <Card interactive className="p-4 gap-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col md:flex-row gap-3">
-        <div className="grid grid-cols-4 gap-3">
-          {/* Left Section - Main Info */}
-          <div className="flex-1 min-w-0 col-span-3">
-            {/* Tags and Status */}
-            <div className="flex items-start justify-between mb-3">
+        {/* Stacks on mobile; the old grid-cols-4 held 4 columns at every width. */}
+        <div className="relative z-10 flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2 mb-3">
               <div className="flex gap-1.5 flex-wrap">
                 {strategy.tags.map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="bg-accent/15 text-accent text-xs font-semibold border border-accent/30 rounded-md px-2 py-0.5 shadow-sm"
+                    className="bg-accent/15 text-accent-light text-xs font-semibold border border-accent/30 rounded-md px-2 py-0.5"
                   >
                     {tag}
                   </Badge>
@@ -70,126 +104,64 @@ export function StrategyCard({ strategy }: StrategyCardProps) {
               </div>
 
               <div
-                className={`flex items-center gap-0.5 text-[10px] font-medium px-2 py-0.5 rounded-full ml-1.5 flex-shrink-0
-                ${isActive
-                    ? "bg-green-500/10 text-green-500 border border-green-500/30"
-                    : "bg-destructive/10 text-destructive border border-destructive/30"
-                  }
-              `}
+                className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 border ${
+                  isActive
+                    ? "bg-success/10 text-success border-success/30"
+                    : "bg-destructive/10 text-destructive border-destructive/30"
+                }`}
               >
                 {isActive ? (
-                  <CheckCircle2 className="w-2.5 h-2.5" />
+                  <CheckCircle2 className="w-3 h-3" aria-hidden />
                 ) : (
-                  <CircleOff className="w-2.5 h-2.5" />
+                  <CircleOff className="w-3 h-3" aria-hidden />
                 )}
                 {isActive ? "Active" : "Inactive"}
               </div>
             </div>
 
-            {/* Strategist and Title */}
-            <div className="mb-3">
-              <h3 className="text-lg font-black text-foreground group-hover:text-accent transition-colors leading-tight mb-2 tracking-tight">
+            <div className="mb-4">
+              {/* font-black at 18px on a display face is heavier than the page
+                  ever needs; semibold keeps the title dominant without shouting. */}
+              <h3 className="text-lg font-semibold text-foreground group-hover:text-accent-light transition-colors leading-snug mb-1 tracking-tight">
                 {strategy.title}
               </h3>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-bold text-foreground">
-                  {strategy.strategistName}
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground/80 font-medium">{strategy.strategistHandle}</p>
-
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground/90">{strategy.strategistName}</span>
+                {strategy.strategistHandle ? ` · ${strategy.strategistHandle}` : null}
+              </p>
             </div>
 
-            {/* Assets / Agents / Chains - Horizontal */}
-            <div className="flex items-center gap-5 pt-3 border-t border-accent/15">
-              {/* Asset */}
-              <div className="flex items-center gap-2 group/item">
-                <p className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Asset</p>
-                <div className="flex gap-1.5">
-                  {strategy.assets.slice(0, 2).map((asset, idx) => (
-                    <div
-                      key={`${asset}-${idx}`}
-                      className="relative w-7 h-7 rounded-full border border-accent/30 overflow-hidden shadow-sm hover:scale-110 hover:border-accent/60 transition-all duration-200 bg-white cursor-help"
-                      title={asset}
-                    >
-                      <Image
-                        src={asset}
-                        alt={asset}
-                        fill
-                        className="object-cover p-0.5"
-                      />
-                    </div>
-                  ))}
-                  {strategy.assets.length > 2 && (
-                    <div className="w-7 h-7 rounded-full bg-accent/15 text-accent border border-accent/30 flex items-center justify-center text-[10px] font-bold shadow-sm hover:scale-110 transition-transform duration-200 cursor-help">
-                      +{strategy.assets.length - 2}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Agent */}
-              <div className="flex items-center gap-2 group/item">
-                <p className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Agent</p>
-                <div className="flex gap-1.5">
-                  {strategy.agents.slice(0, 2).map((agent, idx) => (
-                    <div
-                      key={`${agent}-${idx}`}
-                      className="relative w-7 h-7 rounded-full border border-secondary/30 overflow-hidden shadow-sm hover:scale-110 hover:border-secondary/60 transition-all duration-200 bg-white cursor-help"
-                      title={agent}
-                    >
-                      <Image
-                        src={agent}
-                        alt={agent}
-                        fill
-                        className="object-cover p-0.5"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Chain */}
-              <div className="flex items-center gap-2 group/item">
-                <p className="text-xs font-bold text-foreground/70 uppercase tracking-wide">Chain</p>
-                <div className="flex gap-1.5">
-                  {strategy.chains.slice(0, 2).map((chain, idx) => (
-                    <div
-                      key={`${chain}-${idx}`}
-                      className="relative w-7 h-7 rounded-full border border-tertiary/30 overflow-hidden shadow-sm hover:scale-110 hover:border-tertiary/60 transition-all duration-200 bg-white cursor-help"
-                      title={chain}
-                    >
-                      <Image
-                        src={chain}
-                        alt={chain}
-                        fill
-                        className="object-cover p-0.5"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="flex items-center gap-x-5 gap-y-2 flex-wrap pt-3 border-t border-border">
+              <IconGroup label="Asset" items={strategy.assets} tint="border-accent/30" />
+              <IconGroup label="Agent" items={strategy.agents} tint="border-secondary/40" />
+              <IconGroup label="Chain" items={strategy.chains} tint="border-tertiary/40" />
             </div>
           </div>
 
-          {/* Right Section - APY and CTA */}
-          <div className="flex md:flex-col items-center md:items-end justify-between md:justify-start text-right flex-shrink-0 md:min-w-[120px] md:border-l border-accent/10 md:pl-4 gap-3">
-            <div className="flex-1">
-              <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wide font-semibold">APY</p>
-              <p className="text-3xl md:text-4xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent whitespace-nowrap leading-none" style={{ fontFamily: 'var(--font-display, inherit)' }}>
+          <div className="flex sm:flex-col items-center sm:items-end justify-between text-right flex-shrink-0 sm:min-w-[128px] sm:border-l border-border sm:pl-4 gap-3">
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-1 uppercase tracking-wider font-semibold">
+                APY
+              </p>
+              {/* Gradient clip-text was rendering the single most important
+                  number at roughly 3:1 against the card. Solid accent reads
+                  cleanly and stays legible if the gradient fails to paint. */}
+              <p
+                data-numeric
+                className="font-display text-3xl md:text-4xl font-bold text-accent-light whitespace-nowrap leading-none"
+              >
                 {strategy.apy.toFixed(2)}%
               </p>
             </div>
-            <button
-              onClick={handleClick}
-              className="px-4 py-2 bg-primary hover:bg-accent-light text-primary-foreground text-sm font-semibold rounded-lg transition-all duration-300 hover:shadow-lg hover:scale-105 group/btn flex items-center gap-2 whitespace-nowrap cursor-pointer"
-            >
-              Try Now
-              <span className="inline-block group-hover/btn:translate-x-1 transition-transform">→</span>
-            </button>
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-light whitespace-nowrap">
+              Try now
+              <span aria-hidden className="inline-block transition-transform duration-200 group-hover:translate-x-1">
+                →
+              </span>
+            </span>
           </div>
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    </Link>
+  )
 }

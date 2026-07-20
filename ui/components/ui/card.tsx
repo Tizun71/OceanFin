@@ -2,12 +2,25 @@ import * as React from 'react'
 
 import { cn } from '@/lib/utils'
 
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
+function Card({
+  className,
+  interactive = false,
+  ...props
+}: React.ComponentProps<'div'> & { interactive?: boolean }) {
   return (
     <div
       data-slot="card"
       className={cn(
-        'relative overflow-hidden backdrop-blur-xl bg-gradient-to-br from-card/80 via-card/60 to-card/40 text-card-foreground flex flex-col gap-6 rounded-xl border border-border py-6 shadow-lg shadow-black/20 transition-all duration-300 hover:border-accent/50 hover:shadow-xl hover:shadow-accent/20 hover:scale-[1.02]',
+        'relative overflow-hidden backdrop-blur-xl bg-card text-card-foreground',
+        'flex flex-col gap-6 rounded-xl border border-border py-6 shadow-md',
+        // Inner hairline: gives the glass surface a lit top edge.
+        'before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/8',
+        'transition-[border-color,box-shadow,transform] duration-200 ease-out',
+        // Hover affordance is now opt-in. Applying it to every card implied all
+        // of them were clickable, and `scale(1.02)` resampled the text on each
+        // frame — visibly soft during the transition.
+        interactive &&
+          'cursor-pointer hover:border-accent/50 hover:shadow-lg hover:-translate-y-0.5 focus-within:border-accent/50',
         className,
       )}
       {...props}

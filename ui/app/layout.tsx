@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import LunoProvider from "@/providers/luno-provider";
 import Footer from "@/components/shared/footer";
 import { HeroSection } from "@/components/hero-section";
-import { BackgroundVideo } from "@/components/background-video";
+import { BackgroundAmbient } from "@/components/background-ambient";
 import { ToastProvider } from "@/providers/toast-provider";
 import { QueryProvider } from "@/providers/query-client-provider";
 import { EvmProvider } from "@/providers/evm-provider";
@@ -24,17 +24,20 @@ import { PreloaderProvider } from "@/providers/preloader-provider";
 import { Preloader } from "@/components/preloader";
 import "reactflow/dist/style.css"
 
+// 400/700 only forces every mid-weight to synthesise or round off, which flattens
+// hierarchy. 500 and 600 give real steps between body, label, and heading.
 const montserrat = Montserrat({
   subsets: ['latin'],
-  weight: ['400', '700'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-montserrat',
+  display: 'swap',
 });
-
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
+  display: 'swap',
 });
 
 // Get base URL for metadata
@@ -83,15 +86,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      {/* Both font variables must be on the tree for --font-sans to resolve;
+          previously only Montserrat was attached and Space Grotesk was dead
+          weight. The inline `fontFamily: monospace` that overrode both — and
+          rendered the entire product in the system mono face — is gone. */}
       <body
-        className={`min-h-screen font-sans ${montserrat.variable} relative overflow-x-hidden`}
-        style={{ fontFamily: "monospace" }}
+        className={`min-h-dvh font-sans antialiased ${spaceGrotesk.variable} ${montserrat.variable} relative overflow-x-hidden`}
       >
         <QueryProvider>
           <PreloaderProvider>
             <Preloader/>
-            <BackgroundVideo />
-            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-[1] pointer-events-none" />
+            {/* The ambient background is already tuned for contrast, so the two
+                scrims that used to sit on top of the video (a gradient plus a
+                70% flat wash) are gone — they existed only to make the footage
+                dark enough to read text against. */}
+            <BackgroundAmbient />
             <ToastProvider>
               <EvmProvider>
               {/* LunoProvider stays mounted: the papi execution path
@@ -101,14 +110,25 @@ export default function RootLayout({
                   <ActiveChainProvider>
                   <UserProvider>
                     <Suspense fallback={
-                      <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
-                        Loading...
+                      <div
+                        className="flex items-center justify-center min-h-dvh text-muted-foreground text-sm"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        Loading
                       </div>}
                     >
-                      <div className="fixed inset-0 bg-black/65 z-[2]" />
-                      <div className="min-h-screen flex flex-col relative z-10">
+                      <div className="min-h-dvh flex flex-col relative z-10">
+                        <a href="#main-content" className="skip-link">
+                          Skip to content
+                        </a>
                         <HeroSection />
-                        <main className="flex-1 pt-[30px] flex flex-col overflow-hidden">
+                        {/* pt clears the fixed header; was a magic 30px that let
+                            the header overlap page content on smaller screens. */}
+                        <main
+                          id="main-content"
+                          className="flex-1 flex flex-col pt-24 md:pt-28"
+                        >
                           {children}
                         </main>
                         <Footer />

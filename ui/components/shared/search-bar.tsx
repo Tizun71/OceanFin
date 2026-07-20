@@ -1,18 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, SlidersHorizontal, X } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu"
 
 interface SearchBarProps {
   searchQuery: string
@@ -71,98 +62,99 @@ export function SearchBar({
 
   const hasActiveFilters = searchQuery || selectedTags.length > 0 || statusFilter !== "All"
 
+  const statuses: Array<"All" | "Active" | "Inactive"> = ["All", "Active", "Inactive"]
+
   return (
-    <div className="space-y-4">
-      <div className="flex gap-3">
-        {/* Search input */}
+    <search className="space-y-3">
+      <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+            aria-hidden
+          />
+          <label htmlFor="strategy-search" className="sr-only">
+            Search strategies
+          </label>
           <Input
+            id="strategy-search"
+            type="search"
             placeholder="Search title, asset, agent or chain"
-            className="pl-10 bg-card border-border"
+            className="pl-10 pr-10"
             value={localSearchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
           />
+          {/* Clearing the query needed a trip to a separate button before. */}
+          {localSearchQuery && (
+            <button
+              type="button"
+              onClick={() => setLocalSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center size-6 rounded-md text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
+            >
+              <X className="w-3.5 h-3.5" aria-hidden />
+            </button>
+          )}
         </div>
 
-        {/* Tags filter dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 bg-card/50 border-border hover:bg-accent/10">
-              <SlidersHorizontal className="w-4 h-4" />
-              Filters
-              {selectedTags.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-primary text-primary-foreground"
-                >
-                  {selectedTags.length}
-                </Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Filter by Tags</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-
-            {availableTags.map((tag) => (
-              <DropdownMenuCheckboxItem
-                key={tag.value}
-                checked={selectedTags.includes(tag.value)}
-                onCheckedChange={() => toggleTag(tag.value)}
-              >
-                {tag.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-
-            {selectedTags.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => onTagsChange([])}
-                >
-                  Clear
-                </Button>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Clear all filters button */}
         {hasActiveFilters && (
-          <Button 
-            variant="default" 
-            size="sm"
-            onClick={clearAll}
-            className="gap-2 mt-0.5  hover:bg-destructive/10 hover:text-destructive border-border"
-          >
-            Clear
+          // Was `variant="default"` (solid accent) with destructive hover — a
+          // secondary action styled louder than the page's primary CTA.
+          <Button variant="ghost" onClick={clearAll} className="shrink-0">
+            Clear all
           </Button>
         )}
-       
       </div>
 
-      {/* Tags badges */}
-      <div className="flex gap-2 flex-wrap">
-        {availableTags.map((tag) => (
-          <Badge
-            key={tag.value}
-            variant="secondary"
-            onClick={() => toggleTag(tag.value)}
-            className={
-              selectedTags.includes(tag.value)
-                ? "bg-primary text-primary-foreground cursor-pointer"
-                : "bg-card/80 border border-border cursor-pointer"
-            }
-          >
-            {tag.label}
-          </Badge>
-        ))}
+      {/* Status segmented control. Was buried in props with no visible UI, so
+          the filter existed in state but users could never reach it. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div
+          role="group"
+          aria-label="Filter by status"
+          className="inline-flex items-center rounded-md border border-border bg-surface-1 p-0.5"
+        >
+          {statuses.map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => onStatusChange(status)}
+              aria-pressed={statusFilter === status}
+              className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${
+                statusFilter === status
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        {/* The dropdown duplicated this chip row exactly — same tags, same
+            toggle — so it was two controls and an extra click for one job.
+            Chips alone show state without opening anything. */}
+        <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Filter by tag">
+          {availableTags.map((tag) => {
+            const active = selectedTags.includes(tag.value)
+            return (
+              <button
+                key={tag.value}
+                type="button"
+                onClick={() => toggleTag(tag.value)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-accent/20 text-accent-light border-accent/50"
+                    : "bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-border-strong"
+                }`}
+              >
+                {tag.label}
+                {active && <X className="w-3 h-3" aria-hidden />}
+              </button>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </search>
   )
 }
