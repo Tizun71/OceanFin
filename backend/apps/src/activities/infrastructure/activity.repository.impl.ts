@@ -1,65 +1,51 @@
 import { Injectable } from '@nestjs/common';
 import { ActivityRepository } from '../domain/activity.repository';
 import { Activity, ActivityStatus } from '../domain/activity.entity';
-import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
+import { PostgresService } from 'src/shared/infrastructure/postgres.service';
 
 @Injectable()
 export class ActivityRepositoryImplement implements ActivityRepository {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly db: PostgresService) {}
 
   async findAll(): Promise<Activity[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('activities')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to fetch activities: ${error.message}`);
-    }
-
-    return (data || []).map((row) => this.mapRowToEntity(row));
+    const rows = await this.db.query(
+      'SELECT * FROM activities ORDER BY created_at DESC',
+    );
+    return rows.map((row) => this.mapRowToEntity(row));
   }
 
-  async findByFilter(filters: { strategyId?: string; userAddress?: string }): Promise<Activity[]> {
+  async findByFilter(filters: {
+    strategyId?: string;
+    userAddress?: string;
+  }): Promise<Activity[]> {
     try {
-      let query = this.supabase.getClient().from('activities').select('*');
+      const where: string[] = [];
+      const params: unknown[] = [];
       if (filters.strategyId) {
-        query = query.eq('strategy_id', filters.strategyId);
+        params.push(filters.strategyId);
+        where.push(`strategy_id = $${params.length}`);
       }
       if (filters.userAddress) {
-        query = query.eq('user_address', filters.userAddress);
+        params.push(filters.userAddress);
+        where.push(`user_address = $${params.length}`);
       }
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) {
-        console.warn(`No activities found with filters: ${JSON.stringify(filters)}, error: ${error.message}`);
-        return [];
-      }
-      if (!data || data.length === 0) {
-        return [];
-      }
-      return data.map((row) => this.mapRowToEntity(row));
+      const sql =
+        `SELECT * FROM activities` +
+        (where.length ? ` WHERE ${where.join(' AND ')}` : '') +
+        ` ORDER BY created_at DESC`;
+      const rows = await this.db.query(sql, params);
+      return rows.map((row) => this.mapRowToEntity(row));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.warn(`Error fetching activities with filters: ${JSON.stringify(filters)}`, errorMessage);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`Error fetching activities with filters: ${JSON.stringify(filters)}`, msg);
       return [];
     }
   }
 
   async findById(id: string): Promise<Activity | null> {
     try {
-      const { data, error } = await this.supabase
-        .getClient()
-        .from('activities')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error || !data) {
-        return null;
-      }
-
-      return this.mapRowToEntity(data);
+      const row = await this.db.queryOne('SELECT * FROM activities WHERE id = $1', [id]);
+      return row ? this.mapRowToEntity(row) : null;
     } catch (error) {
       console.warn(`Error fetching activity by id: ${id}`, error);
       return null;
@@ -78,69 +64,65 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     limit: number;
   }): Promise<{ data: Activity[]; total: number }> {
     try {
-      let query = this.supabase
-        .getClient()
-        .from('activities')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
+      const where: string[] = [];
+      const params: unknown[] = [];
       if (strategyId) {
-        query = query.eq('strategy_id', strategyId);
+        params.push(strategyId);
+        where.push(`strategy_id = $${params.length}`);
       }
-
       if (userAddress) {
-        query = query.eq('user_address', userAddress);
+        params.push(userAddress);
+        where.push(`user_address = $${params.length}`);
       }
+      const whereSql = where.length ? ` WHERE ${where.join(' AND ')}` : '';
 
-      const { data, count, error } = await query;
+      const countRow = await this.db.queryOne<{ count: string }>(
+        `SELECT COUNT(*)::int AS count FROM activities${whereSql}`,
+        params,
+      );
+      const total = countRow ? Number(countRow.count) : 0;
 
-      if (error) {
-        return { data: [], total: 0 };
-      }
+      const limitIdx = params.length + 1;
+      const offsetIdx = params.length + 2;
+      const rows = await this.db.query(
+        `SELECT * FROM activities${whereSql} ORDER BY created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+        [...params, limit, offset],
+      );
 
-      return {
-        data: (data ?? []).map((row) => this.mapRowToEntity(row)),
-        total: count ?? 0,
-      };
+      return { data: rows.map((row) => this.mapRowToEntity(row)), total };
     } catch {
       return { data: [], total: 0 };
     }
   }
 
   async save(activity: Activity): Promise<void> {
-    const payload: any = {
-      id: activity.id,
-      user_address: activity.userAddress,
-      strategy_id: activity.strategyId,
-      tx_hash: activity.txHash ?? [],
-      status: activity.status,
-      metadata: activity.metadata ?? null,
-      current_step: activity.currentStep ?? null,
-      total_steps: activity.totalSteps ?? null,
-      created_at: activity.createdAt ?? undefined,
-    };
-
-    const { error } = await this.supabase
-      .getClient()
-      .from('activities')
-      .upsert(payload);
-
-    if (error) {
-      throw new Error(`Failed to save activity: ${error.message}`);
-    }
+    await this.db.query(
+      `INSERT INTO activities
+         (id, user_address, strategy_id, tx_hash, status, metadata, current_step, total_steps, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, now()))
+       ON CONFLICT (id) DO UPDATE SET
+         user_address = EXCLUDED.user_address,
+         strategy_id = EXCLUDED.strategy_id,
+         tx_hash = EXCLUDED.tx_hash,
+         status = EXCLUDED.status,
+         metadata = EXCLUDED.metadata,
+         current_step = EXCLUDED.current_step,
+         total_steps = EXCLUDED.total_steps`,
+      [
+        activity.id,
+        activity.userAddress,
+        activity.strategyId,
+        activity.txHash ?? [],
+        activity.status,
+        activity.metadata == null ? null : JSON.stringify(activity.metadata),
+        activity.currentStep ?? null,
+        activity.totalSteps ?? null,
+        activity.createdAt ?? null,
+      ],
+    );
   }
 
   private mapRowToEntity(row: any): Activity {
-    let txHash: string | null = null;
-    if (row.tx_hash) {
-      if (Array.isArray(row.tx_hash)) {
-        txHash = row.tx_hash.join('');
-      } else if (typeof row.tx_hash === 'string') {
-        txHash = row.tx_hash;
-      }
-    }
-
     return new Activity(
       row.id,
       row.user_address,
@@ -154,4 +136,3 @@ export class ActivityRepositoryImplement implements ActivityRepository {
     );
   }
 }
-

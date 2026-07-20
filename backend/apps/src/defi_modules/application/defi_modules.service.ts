@@ -23,12 +23,14 @@ export class DefiModulesService {
         dto.website_url,
         dto.is_active,
         new Date(),
+        dto.chain ?? 'polkadot',
+        dto.chain_id ?? null,
       ),
     );
   }
 
-  public async getAll() {
-    return this.defiModulesRepository.findAll();
+  public async getAll(chain?: string) {
+    return this.defiModulesRepository.findAll(chain);
   }
 
   public async getById(id: string) {

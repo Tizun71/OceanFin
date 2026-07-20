@@ -1,38 +1,40 @@
 import { DefiModuleAction } from '../domain/defi_module_actions.entity';
 import { DefiModuleActionsRepository } from '../domain/defi_module_actions.repository';
-import { SupabaseService } from '../../shared/infrastructure/supabase.service';
+import { PostgresService } from '../../shared/infrastructure/postgres.service';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class DefiModuleActionsRepositoryImplement
   implements DefiModuleActionsRepository
 {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly db: PostgresService) {}
 
   public async save(
     defiModuleAction: DefiModuleAction,
   ): Promise<DefiModuleAction> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('defi_module_actions')
-      .upsert({
-        id: defiModuleAction.id,
-        module_id: defiModuleAction.module_id,
-        name: defiModuleAction.name,
-        pallet: defiModuleAction.pallet,
-        call: defiModuleAction.call,
-        description: defiModuleAction.description,
-        param_schema: defiModuleAction.param_schema,
-        risk_level: defiModuleAction.risk_level,
-        is_active: defiModuleAction.is_active,
-        created_at: defiModuleAction.created_at,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to save DefiModuleAction: ${error.message}`);
-    }
+    const data = await this.db.queryOne(
+      `INSERT INTO defi_module_actions
+         (id, module_id, name, pallet, call, description, param_schema, risk_level, is_active, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, COALESCE($10, now()))
+       ON CONFLICT (id) DO UPDATE SET
+         module_id = EXCLUDED.module_id, name = EXCLUDED.name, pallet = EXCLUDED.pallet,
+         call = EXCLUDED.call, description = EXCLUDED.description, param_schema = EXCLUDED.param_schema,
+         risk_level = EXCLUDED.risk_level, is_active = EXCLUDED.is_active
+       RETURNING *`,
+      [
+        defiModuleAction.id,
+        defiModuleAction.module_id,
+        defiModuleAction.name,
+        defiModuleAction.pallet,
+        defiModuleAction.call,
+        defiModuleAction.description,
+        // jsonb: stringify so arrays aren't misread as Postgres arrays.
+        defiModuleAction.param_schema == null ? null : JSON.stringify(defiModuleAction.param_schema),
+        defiModuleAction.risk_level,
+        defiModuleAction.is_active,
+        defiModuleAction.created_at ?? null,
+      ],
+    );
 
     return new DefiModuleAction(
       data.id,

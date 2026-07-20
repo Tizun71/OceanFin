@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount } from '@luno-kit/react';
-import { web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
-import { stringToHex } from '@polkadot/util';
+import { useAccount, useSignMessage } from 'wagmi';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +24,8 @@ interface UserSignupDialogProps {
 }
 
 export function UserSignupDialog({ open, onOpenChange, onSuccess }: UserSignupDialogProps) {
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
+  const { signMessageAsync } = useSignMessage();
   const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,25 +38,19 @@ export function UserSignupDialog({ open, onOpenChange, onSuccess }: UserSignupDi
     setIsLoading(true);
 
     try {
-      const message = `Welcome to OceanFin!\n\nWallet Address: ${address}\nTimestamp: ${new Date().toISOString()}\n\nPlease sign this message to verify wallet ownership.`;
+      // Must stay byte-identical to the backend's canonical template
+      // (users/application/wallet-signature.verifier.ts) or verification fails.
+      const issuedAt = new Date().toISOString();
+      const message = `Welcome to OceanFin!\n\nWallet Address: ${address}\nTimestamp: ${issuedAt}\n\nPlease sign this message to verify wallet ownership.`;
 
-      await web3Enable('OceanFin');
-      const injector = await web3FromAddress(address);
-
-      if (!injector.signer.signRaw) {
-        throw new Error('Wallet does not support message signing');
-      }
-
-      const { signature } = await injector.signer.signRaw({
-        address,
-        data: stringToHex(message),
-        type: 'bytes',
-      });
+      // personal_sign via the connected EVM wallet (RainbowKit/wagmi).
+      const signature = await signMessageAsync({ message });
 
       const response = await api.post('/users', {
         walletAddress: address,
-        chainId: 0,
+        chainId: chainId ?? 0,
         username: username.trim() || undefined,
+        issuedAt,
         signature,
       });
 

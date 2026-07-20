@@ -8,11 +8,16 @@ import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
 import { Info } from "lucide-react"
 import { simulateStrategy } from "@/services/strategy-service"
 import type { StrategySimulate } from "@/types/strategy.type"
-import { useLuno } from "@/app/contexts/luno-context"
-import { ConnectButton } from "@luno-kit/ui"
+import { useWallet } from "@/hooks/use-wallet"
+import { EvmConnectButton } from "@/components/shared/evm-connect-button"
 import { displayToast } from "@/components/shared/toast-manager"
 import { isEvmAccountBound, getTokenBalance } from "@/services/user-service"
 import { useParams } from "next/navigation"
+import { useStrategyInputToken } from "@/hooks/use-strategy-input-token"
+import { useActiveChain } from "@/hooks/use-active-chain"
+import { usePublicClient } from "wagmi"
+import { formatUnits } from "viem"
+import { ERC20_ABI } from "@/lib/evm/abis"
 
 const ExecutionModal = dynamic(() => import("@/components/shared/execution-modal").then(m => m.ExecutionModal), { ssr: false })
 const BindAccountModal = dynamic(() => import("@/components/shared/bind-account-modal").then(m => m.BindAccountModal), { ssr: false })
@@ -20,6 +25,8 @@ const BindAccountModal = dynamic(() => import("@/components/shared/bind-account-
 interface StrategyInputProps {
   strategy: {
     id: string
+    /** Entry token symbols from the strategies API; assets[0] is the input token. */
+    assets?: string[]
     inputAsset?: string | null
     inputAssetId?: string | number
     networkCost?: string | null
@@ -46,11 +53,20 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   const [balance, setBalance] = useState<string | null>(null)
   const [loadingBalance, setLoadingBalance] = useState(false)
 
-  const { isConnected, address } = useLuno()
+  const { isConnected, address, needsSwitch, switchToActive } = useWallet()
+  const [switching, setSwitching] = useState(false)
+
+  // The input token comes from the strategy itself — never hardcode one here.
+  // On EVM it resolves to an ERC-20 address + decimals via the token registry.
+  const { activeChain, isEvm } = useActiveChain()
+  const asset = useStrategyInputToken(strategy)
+  const publicClient = usePublicClient({ chainId: activeChain.chainId })
 
   useEffect(() => {
     const check = async () => {
-      if (!isConnected || !address) {
+      // Account binding only exists on Hydration (linking an EVM address to a
+      // substrate account). EVM chains sign directly — nothing to bind.
+      if (isEvm || !isConnected || !address) {
         setIsAccountBound(null)
         return
       }
@@ -67,14 +83,50 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     }
 
     check()
-  }, [isConnected, address])
+  }, [isConnected, address, isEvm])
 
   const fetchBalance = async (silent = false) => {
     try {
       if (!silent) setLoadingBalance(true)
-      if (!isConnected || !address || !isAccountBound) return null
+      if (!isConnected || !address) return null
 
-      const bal = await getTokenBalance(address, "5")
+      // EVM: read the strategy's own input token on-chain.
+      if (isEvm) {
+        if (asset.decimals === undefined || !publicClient) {
+          setBalance(null)
+          return null
+        }
+
+        // A native coin (AVAX/ETH) has no contract — read the account balance.
+        const raw = asset.isNative
+          ? await publicClient.getBalance({ address: address as `0x${string}` })
+          : asset.address
+            ? ((await publicClient.readContract({
+                address: asset.address,
+                abi: ERC20_ABI,
+                functionName: "balanceOf",
+                args: [address as `0x${string}`],
+              })) as bigint)
+            : null
+
+        if (raw === null) {
+          setBalance(null)
+          return null
+        }
+
+        const formatted = formatUnits(raw, asset.decimals)
+        setBalance(formatted)
+        return Number(formatted)
+      }
+
+      // Substrate: Hydration balance endpoint, keyed by the token's asset id.
+      if (!isAccountBound) return null
+      if (!asset.assetId) {
+        setBalance(null)
+        return null
+      }
+
+      const bal = await getTokenBalance(address, asset.assetId)
       setBalance(bal || "0")
       return bal ? Number(bal) : 0
     } catch (e) {
@@ -86,12 +138,14 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
   }
 
   useEffect(() => {
-    if (!isConnected || !address || isAccountBound !== true) return
+    if (!isConnected || !address) return
+    // Account binding is a Hydration concept; EVM balances need no binding.
+    if (!isEvm && isAccountBound !== true) return
 
     fetchBalance()
     const interval = setInterval(() => fetchBalance(true), 600000)
     return () => clearInterval(interval)
-  }, [isConnected, address, isAccountBound])
+  }, [isConnected, address, isAccountBound, isEvm, asset.assetId, asset.address, asset.decimals, asset.isNative])
 
   const params = useParams<{ id: string | string[] }>()
   const strategyId = useMemo(() => {
@@ -102,11 +156,6 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
       return raw
     }
   }, [params])
-
-  const asset = {
-    symbol: "DOT",
-    icon: "https://cdn.jsdelivr.net/gh/galacticcouncil/intergalactic-asset-metadata@latest/v2/polkadot/2034/assets/5/icon.svg",
-  }
 
   const handleSimulate = async () => {
     if (!amount || Number(amount) < 0.01) {
@@ -120,7 +169,7 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     setSimulateError(null)
 
     try {
-      const data = await simulateStrategy(strategy, Number(amount))
+      const data = await simulateStrategy(strategy, Number(amount), asset)
       setSimulateResult(data)
       onSimulateSuccess?.(data)
       displayToast("success", "Simulation completed successfully.")
@@ -153,6 +202,17 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
     }
 
     setExecutionModalOpen(true)
+  }
+
+  const handleSwitchNetwork = async () => {
+    setSwitching(true)
+    try {
+      await switchToActive()
+    } catch {
+      displayToast("error", `Switch your wallet to ${activeChain.name} to continue.`)
+    } finally {
+      setSwitching(false)
+    }
   }
 
   const handleBindButton = () => {
@@ -197,15 +257,24 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
 
               <div className="flex items-center gap-2 px-3 py-1.5 h-10 rounded-lg border-2 border-accent/30 bg-accent/10 hover:border-accent/50 hover:bg-accent/15 transition-all duration-300 shadow-sm">
                 <div className="relative w-4 h-4">
-                  <Image
-                    src={asset.icon || "/placeholder.svg"}
-                    alt={asset.symbol}
-                    width={16}
-                    height={16}
-                    className="rounded-full object-cover"
-                  />
+                  {asset.icon ? (
+                    <Image
+                      src={asset.icon}
+                      alt={asset.symbol}
+                      width={16}
+                      height={16}
+                      className="rounded-full object-cover"
+                    />
+                  ) : (
+                    // No icon mapped (e.g. an EVM token) — show a letter badge.
+                    <div className="w-4 h-4 rounded-full bg-accent/30 flex items-center justify-center text-[9px] font-bold text-accent">
+                      {asset.symbol.charAt(0).toUpperCase() || "?"}
+                    </div>
+                  )}
                 </div>
-                <span className="font-bold text-accent text-sm tracking-wide">{asset.symbol}</span>
+                <span className="font-bold text-accent text-sm tracking-wide">
+                  {asset.symbol || "—"}
+                </span>
               </div>
             </div>
 
@@ -257,7 +326,18 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
                     : "Simulate Strategy"}
               </Button>
 
-              {isAccountBound === false ? (
+              {isEvm && needsSwitch ? (
+                // Signing is impossible from another network: wagmi has no wallet
+                // client for the active chain, so offer the switch up front
+                // instead of failing mid-execution.
+                <Button
+                  className="w-full h-10 bg-gradient-to-r from-amber-500 via-amber-500 to-amber-400 hover:shadow-[0_8px_24px_rgba(245,158,11,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50"
+                  onClick={handleSwitchNetwork}
+                  disabled={switching}
+                >
+                  {switching ? "Switching…" : `Switch wallet to ${activeChain.name}`}
+                </Button>
+              ) : !isEvm && isAccountBound === false ? (
                 <Button
                   className="w-full h-10 bg-gradient-to-r from-destructive via-destructive to-destructive/80 hover:shadow-[0_8px_24px_rgba(220,38,38,0.35)] hover:scale-[1.02] active:scale-[0.98] text-white font-bold rounded-xl transition-all duration-200 shadow-md disabled:opacity-50"
                   onClick={handleBindButton}
@@ -276,19 +356,13 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
               )}
             </>
           ) : (
-            <ConnectButton
-              label="Connect Wallet"
-              accountStatus="full"
-              chainStatus="full"
-              showBalance={true}
-              className="w-full h-10 bg-gradient-to-r from-accent via-accent to-accent-light hover:shadow-[0_8px_24px_rgba(0,209,255,0.3)] text-white font-bold rounded-xl transition-all duration-300"
-            />
+            <EvmConnectButton />
           )}
         </div>
       </div>
 
-      {/* EXECUTION MODAL */}
-      {simulateResult && isAccountBound && (
+      {/* EXECUTION MODAL — EVM signs directly, so no binding is required there. */}
+      {simulateResult && (isEvm || isAccountBound) && (
         <ExecutionModal
           open={executionModalOpen}
           onOpenChange={setExecutionModalOpen}
@@ -302,8 +376,10 @@ export function StrategyInput({ strategy, onSimulateSuccess }: StrategyInputProp
         />
       )}
 
-      {/* BIND MODAL */}
-      <BindAccountModal open={bindModalOpen} onOpenChange={setBindModalOpen} onBindSuccess={onBindSuccess} />
+      {/* BIND MODAL — Hydration only; EVM has no account binding. */}
+      {!isEvm && (
+        <BindAccountModal open={bindModalOpen} onOpenChange={setBindModalOpen} onBindSuccess={onBindSuccess} />
+      )}
     </>
   )
 }

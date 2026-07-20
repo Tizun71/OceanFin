@@ -9,6 +9,7 @@ import {
 } from "@/services/defi-module-service";
 import { useEdges, Node } from "reactflow";
 import { DefiOperationType } from "@/app/builder/components/nodes/defi-node.types";
+import type { Token } from "@/types/defi";
 import Image from "next/image";
 import { assetIcons } from "@/lib/iconMap";
 
@@ -19,17 +20,11 @@ interface Props {
   onClose: () => void;
 }
 
+// Pairs come back from the API with their tokens embedded; reuse the shared
+// Token shape so EVM fields (address/decimals) stay in one place.
 type DefiPair = {
-  token_in?: {
-    id?: string;
-    asset_id?: string;
-    name?: string;
-  };
-  token_out?: {
-    id?: string;
-    asset_id?: string;
-    name?: string;
-  };
+  token_in?: Partial<Token>;
+  token_out?: Partial<Token>;
 };
 
 const normalizeOperationType = (value: unknown): DefiOperationType => {
@@ -491,6 +486,13 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
 
       tokenInSymbol: tokenInMeta?.name || "",
       tokenOutSymbol: requiresTokenOut ? tokenOutMeta?.name || "" : "",
+
+      // EVM execution metadata. Undefined for substrate tokens; without these
+      // buildEvmStepPlan cannot encode an amount and throws at execution time.
+      tokenInAddress: tokenInMeta?.address ?? undefined,
+      tokenInDecimals: tokenInMeta?.decimals ?? undefined,
+      tokenOutAddress: requiresTokenOut ? tokenOutMeta?.address ?? undefined : undefined,
+      tokenOutDecimals: requiresTokenOut ? tokenOutMeta?.decimals ?? undefined : undefined,
 
       amount: Number(amount),
 

@@ -2,6 +2,10 @@ export interface Token {
   id: string
   name: string
   asset_id: number
+  /** ERC-20 contract address, lowercase. Null for substrate tokens. */
+  address?: `0x${string}` | null
+  /** ERC-20 decimals. Null for substrate tokens. */
+  decimals?: number | null
 }
 
 export interface DefiPair {

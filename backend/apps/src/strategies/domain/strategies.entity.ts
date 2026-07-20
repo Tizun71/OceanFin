@@ -10,6 +10,7 @@ export class Strategy {
     public assets: string[] = [],
     public agents: string[] = [],
     public chains: string[] = [],
+    public title?: string,
   ) {}
 
   update(
@@ -21,8 +22,10 @@ export class Strategy {
       assets: string[];
       agents: string[];
       chains: string[];
+      title?: string;
     }>,
   ): void {
+    if (fields.title !== undefined) this.title = fields.title;
     if (fields.strategistName !== undefined) this.strategistName = fields.strategistName;
     if (fields.apy !== undefined) this.apy = fields.apy;
     if (fields.tags !== undefined) this.tags = fields.tags;

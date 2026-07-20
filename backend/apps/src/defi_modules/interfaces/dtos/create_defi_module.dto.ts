@@ -1,5 +1,5 @@
-import { IsBoolean, IsInt, IsString, IsUrl } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUrl } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateDefiModuleDto {
   @ApiProperty({
@@ -57,4 +57,17 @@ export class CreateDefiModuleDto {
   })
   @IsBoolean()
   is_active: boolean;
+
+  @ApiPropertyOptional({
+    description: "Chain slug ('polkadot' | 'avalanche' | 'base' | 'arbitrum')",
+    default: 'polkadot',
+  })
+  @IsString()
+  @IsOptional()
+  chain?: string;
+
+  @ApiPropertyOptional({ description: 'EVM numeric chain id (43114 / 8453 / 42161)' })
+  @IsInt()
+  @IsOptional()
+  chain_id?: number;
 }

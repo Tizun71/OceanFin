@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { DefiStrategiesRepositoryImplement } from './infrastructure/defi_strategies.repository.impl';
 import { DefiStrategiesRepository } from './domain/defi_strategies.repository';
 import { DefiStrategiesService } from './application/defi_strategies.service';
-import { SupabaseModule } from '../shared/supabase.module';
+import { DatabaseModule } from '../shared/database.module';
 import { DefiStrategiesController } from './interfaces/defi_strategies.controller';
 import { DefiStrategyVersionService } from './application/defi_strategy_version.service';
 import { DefiStrategyVersionRepository } from './domain/defi_strategy_version.repository';
@@ -30,7 +30,7 @@ import { HydrationStrategyService } from 'src/strategies/application/hydration-s
 import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.service';
 
 @Module({
-  imports: [SupabaseModule, UsersModule],
+  imports: [DatabaseModule, UsersModule],
   controllers: [
     DefiStrategiesController,
     DefiStrategySimulationSnapshotsController,

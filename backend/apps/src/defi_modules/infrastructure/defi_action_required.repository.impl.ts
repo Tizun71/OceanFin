@@ -1,85 +1,67 @@
 import { Injectable } from "@nestjs/common";
 import { DefiActionRequired } from "../domain/defi_action_required.entity";
 import { DefiActionRequiredRepository } from "../domain/defi_action_required.repository";
-import { SupabaseService } from "../../shared/infrastructure/supabase.service";
+import { PostgresService } from "../../shared/infrastructure/postgres.service";
 import { DefiModuleAction } from "../domain/defi_module_actions.entity";
+import { NESTED_MODULE_SELECT } from "./defi_modules.repository.impl";
 
 @Injectable()
 export class DefiActionRequiredRepositoryImplement implements DefiActionRequiredRepository {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly db: PostgresService) {}
+
+  private toEntity(r: any): DefiActionRequired {
+    return new DefiActionRequired(r.id, r.action_id, r.module_id, r.action_required_id);
+  }
 
   async save(defiActionRequired: DefiActionRequired): Promise<DefiActionRequired> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_action_required")
-      .upsert({
-        id: defiActionRequired.id,
-        action_id: defiActionRequired.action_id,
-        module_id: defiActionRequired.module_id,
-        action_required_id: defiActionRequired.action_required_id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to save DefiActionRequired: ${error.message}`);
-    }
-
-    return new DefiActionRequired(data.id, data.action_id, data.module_id, data.action_required_id);
+    const row = await this.db.queryOne(
+      `INSERT INTO defi_action_required (id, action_id, module_id, action_required_id)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (id) DO UPDATE SET
+         action_id = EXCLUDED.action_id,
+         module_id = EXCLUDED.module_id,
+         action_required_id = EXCLUDED.action_required_id
+       RETURNING *`,
+      [
+        defiActionRequired.id,
+        defiActionRequired.action_id,
+        defiActionRequired.module_id,
+        defiActionRequired.action_required_id,
+      ],
+    );
+    return this.toEntity(row);
   }
 
   async findByActionId(actionId: string): Promise<DefiActionRequired[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_action_required")
-      .select("*")
-      .eq("action_id", actionId);
-
-    if (error) {
-      throw new Error(`Failed to find DefiActionRequired by action_id: ${error.message}`);
-    }
-
-    return data.map(
-      (item) =>
-        new DefiActionRequired(item.id, item.action_id, item.module_id, item.action_required_id),
+    const rows = await this.db.query(
+      "SELECT * FROM defi_action_required WHERE action_id = $1",
+      [actionId],
     );
+    return rows.map((r) => this.toEntity(r));
   }
 
   async findRequiredActionsByActionId(actionId: string): Promise<DefiModuleAction[]> {
-    let { data: actionRequired, error } = await this.supabase
-      .getClient()
-      .from("defi_action_required")
-      .select("defi_module_actions:action_required_id(*)")
-      .eq("action_id", actionId);
+    // The set of required action ids for this action.
+    const required = await this.db.query(
+      `SELECT a.id
+       FROM defi_action_required r
+       JOIN defi_module_actions a ON a.id = r.action_required_id
+       WHERE r.action_id = $1`,
+      [actionId],
+    );
+    const requiredIds = new Set(required.map((r) => r.id));
 
-    actionRequired = actionRequired?.map((item) => item.defi_module_actions) as any;
+    // All modules (nested). Keep only actions in the required set (or all if none).
+    const defiModules = await this.db.query(NESTED_MODULE_SELECT);
 
-    if (error) {
-      throw new Error(`Failed to find required actions: ${error.message}`);
-    }
+    const filtered = defiModules.map((item: any) => ({
+      ...item,
+      defi_module_actions:
+        requiredIds.size !== 0
+          ? item.defi_module_actions.filter((a: any) => requiredIds.has(a.id))
+          : item.defi_module_actions,
+    }));
 
-    const { data: defiModules } = await this.supabase.getClient().from("defi_modules").select(`*,
-      defi_module_actions(
-        *,
-        defi_pairs (
-          id,
-          token_in:defi_token!defi_pairs_token_in_id_fkey (*),
-          token_out:defi_token!defi_pairs_token_out_id_fkey (*)
-        )
-      )`);
-
-    const filteredData = defiModules?.map((item) => {
-      return {
-        ...item,
-        defi_module_actions:
-          actionRequired?.length !== 0
-            ? item.defi_module_actions.filter((defi_action) =>
-                actionRequired?.some((action: any) => defi_action.id === action.id),
-              )
-            : item.defi_module_actions,
-      };
-    });
-
-    return filteredData as any;
+    return filtered as any;
   }
 }

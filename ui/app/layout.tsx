@@ -6,12 +6,13 @@ import "./globals.css";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import LunoProvider from "@/providers/luno-provider";
-import { LunoProviderWrapper } from "./contexts/luno-context";
 import Footer from "@/components/shared/footer";
 import { HeroSection } from "@/components/hero-section";
 import { BackgroundVideo } from "@/components/background-video";
 import { ToastProvider } from "@/providers/toast-provider";
 import { QueryProvider } from "@/providers/query-client-provider";
+import { EvmProvider } from "@/providers/evm-provider";
+import { ActiveChainProvider } from "@/providers/active-chain-provider";
 
 const UserProvider = dynamic(
   () => import("@/providers/user-provider").then((mod) => ({ default: mod.UserProvider })),
@@ -92,8 +93,12 @@ export default function RootLayout({
             <BackgroundVideo />
             <div className="fixed inset-0 bg-gradient-to-b from-transparent via-transparent to-background z-[1] pointer-events-none" />
             <ToastProvider>
+              <EvmProvider>
+              {/* LunoProvider stays mounted: the papi execution path
+                  (execution-modal / bind-account-modal) still depends on it.
+                  All wallet UI is RainbowKit — see WalletButton. */}
               <LunoProvider>
-                <LunoProviderWrapper>
+                  <ActiveChainProvider>
                   <UserProvider>
                     <Suspense fallback={
                       <div className="flex items-center justify-center min-h-screen text-gray-400 text-lg">
@@ -110,8 +115,9 @@ export default function RootLayout({
                       </div>
                     </Suspense>
                   </UserProvider>
-                </LunoProviderWrapper>
+                  </ActiveChainProvider>
               </LunoProvider>
+              </EvmProvider>
             </ToastProvider>
             <Analytics />
           </PreloaderProvider>

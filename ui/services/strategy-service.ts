@@ -1,21 +1,43 @@
 import { api, API_ENDPOINTS } from './api';
+import { resolveStrategyInputToken, type StrategyInputToken } from '@/lib/strategy-input-token';
 
-// Simulate strategy
-export const simulateStrategy = async (strategy: any, amount: number) => {
+// Simulate strategy. Callers that already resolved the input token (chain-aware)
+// should pass it; otherwise it falls back to substrate resolution.
+export const simulateStrategy = async (
+  strategy: any,
+  amount: number,
+  inputToken?: StrategyInputToken,
+) => {
   if (!strategy?.id) throw new Error('Invalid strategy');
 
-  const assetIn = strategy.inputAssetId ?? 2;
-  const iterations = strategy.iterations ?? 3;
-  const assetIdIn = strategy.assetIdIn ?? 5;
+  // Simulate against the strategy's own input token, not a hardcoded default.
+  const token = inputToken ?? resolveStrategyInputToken(strategy);
+
+  // EVM strategies are simulated from their seeded workflow server-side, which
+  // already knows every token — only the amount is needed. Substrate strategies
+  // still address assets by Hydration asset id.
+  const isEvmToken = !!token.address || !!token.isNative;
+  if (!isEvmToken && !token.assetId) {
+    throw new Error(
+      token.symbol
+        ? `No Hydration asset id for input token ${token.symbol}`
+        : `Strategy "${strategy.title ?? strategy.id}" declares no input token`,
+    );
+  }
+
+  const params: Record<string, unknown> = {
+    amountIn: amount,
+    iterations: strategy.iterations ?? 3,
+  };
+
+  if (!isEvmToken) {
+    params.assetIn = strategy.inputAssetId ?? 2;
+    params.assetIdIn = token.assetId;
+  }
 
   try {
     const res = await api.get(API_ENDPOINTS.STRATEGIES.SIMULATE(strategy.id), {
-      params: {
-        amountIn: amount,
-        assetIn,
-        iterations,
-        assetIdIn,
-      },
+      params,
     });
     return res.data;
   } catch (e: any) {

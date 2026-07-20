@@ -8,6 +8,12 @@ import type { ExecutionStatus, ExecutionStep } from "./types"
 import { STEP_TYPE } from "@/utils/constant"
 import { buildStepTx } from "@/services/strategy-step-service"
 import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
+import { useActiveChain } from "@/hooks/use-active-chain"
+import { useWallet } from "@/hooks/use-wallet"
+import { usePublicClient } from "wagmi"
+import type { Address } from "viem"
+import { resolveEvmStepPlan } from "@/lib/evm/build-evm-plan"
+import { executeEvmStep } from "@/lib/evm/execute-evm-step"
 import { motion } from "framer-motion"
 import { displayToast } from "./toast-manager"
 import StepStack from "./execution-step-stack"
@@ -110,6 +116,14 @@ export function ExecutionModal({
   const abortRef = useRef(false)
 
   const { sendTransaction, walletAddress, isWalletConnected } = useLunoPapiClient()
+  const { activeChain, isEvm } = useActiveChain()
+  const evmWallet = useWallet()
+  const publicClient = usePublicClient({ chainId: activeChain.chainId })
+
+  // Chain-agnostic wallet view used across the execution flow.
+  const activeAddress = isEvm ? evmWallet.address : walletAddress
+  const walletConnected = isEvm ? evmWallet.isConnected : isWalletConnected
+
   const createActivityMutation = useCreateActivity()
   const updateActivityMutation = useUpdateActivity()
 
@@ -176,9 +190,52 @@ export function ExecutionModal({
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const executeStep = async (stepIndex: number, step: StrategyStep) => {
     updateStepStatus(stepIndex, "processing")
+
+    const isLast = stepIndex >= strategy.steps.length - 1
+
+    // EVM path: build a plan and run the safe simulate→approve→write rail.
+    if (isEvm) {
+      if (!activeChain.chainId) throw new Error("Active chain has no chainId")
+      if (!evmWallet.isConnected) throw new Error("Connect an EVM wallet first")
+      // useWalletClient returns nothing while the wallet sits on another network,
+      // which otherwise surfaces as a confusing "not ready".
+      if (evmWallet.needsSwitch) {
+        throw new Error(
+          `Wallet is on chain ${evmWallet.walletChainId}; switch it to ${activeChain.name} (${activeChain.chainId}) to sign.`,
+        )
+      }
+
+      const walletClient = evmWallet.getWalletClient()
+      if (!walletClient) throw new Error(`No wallet client for ${activeChain.name}`)
+      if (!publicClient) throw new Error(`No RPC client for ${activeChain.name}`)
+
+      const plan = await resolveEvmStepPlan(
+        step,
+        activeChain,
+        activeAddress as Address,
+        publicClient,
+      )
+      if (!plan) {
+        updateStepStatus(stepIndex, "completed")
+        return { success: true, skipDelay: isLast }
+      }
+
+      const { txHash } = await executeEvmStep(plan, {
+        publicClient,
+        walletClient,
+        account: activeAddress as Address,
+        expectedChainId: activeChain.chainId,
+      })
+
+      updateStepStatus(stepIndex, "completed", txHash)
+      displayToast("success", `Step ${stepIndex + 1} completed successfully.`)
+      return { success: true, txHash, skipDelay: isLast }
+    }
+
+    // Substrate path (Hydration) — unchanged.
     await sleep(3000);
     const tx = await buildStepTx(step, walletAddress!)
-    
+
     if (!tx) {
       updateStepStatus(stepIndex, "completed")
       return { success: true, skipDelay: stepIndex >= strategy.steps.length - 1 }
@@ -199,7 +256,7 @@ export function ExecutionModal({
 
   const startExecution = async () => {
     if (!executionSteps.length || isExecuting) return
-    if (!isWalletConnected || !walletAddress) {
+    if (!walletConnected || !activeAddress) {
       displayToast("warning", "Please connect your wallet first.")
       return
     }
@@ -212,7 +269,7 @@ export function ExecutionModal({
 
       if (!currentActivityId) {
         const activity = await createActivityMutation.mutateAsync({
-          userAddress: walletAddress,
+          userAddress: activeAddress,
           strategyId,
           initialCapital: String(strategy.initialCapital?.amount || 0),
           totalSteps: executionSteps.length,
@@ -355,9 +412,9 @@ export function ExecutionModal({
                 <Button
                   className="flex-1 bg-accent hover:bg-accent/90 text-white font-semibold"
                   onClick={startExecution}
-                  disabled={!executionSteps.length || !isWalletConnected}
+                  disabled={!executionSteps.length || !walletConnected}
                 >
-                  {!isWalletConnected ? 'Connect Wallet' : 'Start Execution'}
+                  {!walletConnected ? 'Connect Wallet' : 'Start Execution'}
                 </Button>
               )}
             </>

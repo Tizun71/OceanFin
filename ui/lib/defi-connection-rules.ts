@@ -1,11 +1,25 @@
+/**
+ * Which step can follow which in the strategy builder.
+ *
+ * Scoped to the operations Avalanche actually exposes today: Aave v3
+ * SUPPLY/BORROW and Trader Joe SWAP. JOIN_STRATEGY is intentionally absent —
+ * no protocol module provides it on Avalanche (Benqi looping is not wired up),
+ * so allowing it would let users build a strategy that cannot execute.
+ */
 export const ALLOWED_NEXT_ACTIONS: Record<string, string[]> = {
-  SWAP: ["SUPPLY", "SWAP", "JOIN_STRATEGY"],
-  JOIN_STRATEGY: ["SWAP", "BORROW"],
+  // Swap the proceeds again, or put them to work as collateral.
+  SWAP: ["SWAP", "SUPPLY"],
+  // Collateral must exist before anything can be borrowed against it.
   SUPPLY: ["BORROW"],
-  BORROW: ["SWAP", "JOIN_STRATEGY", "SUPPLY"],
+  // Borrowed funds can be swapped or re-supplied — this is the leverage loop.
+  BORROW: ["SWAP", "SUPPLY"],
 };
 
-export const ALLOWED_FIRST_ACTIONS = ["SWAP", "JOIN_STRATEGY", "SUPPLY"];
+/**
+ * BORROW is excluded: Aave rejects a borrow with no collateral behind it, so a
+ * strategy starting there always fails on-chain.
+ */
+export const ALLOWED_FIRST_ACTIONS = ["SWAP", "SUPPLY"];
 
 export const canBeFirstStep = (operationType?: string) => {
   if (!operationType) {
@@ -22,7 +36,7 @@ export const canBeFirstStep = (operationType?: string) => {
     valid,
     message: valid
       ? ""
-      : "BORROW cannot be the first step. Please start with SWAP, JOIN_STRATEGY, or SUPPLY.",
+      : `${normalizedType} cannot be the first step. Please start with ${ALLOWED_FIRST_ACTIONS.join(" or ")}.`,
   };
 };
 

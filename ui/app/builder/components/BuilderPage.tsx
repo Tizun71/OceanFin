@@ -15,18 +15,21 @@ import ConfigPanel from "./ConfigPanel";
 import CreateStrategyModal from "./CreateStrategyModal";
 import DefiNode from "./DefiNode";
 import { useDefiModules } from "@/hooks/use-defi-modules";
+import { useActiveChain } from "@/hooks/use-active-chain";
 import { useDefiBuilder } from "@/hooks/use-strategy-builder";
 import { useEffect } from "react";
 import { usePreloader } from "@/providers/preloader-provider";
 import { displayToast } from "@/components/shared/toast-manager";
 import { canBeFirstStep, validateConnection } from "@/lib/defi-connection-rules";
+import { resolveDefiOperationType } from "@/app/builder/components/nodes/defi-node-utils";
 
 const nodeTypes = {
   defiNode: DefiNode,
 };
 
 function Builder() {
-  const { data: modules = [], isFetching } = useDefiModules();
+  const { activeChain } = useActiveChain();
+  const { data: modules = [], isFetching } = useDefiModules(activeChain.slug);
 
   const {
     nodes,
@@ -83,7 +86,10 @@ function Builder() {
 
   const handleAddNode = (module: any, action: any) => {
     const isFirstNode = nodes.length === 0;
-    const operationType = action?.operation_type;
+    // defi_module_actions has no operation_type column — the type is derived
+    // from the action name. Reading action.operation_type directly made every
+    // action fail validation as "Invalid action type".
+    const operationType = resolveDefiOperationType({ module, action });
 
     if (isFirstNode) {
       const result = canBeFirstStep(operationType);
@@ -97,15 +103,7 @@ function Builder() {
     addNode(module, action);
   };
 
-  const getOperationType = (node: any) => {
-    
-    return (
-      node?.data?.action?.operation_type ||
-      node?.data?.module?.operation_type ||
-      node?.data?.operation_type ||
-      ""
-    );
-  };
+  const getOperationType = (node: any) => resolveDefiOperationType(node?.data) ?? "";
 
   const isValidConnection = (connection: Connection) => {
     const sourceNode = nodes.find((node) => node.id === connection.source);

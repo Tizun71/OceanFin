@@ -5,7 +5,7 @@ import { DefiPair } from './defi_pairs.entity';
 
 export abstract class DefiModulesRepository {
   abstract save(defiModule: DefiModule): Promise<DefiModule>;
-  abstract findAll(): Promise<
+  abstract findAll(chain?: string): Promise<
     (DefiModule & {
       defi_module_actions: (DefiModuleAction & {
         defi_pairs: (Pick<DefiPair, 'id'> & {

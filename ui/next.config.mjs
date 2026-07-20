@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Self-contained server output for a lean Docker runtime image.
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },

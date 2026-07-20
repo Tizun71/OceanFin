@@ -28,6 +28,7 @@ export enum STEP_TYPE {
   ENABLE_E_MODE = 'ENABLE_E_MODE',
   SWAP = 'SWAP',
   SUPPLY = 'SUPPLY',
+  BRIDGE = 'BRIDGE',
 }
 
 export enum EMODE_CATEGORY {

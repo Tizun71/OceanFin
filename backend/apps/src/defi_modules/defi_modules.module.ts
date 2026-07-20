@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { DefiModulesController } from './interfaces/defi_modules.controller';
 import { DefiModulesRepository } from './domain/defi_modules.repository';
 import { DefiModulesRepositoryImplement } from './infrastructure/defi_modules.repository.impl';
-import { SupabaseModule } from 'src/shared/supabase.module';
+import { DatabaseModule } from 'src/shared/database.module';
 import { DefiModulesService } from './application/defi_modules.service';
 import { DefiModuleActionsRepository } from './domain/defi_module_actions.repository';
 import { DefiModuleActionsRepositoryImplement } from './infrastructure/defi_module_actions.repository.impl';
@@ -18,7 +18,7 @@ import { DefiActionRequiredRepositoryImplement } from './infrastructure/defi_act
 import { DefiActionRequiredService } from './application/defi_action_required.service';
 
 @Module({
-  imports: [SupabaseModule, DefiTokenModule],
+  imports: [DatabaseModule, DefiTokenModule],
   providers: [
     {
       provide: DefiModulesRepository,

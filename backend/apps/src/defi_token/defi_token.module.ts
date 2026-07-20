@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { DefiTokenRepositoryImpl } from './infrastructure/defi_token.repository.impl';
 import { DefiTokenRepository } from './domain/defi_token.repository';
 import { DefiTokenService } from './application/defi_token.service';
-import { SupabaseModule } from '../shared/supabase.module';
+import { DatabaseModule } from '../shared/database.module';
 import { DefiTokenController } from './interfaces/defi_token.controller';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [DatabaseModule],
   controllers: [DefiTokenController],
   providers: [
     DefiTokenService,

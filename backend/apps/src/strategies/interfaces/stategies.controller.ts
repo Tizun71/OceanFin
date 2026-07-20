@@ -27,8 +27,13 @@ export class StrategiesController {
   @ApiParam({ name: 'id', description: 'Strategy ID' })
   @ApiResponse({ status: 200, description: 'Strategy found', type: StrategyResponseDto })
   async findById(@Param('id') id: string): Promise<StrategyResponseDto> {
-    const found = await this.strategyService.findById(id);
-    return StrategyMapper.toResponse(found);
+    const [found, inputAsset] = await Promise.all([
+      this.strategyService.findById(id),
+      // The detail page needs the input token before any simulation runs;
+      // strategies.assets holds icon paths, so it comes from the workflow.
+      this.strategyService.getInputAsset(id),
+    ]);
+    return { ...StrategyMapper.toResponse(found), inputAsset };
   }
 
   @Get()

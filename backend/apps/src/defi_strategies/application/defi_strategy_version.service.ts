@@ -4,34 +4,27 @@ import { DefiStrategyVersion } from "../domain/defi_strategy_version.entity";
 import { CreateDefiStrategyVersionDto } from "../interfaces/dto/create_defi_strategy_version.dto";
 import { UpdateDefiStrategyVersionDto } from "../interfaces/dto/update_defi_strategy_version.dto";
 import { DefiStrategyVersionRepository } from "../domain/defi_strategy_version.repository";
-import { SupabaseService } from "src/shared/infrastructure/supabase.service";
+import { PostgresService } from "src/shared/infrastructure/postgres.service";
 
 @Injectable()
 export class DefiStrategyVersionService {
   constructor(
     private readonly defiStrategyVersionRepository: DefiStrategyVersionRepository,
-    private readonly supabase: SupabaseService,
+    private readonly db: PostgresService,
   ) {}
 
   public async getNextVersionNumber(strategy_id: string) {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_strategy_versions")
-      .select("version")
-      .eq("strategy_id", strategy_id)
-      .order("version", { ascending: false })
-      .limit(1)
-      .single();
+    const row = await this.db.queryOne<{ version: number }>(
+      `SELECT version FROM defi_strategy_versions
+       WHERE strategy_id = $1 ORDER BY version DESC LIMIT 1`,
+      [strategy_id],
+    );
 
-    if (error && error.code !== "PGRST116") {
-      throw new Error(`Failed to fetch latest version: ${error.message}`);
-    }
-
-    if (!data) {
+    if (!row) {
       return 1;
     }
 
-    return data.version + 1;
+    return row.version + 1;
   }
 
   public async createStrategyVersion(

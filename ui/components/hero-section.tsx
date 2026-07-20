@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bookmark, Layers, Sparkles, Workflow } from "lucide-react";
 import { WalletButton } from "./shared/wallet-button";
+import { ChainSelector } from "./shared/chain-selector";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
@@ -123,8 +124,9 @@ export function HeroSection() {
           </nav>
         </div>
 
-        {/* Right: Wallet */}
+        {/* Right: Chain + Wallet */}
         <div className="flex items-center gap-4">
+          <ChainSelector />
           <WalletButton />
         </div>
       </div>
