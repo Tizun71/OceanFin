@@ -7,30 +7,76 @@
   --foreground: #E2F3F5;
   --background: #001F2D;
 
-  --card: rgba(255, 255, 255, 0.08);
+  /* Elevation ladder — surfaces stack, they don't all sit at one opacity. */
+  --surface-1: rgba(255, 255, 255, 0.04);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --surface-3: rgba(255, 255, 255, 0.11);
+
+  --card: rgba(255, 255, 255, 0.06);
   --card-foreground: #D9F0F7;
 
   --accent: #00A6A6;
-  --accent-light: #00C2CB;     
+  --accent-light: #00C2CB;
+  /* Text/icon color that sits on top of --accent. 5.1:1 against #00A6A6. */
+  --accent-foreground: #002B31;
 
-  --secondary: #007F8C;        
+  --secondary: #007F8C;
+  --secondary-foreground: #E2F3F5;
   --secondary-light: #00B2B9;
 
-  --tertiary: #66D1D9;         
+  --tertiary: #66D1D9;
 
   --border: rgba(255, 255, 255, 0.12);
-  --muted: #94A3B8;
+  --border-strong: rgba(255, 255, 255, 0.2);
 
+  /* #94A3B8 on #001F2D is only 3.9:1 — below WCAG AA for body text.
+     Lifted to a tinted slate that clears 4.5:1 while staying clearly secondary. */
+  --muted: rgba(255, 255, 255, 0.07);
+  --muted-foreground: #A9C2CC;
+  /* For non-essential labels at >=14px semibold only. */
+  --muted-foreground-subtle: #8AA6B1;
+
+  --success: #34D399;
+  --success-foreground: #00241A;
+  --warning: #FBBF24;
+  --warning-foreground: #2B1D00;
+
+  /* 4pt base, 8pt rhythm for anything structural. */
   --radius: 0.75rem;
+  --radius-sm: 0.375rem;
+  --radius-xs: 0.25rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
 
-  --popover: rgba(0, 31, 45, 0.75);
+  --popover: rgba(2, 26, 37, 0.92);
   --popover-foreground: #E2F3F5;
   --primary: #00C2CB;
-  --primary-foreground: #001F2D;
-  --destructive: #EF4444;
-  --destructive-foreground: #ffffff;
-  --input: rgba(255, 255, 255, 0.08);
+  --primary-foreground: #00212A;
+  --destructive: #F87171;
+  --destructive-foreground: #2B0707;
+  --input: rgba(255, 255, 255, 0.06);
   --ring: #00C2CB;
+
+  /* Shadows carry the background hue instead of neutral black. */
+  --shadow-sm: 0 1px 2px rgba(0, 12, 18, 0.4);
+  --shadow-md: 0 4px 12px -2px rgba(0, 12, 18, 0.45);
+  --shadow-lg: 0 12px 32px -8px rgba(0, 12, 18, 0.55);
+  --shadow-accent: 0 8px 28px -10px rgba(0, 194, 203, 0.45);
+
+  /* One motion vocabulary so components stop inventing their own. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
+  /* Named z-index scale replaces scattered magic numbers. */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-header: 50;
+  --z-overlay: 100;
+  --z-modal: 110;
+  --z-toast: 120;
 
   --chart-1: #00C2CB;
   --chart-2: #007F8C;
@@ -51,61 +97,259 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-light: var(--secondary-light);
+
+  /* These were referenced across ~130 class names but never mapped, so the
+     utilities silently did nothing and every "muted" string rendered at full
+     foreground brightness. Mapping them restores the type hierarchy. */
   --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-foreground-subtle: var(--muted-foreground-subtle);
+
   --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-tertiary: var(--tertiary);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-sans: var(--font-space-grotesk), var(--font-montserrat), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: "Inter", system-ui, sans-serif;
-    min-height: 100vh;
+    font-family: var(--font-space-grotesk), var(--font-montserrat), system-ui, sans-serif;
+    /* dvh avoids the iOS Safari toolbar height jump that 100vh causes. */
+    min-height: 100dvh;
     color: var(--foreground);
+    background-color: var(--background);
     background-size: cover;
-    backdrop-filter: blur(10px);
-    transition: all 0.4s ease;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Removed the full-viewport `backdrop-filter: blur(10px)`: it promoted the
+       whole document to its own compositing layer (janky scroll on mobile) and
+       had nothing behind it to blur. Removed `transition: all` for the same
+       reason — it animated layout properties on every state change. */
+  }
+
+  /* One visible focus ring for keyboard users across every interactive element.
+     Previously focus was invisible on most custom buttons. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Headings: tighter tracking and leading the larger they get. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-space-grotesk), system-ui, sans-serif;
+    text-wrap: balance;
+  }
+  h1 { letter-spacing: -0.03em; line-height: 1.08; }
+  h2 { letter-spacing: -0.02em; line-height: 1.15; }
+  h3 { letter-spacing: -0.015em; line-height: 1.25; }
+
+  p { text-wrap: pretty; }
+
+  /* Financial UI: figures must align in columns and not reflow as they tick. */
+  [data-numeric], .tabular, table td, table th {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
   }
 }
 
+/* Respect the OS setting instead of animating regardless. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard users need a way past the fixed header into page content. */
+.skip-link {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -120%);
+  z-index: var(--z-toast);
+  padding: 0.75rem 1.25rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.skip-link:focus-visible {
+  transform: translate(-50%, 0);
+  outline-offset: -4px;
+}
+
+/* Glass surfaces: an inner hairline simulates edge refraction, which is what
+   separates real glassmorphism from "blur plus a border". */
 .glass {
   background: rgba(0, 31, 45, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  transition: all 0.4s ease;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* Transition only compositor-friendly properties, not `all`. */
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
 }
 .glass:hover {
-  border-color: rgba(0, 194, 203, 0.6);
-  box-shadow: 0 6px 25px rgba(0, 194, 203, 0.2);
-  transform: translateY(-4px);
+  border-color: rgba(0, 194, 203, 0.5);
+  box-shadow: var(--shadow-accent), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
 }
 
 .ocean-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  transition: all 0.4s ease;
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
 }
+/* Was -6px: enough travel that the cursor fell outside the card and triggered
+   a hover/unhover flicker loop on dense grids. 2px reads as lift without it. */
 .ocean-card:hover {
   border-color: rgba(0, 194, 203, 0.4);
-  box-shadow: 0 10px 30px rgba(0, 194, 203, 0.15);
-  transform: translateY(-6px);
+  box-shadow: var(--shadow-accent);
+  transform: translateY(-2px);
+}
+.ocean-card:focus-within {
+  border-color: rgba(0, 194, 203, 0.5);
+}
+
+/* =========================
+   AMBIENT BACKGROUND
+   Replaces the looping background video. See background-ambient.tsx.
+========================= */
+
+/* Deep-water base: darkens toward the bottom so content in the upper two
+   thirds keeps the most contrast, which is where the header and hero sit. */
+.bg-ocean-depth {
+  background:
+    radial-gradient(120% 80% at 50% 0%, #013243 0%, transparent 60%),
+    linear-gradient(180deg, #002536 0%, #001F2D 45%, #001622 100%);
+}
+
+/* Two offset light sources, drifting on different periods so they never fall
+   back into sync and produce a visibly repeating loop. */
+.bg-ocean-caustics::before,
+.bg-ocean-caustics::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  /* Large blur radius + low alpha keeps these reading as ambient light rather
+     than as discrete circles. */
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.bg-ocean-caustics::before {
+  top: -18%;
+  right: -8%;
+  width: 55vw;
+  height: 55vw;
+  max-width: 900px;
+  max-height: 900px;
+  background: radial-gradient(circle, rgba(0, 194, 203, 0.16) 0%, transparent 70%);
+  animation: drift-a 34s var(--ease-out) infinite alternate;
+}
+
+.bg-ocean-caustics::after {
+  bottom: -22%;
+  left: -12%;
+  width: 45vw;
+  height: 45vw;
+  max-width: 760px;
+  max-height: 760px;
+  background: radial-gradient(circle, rgba(0, 127, 140, 0.2) 0%, transparent 70%);
+  animation: drift-b 44s var(--ease-out) infinite alternate;
+}
+
+/* transform/opacity only — no layout properties, so these stay on the
+   compositor and never trigger reflow. */
+@keyframes drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-6%, 8%, 0) scale(1.12); }
+}
+@keyframes drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(7%, -6%, 0) scale(1); }
+}
+
+/* Inline SVG turbulence: no image request, no extra bytes over the wire. */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* The video could not honour this; the replacement can. */
+@media (prefers-reduced-motion: reduce) {
+  .bg-ocean-caustics::before,
+  .bg-ocean-caustics::after {
+    animation: none;
+  }
 }
 
 .ocean-glow {
@@ -161,10 +405,35 @@
   }
 }
 
+/* Shape-matched loading placeholder. Replaces centered spinners, which give no
+   hint of the incoming layout and cause a full reflow when content lands. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(102, 209, 217, 0.09),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}
+
 /* Wrapper glass */
 .defi-minimap {
 
-  background: rgba(15,15,26,0.55) !important;
+  background: rgba(0, 24, 35, 0.6) !important;
 
   backdrop-filter: blur(16px);
 
@@ -192,12 +461,12 @@
 
 }
 
-/* viewport rectangle */
+/* viewport rectangle — was indigo #6366f1, off-brand against the teal palette */
 .defi-minimap .react-flow__minimap-viewport {
 
-  fill: rgba(99,102,241,0.15) !important;
+  fill: rgba(0, 194, 203, 0.15) !important;
 
-  stroke: #6366f1 !important;
+  stroke: var(--accent-light) !important;
 
   stroke-width: 1.5px !important;
 
@@ -244,31 +513,37 @@
    BASE STYLE 
 ========================= */
 
+/* Retinted from indigo (#6366f1 / #c7d2fe) to the product's teal accent — this
+   button sat in the builder canvas and read as a different product's control. */
 .defi-btn-glass {
 
-  padding: 12px 0;
+  padding: 12px 16px;
 
   font-size: 14px;
 
   font-weight: 600;
 
-  color: #c7d2fe;
+  color: var(--tertiary);
 
-  background: rgba(99,102,241,0.12);
+  background: rgba(0, 194, 203, 0.12);
 
   backdrop-filter: blur(16px);
 
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 
-  border: 1px solid rgba(99,102,241,0.25);
+  border: 1px solid rgba(0, 194, 203, 0.28);
 
   box-shadow:
-    0 4px 15px rgba(0,0,0,0.35),
-    inset 0 0 10px rgba(255,255,255,0.05);
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255,255,255,0.06);
 
   cursor: pointer;
 
-  transition: all 0.2s ease;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
 
 }
 
@@ -277,14 +552,24 @@
 
 .defi-btn-glass:hover {
 
-  color: white;
+  color: #EAFDFF;
 
-  background: rgba(99,102,241,0.25);
+  background: rgba(0, 194, 203, 0.22);
 
-  border: 1px solid rgba(129,140,248,0.5);
+  border-color: rgba(0, 194, 203, 0.55);
 
-  box-shadow:
-    0 6px 20px rgba(99,102,241,0.35);
+  box-shadow: var(--shadow-accent);
+
+}
+
+
+/* Physical press feedback — the control previously felt inert on click. */
+
+.defi-btn-glass:active:not(:disabled) {
+
+  transform: translateY(1px);
+
+  background: rgba(0, 194, 203, 0.3);
 
 }
 

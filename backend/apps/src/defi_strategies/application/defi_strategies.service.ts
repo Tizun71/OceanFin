@@ -54,6 +54,11 @@ export class DefiStrategiesService {
     return strategies;
   }
 
+  /** Returns null when no strategy carries this id (callers may fall back). */
+  public async getById(id: string) {
+    return this.defiStrategiesRepository.getById(id);
+  }
+
   public async update(
     id: string,
     data: UpdateDefiStrategyDto,

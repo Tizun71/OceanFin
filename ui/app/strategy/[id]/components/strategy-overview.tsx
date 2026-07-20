@@ -1,5 +1,5 @@
 import { Bot } from "lucide-react";
-import { StrategyHeader } from "./strategy-header";
+import { resolveAgentIcon } from "@/lib/iconMap";
 
 interface StrategyOverviewProps {
   strategy?: {
@@ -32,84 +32,90 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
     strategy?.description ||
     `Strategy simulation with ${simulateData?.loops || 0} loops, starting from ${simulateData?.initialCapital?.symbol || "DOT"}.`;
 
-  const AGENT_ICONS: Record<string, string> = {
-    HYDRATION:
-      "https://cdn.jsdelivr.net/gh/galacticcouncil/intergalactic-asset-metadata@latest/v2/polkadot/2034/assets/0/icon.svg",
-  };
   const uniqueAgents = Array.from(new Set(safeAgents));
 
   return (
     <div className="space-y-6">
-
-      {/* === STRATEGY HEADER === */}
-      <StrategyHeader strategy={strategy as any} simulateData={simulateData} />
+      {/* StrategyHeader moved up to the page level — it rendered here, so the
+          title and APY vanished the moment you opened any other tab. */}
 
       {/* === DESCRIPTION SECTION === */}
-      <div className="glass rounded-lg p-6 space-y-5">
-        <div className="flex items-center gap-3 ">
-          <div className="h-1 w-1 rounded-full bg-accent"></div>
-          <h3 className="text-xl font-semibold text-foreground">
-            Strategy Description
-          </h3>
-        </div>
+      <section className="glass rounded-xl p-6 space-y-5">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Description
+        </h2>
 
         {simulateData ? (
-          <p className="text-foreground/80 leading-relaxed text-[15px]">
+          // ~70ch keeps prose in the comfortable reading band instead of
+          // running the full panel width.
+          <p className="text-foreground/90 leading-relaxed max-w-[70ch]">
             {safeDescription}
           </p>
         ) : (
-          <div className="flex flex-col items-center justify-center px-4">
-            <div className="w-10 h-10 mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-              <Bot className="w-10 h-10 text-accent/50" />
-            </div>
-            <p className="text-muted-foreground text-center max-w-md text-sm">
-              Please run a simulation first to see the strategy details and expected results.
-            </p>
-          </div>
+          <SimulationEmptyState />
         )}
 
         {/* Agents */}
         {safeAgents.length > 0 && (
-          <div className="pt-4 border-t border-border/50">
-            <div className="flex items-center gap-2 mb-3">
-              <Bot className="w-4 h-4 text-accent" />
-              <span className="text-sm font-semibold text-foreground/90">
-                Executed by Agents
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
+          <div className="pt-5 border-t border-border">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Executed by
+            </h3>
+            <ul className="flex flex-wrap gap-2">
               {uniqueAgents.map((agent, idx) => {
-                const iconUrl = AGENT_ICONS[agent] || null;
+                const iconUrl = resolveAgentIcon(String(agent));
                 return (
-                  <div
+                  // The chips were icon-only with the agent name hidden in an
+                  // alt attribute, so sighted users had to recognise protocols
+                  // by logo alone. The name is now visible text.
+                  <li
                     key={`${agent}-${idx}`}
-                    className="
-                      group px-4 py-2 rounded-lg 
-                      bg-card/60 border border-border/50
-                      hover:border-accent/50 hover:bg-accent/10
-                      transition-all duration-300
-                      backdrop-blur-sm flex items-center justify-center
-                    "
+                    className="flex items-center gap-2 rounded-lg border border-border bg-surface-1 px-3 py-2"
                   >
                     {iconUrl ? (
                       <img
                         src={iconUrl}
-                        alt={agent}
-                        className="w-8 h-8 rounded-full object-contain transition-transform duration-300 group-hover:scale-110"
+                        alt=""
+                        aria-hidden
+                        className="w-5 h-5 rounded-full object-contain"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-accent" />
-                      </div>
+                      <span className="grid size-5 place-items-center rounded-full bg-accent/15">
+                        <Bot className="w-3 h-3 text-accent" aria-hidden />
+                      </span>
                     )}
-                  </div>
+                    <span className="text-sm font-medium text-foreground/90">
+                      {String(agent)}
+                    </span>
+                  </li>
                 );
               })}
-
-            </div>
+            </ul>
           </div>
         )}
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Shared "run a simulation first" state.
+ *
+ * This exact block was duplicated in three places (Overview, the Flow tab, and
+ * inline here) with a `w-10 h-10` circle wrapping a `w-10 h-10` icon — the
+ * icon completely filled and overflowed its own container.
+ */
+export function SimulationEmptyState({
+  message = "Run a simulation to see the projected steps and returns for this strategy.",
+}: {
+  message?: string
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="mb-4 grid size-12 place-items-center rounded-full bg-accent/10">
+        <Bot className="w-6 h-6 text-accent" aria-hidden />
       </div>
+      <p className="max-w-sm text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

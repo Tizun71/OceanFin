@@ -1,5 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { DefiPair } from "../domain/defi_pairs.entity";
+import { DefiToken } from "src/defi_token/domain/defi_token.entity";
 import { DefiPairsRepository } from "../domain/defi_pairs.repository";
 import { DefiTokenService } from "src/defi_token/application/defi_token.service";
 import { HydrationSdkService } from "src/shared/infrastructure/hydration-sdk.service";
@@ -36,6 +37,20 @@ export class DefiPairsService {
 
   async getAllAvailablePairs(): Promise<DefiPair[]> {
     return this.defiPairsRepository.findAll();
+  }
+
+  /**
+   * These estimates run against the Hydration SDK, which addresses assets by
+   * asset_id. EVM tokens carry an address instead, so fail with a clear message
+   * rather than stringifying a null.
+   */
+  private requireAssetId(token: DefiToken): string {
+    if (token.asset_id === null || token.asset_id === undefined) {
+      throw new BadRequestException(
+        `Token ${token.name} (chain ${token.chain}) has no Hydration asset_id; this estimate is Hydration-only`,
+      );
+    }
+    return token.asset_id.toString();
   }
 
   async getAvailablePairsForToken(tokenId: string): Promise<{
@@ -81,8 +96,8 @@ export class DefiPairsService {
 
     const { sdk } = await this.hydrationSdk.getApiAndSdk();
 
-    const assetInId = tokenIn.asset_id.toString();
-    const assetOutId = tokenOut.asset_id.toString();
+    const assetInId = this.requireAssetId(tokenIn);
+    const assetOutId = this.requireAssetId(tokenOut);
 
     try {
       const amountInRaw = BigInt(Math.floor(amountIn * 10 ** 12));
@@ -149,8 +164,8 @@ export class DefiPairsService {
 
     const { sdk } = await this.hydrationSdk.getApiAndSdk();
 
-    const assetInId = tokenIn.asset_id.toString();
-    const assetOutId = tokenOut.asset_id.toString();
+    const assetInId = this.requireAssetId(tokenIn);
+    const assetOutId = this.requireAssetId(tokenOut);
 
     try {
       const amountInRaw = BigInt(Math.floor(amountIn * 10 ** 12));
@@ -222,7 +237,7 @@ export class DefiPairsService {
       });
 
       const reserve = poolData.reservesData.find(
-        (r) => r.symbol === tokenIn.name || r.id === tokenIn.asset_id.toString(),
+        (r) => r.symbol === tokenIn.name || r.id === this.requireAssetId(tokenIn),
       );
 
       if (!reserve) {
@@ -268,12 +283,12 @@ export class DefiPairsService {
       }
       else {
         spotPrice = await this.hydrationStrategyService.getAssetPrice(
-          collateralToken.asset_id.toString(),
-          borrowToken.asset_id.toString(),
+          this.requireAssetId(collateralToken),
+          this.requireAssetId(borrowToken),
         );
       }
 
-      if (collateralToken.asset_id.toString() === ASSET_ID.GDOT) {
+      if (this.requireAssetId(collateralToken) === ASSET_ID.GDOT) {
 
         const ltv = 0.8;
         const maxBorrowAmount = collateralAmount * (ltv - ltv * 0.1) * spotPrice * 0.99;
@@ -281,7 +296,7 @@ export class DefiPairsService {
           lendingPoolAddressProvider: POOL,
         });
         const borrowReserve = poolData.reservesData.find(
-          (r) => r.symbol === borrowToken.name || r.id === borrowToken.asset_id.toString(),
+          (r) => r.symbol === borrowToken.name || r.id === this.requireAssetId(borrowToken),
         );
         const borrowApy = borrowReserve?.variableBorrowRate
           ? (parseFloat(borrowReserve.variableBorrowRate) * 100) / 1e27
@@ -302,10 +317,10 @@ export class DefiPairsService {
       });
 
       const collateralReserve = poolData.reservesData.find(
-        (r) => r.symbol === collateralToken.name || r.id === collateralToken.asset_id.toString(),
+        (r) => r.symbol === collateralToken.name || r.id === this.requireAssetId(collateralToken),
       );
       const borrowReserve = poolData.reservesData.find(
-        (r) => r.symbol === borrowToken.name || r.id === borrowToken.asset_id.toString(),
+        (r) => r.symbol === borrowToken.name || r.id === this.requireAssetId(borrowToken),
       );
 
       if (!collateralReserve) {

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
-import { SupabaseModule } from './shared/supabase.module';
+import { DatabaseModule } from './shared/database.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { StrategiesModule } from './strategies/stategies.module';
@@ -18,7 +18,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
-    SupabaseModule,
+    DatabaseModule,
     UsersModule,
     StrategiesModule,
     ActivitiesModule,

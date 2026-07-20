@@ -8,10 +8,16 @@ import type { ExecutionStatus, ExecutionStep } from "./types"
 import { STEP_TYPE } from "@/utils/constant"
 import { buildStepTx } from "@/services/strategy-step-service"
 import { useLunoPapiClient } from "@/hooks/use-luno-papiclient"
-import { motion } from "framer-motion"
+import { useActiveChain } from "@/hooks/use-active-chain"
+import { useWallet } from "@/hooks/use-wallet"
+import { usePublicClient } from "wagmi"
+import type { Address } from "viem"
+import { resolveEvmStepPlan } from "@/lib/evm/build-evm-plan"
+import { executeEvmStep } from "@/lib/evm/execute-evm-step"
+import { CheckCircle2 } from "lucide-react"
 import { displayToast } from "./toast-manager"
 import StepStack from "./execution-step-stack"
-import { assetIcons } from "@/lib/iconMap"
+import { resolveAssetIcon } from "@/lib/iconMap"
 import type { UpdateActivityPayload } from "@/types/activity.interface"
 import { useCreateActivity, useUpdateActivity } from "@/hooks/use-activity-service"
 
@@ -70,12 +76,12 @@ const buildExecutionSteps = (strategy?: StrategySimulate): ExecutionStep[] => {
   
   return strategy.steps.map((s, i) => {
     const fromToken = s.tokenIn ? {
-      icon: assetIcons[s.tokenIn.symbol],
+      icon: resolveAssetIcon(s.tokenIn.symbol) ?? "",
       symbol: s.tokenIn.symbol,
     } : undefined
 
     const toToken = s.tokenOut ? {
-      icon: assetIcons[s.tokenOut.symbol],
+      icon: resolveAssetIcon(s.tokenOut.symbol) ?? "",
       symbol: s.tokenOut.symbol,
     } : undefined
 
@@ -110,6 +116,14 @@ export function ExecutionModal({
   const abortRef = useRef(false)
 
   const { sendTransaction, walletAddress, isWalletConnected } = useLunoPapiClient()
+  const { activeChain, isEvm } = useActiveChain()
+  const evmWallet = useWallet()
+  const publicClient = usePublicClient({ chainId: activeChain.chainId })
+
+  // Chain-agnostic wallet view used across the execution flow.
+  const activeAddress = isEvm ? evmWallet.address : walletAddress
+  const walletConnected = isEvm ? evmWallet.isConnected : isWalletConnected
+
   const createActivityMutation = useCreateActivity()
   const updateActivityMutation = useUpdateActivity()
 
@@ -176,9 +190,52 @@ export function ExecutionModal({
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const executeStep = async (stepIndex: number, step: StrategyStep) => {
     updateStepStatus(stepIndex, "processing")
+
+    const isLast = stepIndex >= strategy.steps.length - 1
+
+    // EVM path: build a plan and run the safe simulate→approve→write rail.
+    if (isEvm) {
+      if (!activeChain.chainId) throw new Error("Active chain has no chainId")
+      if (!evmWallet.isConnected) throw new Error("Connect an EVM wallet first")
+      // useWalletClient returns nothing while the wallet sits on another network,
+      // which otherwise surfaces as a confusing "not ready".
+      if (evmWallet.needsSwitch) {
+        throw new Error(
+          `Wallet is on chain ${evmWallet.walletChainId}; switch it to ${activeChain.name} (${activeChain.chainId}) to sign.`,
+        )
+      }
+
+      const walletClient = evmWallet.getWalletClient()
+      if (!walletClient) throw new Error(`No wallet client for ${activeChain.name}`)
+      if (!publicClient) throw new Error(`No RPC client for ${activeChain.name}`)
+
+      const plan = await resolveEvmStepPlan(
+        step,
+        activeChain,
+        activeAddress as Address,
+        publicClient,
+      )
+      if (!plan) {
+        updateStepStatus(stepIndex, "completed")
+        return { success: true, skipDelay: isLast }
+      }
+
+      const { txHash } = await executeEvmStep(plan, {
+        publicClient,
+        walletClient,
+        account: activeAddress as Address,
+        expectedChainId: activeChain.chainId,
+      })
+
+      updateStepStatus(stepIndex, "completed", txHash)
+      displayToast("success", `Step ${stepIndex + 1} completed successfully.`)
+      return { success: true, txHash, skipDelay: isLast }
+    }
+
+    // Substrate path (Hydration) — unchanged.
     await sleep(3000);
     const tx = await buildStepTx(step, walletAddress!)
-    
+
     if (!tx) {
       updateStepStatus(stepIndex, "completed")
       return { success: true, skipDelay: stepIndex >= strategy.steps.length - 1 }
@@ -199,7 +256,7 @@ export function ExecutionModal({
 
   const startExecution = async () => {
     if (!executionSteps.length || isExecuting) return
-    if (!isWalletConnected || !walletAddress) {
+    if (!walletConnected || !activeAddress) {
       displayToast("warning", "Please connect your wallet first.")
       return
     }
@@ -212,7 +269,7 @@ export function ExecutionModal({
 
       if (!currentActivityId) {
         const activity = await createActivityMutation.mutateAsync({
-          userAddress: walletAddress,
+          userAddress: activeAddress,
           strategyId,
           initialCapital: String(strategy.initialCapital?.amount || 0),
           totalSteps: executionSteps.length,
@@ -238,7 +295,7 @@ export function ExecutionModal({
             setCurrentStepIndex(i + 1)
             setAllStepsCompleted(true)
             onStatusChange?.("completed")
-            displayToast("success", "🎉 All steps completed successfully!")
+            displayToast("success", "All steps completed.")
             if (currentActivityId) {
               await updateActivityMutation.mutateAsync({
                 activityId: currentActivityId,
@@ -287,77 +344,120 @@ export function ExecutionModal({
     onOpenChange(false)
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto bg-card/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-border">
-        <DialogHeader className="pb-4 border-b border-border">
-          <DialogTitle className="text-2xl font-bold text-primary">
-            {allStepsCompleted ? "Execution Completed! 🎉" : "Execute Strategy"}
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1.5">
-            {allStepsCompleted 
-              ? `All ${executionSteps.length} steps completed successfully!`
-              : `${subtitle} • Step ${currentStepIndex + 1} of ${executionSteps.length}`
-            }
-          </p>
-        </DialogHeader>
-        
-        <div className="flex-1">
-          {executionSteps.length > 0 ? (
-            <StepStack steps={executionSteps} currentStep={currentStepIndex} allStepsCompleted={allStepsCompleted} />
+  const completedCount = allStepsCompleted ? executionSteps.length : currentStepIndex
+  const progressPct = executionSteps.length
+    ? Math.round((completedCount / executionSteps.length) * 100)
+    : 0
 
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="text-center"
+  return (
+    <Dialog
+      open={open}
+      // Esc and overlay clicks used to abort a running transaction sequence
+      // with no confirmation — one stray click mid-execution marked the current
+      // step failed. While executing, dismissal must go through the explicit
+      // Cancel button.
+      onOpenChange={(next) => {
+        if (!next && isExecuting) return
+        onOpenChange(next)
+      }}
+    >
+      <DialogContent
+        className="sm:max-w-lg max-h-[85dvh] flex flex-col gap-0 bg-popover backdrop-blur-xl shadow-lg rounded-xl border border-border"
+        onInteractOutside={(e) => isExecuting && e.preventDefault()}
+        onEscapeKeyDown={(e) => isExecuting && e.preventDefault()}
+      >
+        <DialogHeader className="pb-4 border-b border-border">
+          {/* Was `text-2xl` with a 🎉 and an exclamation mark. A confirmation
+              dialog for signing transactions should read as calm and factual. */}
+          <DialogTitle className="text-lg font-semibold text-foreground">
+            {allStepsCompleted ? "Execution complete" : "Execute strategy"}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            {allStepsCompleted
+              ? `All ${executionSteps.length} steps completed.`
+              : `${subtitle} • Step ${Math.min(currentStepIndex + 1, executionSteps.length)} of ${executionSteps.length}`}
+          </p>
+
+          {/* Progress was only ever stated in text. A bar gives the "how much
+              is left" read at a glance during a multi-minute signing flow. */}
+          {executionSteps.length > 0 && (
+            <div
+              className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2"
+              role="progressbar"
+              aria-valuenow={completedCount}
+              aria-valuemin={0}
+              aria-valuemax={executionSteps.length}
+              aria-label="Execution progress"
             >
-              <p className="text-sm text-muted-foreground">No steps to execute.</p>
-            </motion.div>
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                  allStepsCompleted ? "bg-success" : "bg-accent"
+                }`}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          )}
+        </DialogHeader>
+
+        {/* Screen readers got no notification as steps advanced. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {allStepsCompleted
+            ? "All steps completed"
+            : isExecuting
+              ? `Executing step ${currentStepIndex + 1} of ${executionSteps.length}`
+              : ""}
+        </p>
+
+        <div className="flex-1 min-h-0 py-4">
+          {executionSteps.length > 0 ? (
+            <StepStack
+              steps={executionSteps}
+              currentStep={currentStepIndex}
+              allStepsCompleted={allStepsCompleted}
+              explorerUrl={activeChain?.explorerUrl}
+              isEvm={isEvm}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              This strategy has no steps to execute.
+            </p>
           )}
         </div>
 
         {allStepsCompleted && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mx-6 p-4 rounded-xl bg-accent/10 border border-accent/30"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                <span className="text-2xl">✓</span>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-accent-light">Success!</p>
-                <p className="text-xs text-foreground/70">Your strategy has been executed successfully.</p>
-              </div>
-            </div>
-          </motion.div>
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-success/30 bg-success/10 p-3">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-success" aria-hidden />
+            <p className="text-sm text-foreground">
+              Your strategy is now running. Track it under{" "}
+              <span className="font-medium">My activities</span>.
+            </p>
+          </div>
         )}
 
-        <div className="flex gap-3 mt-6 pt-4 border-t border-border">
+        <div className="flex gap-3 pt-4 border-t border-border">
           {isExecuting ? (
-            <Button
-              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-400/50 
-                        ring-1 ring-red-500/40 hover:scale-105 transform transition-all duration-200"
-              onClick={handleCancel}
-            >
-              Cancel Execution
+            // Was `bg-red-600` hardcoded with a red glow and hover:scale-105.
+            // Cancelling is a secondary, cautionary action — not the loudest
+            // thing on screen.
+            <Button variant="outline" className="flex-1" onClick={handleCancel}>
+              Cancel execution
             </Button>
           ) : (
             <>
-              <Button variant="secondary" className="flex-1" onClick={handleClose}>
-                Close
+              <Button
+                variant={allStepsCompleted ? "default" : "secondary"}
+                className="flex-1"
+                onClick={handleClose}
+              >
+                {allStepsCompleted ? "Done" : "Close"}
               </Button>
               {!allStepsCompleted && (
                 <Button
-                  className="flex-1 bg-accent hover:bg-accent/90 text-white font-semibold"
+                  className="flex-1"
                   onClick={startExecution}
-                  disabled={!executionSteps.length || !isWalletConnected}
+                  disabled={!executionSteps.length || !walletConnected}
                 >
-                  {!isWalletConnected ? 'Connect Wallet' : 'Start Execution'}
+                  {!walletConnected ? "Connect wallet" : "Start execution"}
                 </Button>
               )}
             </>

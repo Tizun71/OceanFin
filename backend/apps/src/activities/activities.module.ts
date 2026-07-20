@@ -3,10 +3,10 @@ import { ActivityController } from './interfaces/activity.controller';
 import { ActivityService } from './application/activity.service';
 import { ActivityRepository } from './domain/activity.repository';
 import { ActivityRepositoryImplement } from './infrastructure/activity.repository.impl';
-import { SupabaseModule } from '../shared/supabase.module';
+import { DatabaseModule } from '../shared/database.module';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [DatabaseModule],
   controllers: [ActivityController],
   providers: [
     ActivityService,

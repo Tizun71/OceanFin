@@ -7,6 +7,10 @@ import { RewardsService } from './rewards.service';
 import { HydrationStrategyService } from './hydration-strategy.service';
 import { StrategySimulationService } from './strategy-simulation.service';
 import { StrategyMapper } from './mappers/strategy.mapper';
+import { AvalancheApyService } from './avalanche-apy.service';
+import { EvmWorkflowSimulationService } from './evm-workflow-simulation.service';
+import { DefiStrategiesService } from '../../defi_strategies/application/defi_strategies.service';
+import { DefiStrategyVersionService } from '../../defi_strategies/application/defi_strategy_version.service';
 
 @Injectable()
 export class StrategyService {
@@ -15,6 +19,10 @@ export class StrategyService {
     private readonly hydrationStrategy: HydrationStrategyService,
     private readonly rewards: RewardsService,
     private readonly simulation: StrategySimulationService,
+    private readonly avalancheApy: AvalancheApyService,
+    private readonly evmSimulation: EvmWorkflowSimulationService,
+    private readonly defiStrategies: DefiStrategiesService,
+    private readonly defiStrategyVersions: DefiStrategyVersionService,
   ) { }
 
   async create(dto: {
@@ -105,7 +113,52 @@ export class StrategyService {
     if (strategy.strategistName === STRATEGY_LIST.vDOT_LOOPING) {
       return await this.simulation.simulateVdot(assetIn, amountIn, iterations);
     }
-    throw new Error('Strategy not found');
+
+    // EVM strategies are backed by a seeded workflow sharing this row's id;
+    // simulation walks that workflow instead of a hand-written Hydration script.
+    const workflow = await this.findEvmWorkflow(strategyId);
+    if (workflow) {
+      return await this.evmSimulation.simulate(workflow, amountIn);
+    }
+
+    throw new Error(`No simulator for strategy ${strategy.strategistName}`);
+  }
+
+  /**
+   * The marketplace row and its executable workflow share an id (see
+   * seeds/0003-strategies.sql and 0004-defi-strategies.sql). Returns null when a
+   * strategy has no workflow, so callers can fall back.
+   */
+  private async findEvmWorkflow(strategyId: string): Promise<any | null> {
+    const defiStrategy = await this.defiStrategies.getById(strategyId).catch(() => null);
+    if (!defiStrategy?.current_version_id) return null;
+
+    const version = await this.defiStrategyVersions
+      .getById(defiStrategy.current_version_id)
+      .catch(() => null);
+
+    return version?.workflow_json ?? null;
+  }
+
+  /**
+   * Input token of a strategy, read from the first step of its workflow.
+   * `strategies.assets` holds icon paths, not symbols, so it cannot be used.
+   */
+  async getInputAsset(
+    strategyId: string,
+  ): Promise<{ symbol: string; address?: string; decimals?: number; chain?: string } | null> {
+    const workflow = await this.findEvmWorkflow(strategyId);
+    // A workflow can open with ENABLE_E_MODE, which carries no token — take the
+    // first step that actually moves one.
+    const token = workflow?.steps?.find((s: any) => s?.tokenIn?.symbol)?.tokenIn;
+    if (!token?.symbol) return null;
+
+    return {
+      symbol: token.symbol,
+      address: token.address,
+      decimals: token.decimals,
+      chain: workflow?.chain,
+    };
   }
 
   private generateId(): string {
@@ -121,7 +174,9 @@ export class StrategyService {
     await Promise.all(
       strategies.map(async (strategy) => {
         try {
-          const result = await this.rewards.calculateAPY(strategy.strategistName);
+          const result = this.avalancheApy.supports(strategy.strategistName)
+            ? await this.avalancheApy.calculateApy(strategy.strategistName)
+            : await this.rewards.calculateAPY(strategy.strategistName);
           console.log(result);
           strategy.update({ apy: result.apy });
           await this.strategiesRepo.save(strategy);

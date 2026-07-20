@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from '@luno-kit/react';
+import { useAccount } from 'wagmi';
 import { getCurrentUser } from '@/services/user-service';
 import { User } from '@/types/user.interface';
 

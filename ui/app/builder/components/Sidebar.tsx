@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Plus, Search } from "lucide-react";
 import { Action, Module } from "@/types/defi";
 
 interface SidebarProps {
@@ -15,122 +15,126 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
 
   useEffect(() => {
     if (modules && modules.length > 0) {
-      const allModuleIds = modules.map((m) => m.id);
-      setOpenModules(allModuleIds);
+      setOpenModules(modules.map((m) => m.id));
     }
   }, [modules]);
-  
+
   const toggleModule = (id: string) => {
     setOpenModules((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
     );
   };
 
-  return (
-    <div
-      className="
-        h-full flex flex-col
-        glass
-        rounded-2xl
-        text-white
-        overflow-hidden
-      "
-    >
-      {/* Header */}
-      <div className="p-4 border-b border-white/10">
-        <h2 className="text-lg font-semibold tracking-wide">Module Library</h2>
+  // Search used to match module names only, so typing an action name ("borrow")
+  // hid every module that offered it.
+  const filteredModules = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return modules;
 
-        {/* Search */}
-        <div className="mt-3 relative">
+    return modules.filter(
+      (module) =>
+        module.name.toLowerCase().includes(query) ||
+        module.actions?.some((action) => action.name.toLowerCase().includes(query)),
+    );
+  }, [modules, search]);
+
+  return (
+    <nav
+      aria-label="Module library"
+      className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface-1"
+    >
+      <div className="space-y-3 border-b border-border p-4">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-foreground">Module library</h2>
+          <span className="text-xs tabular-nums text-muted-foreground-subtle">
+            {modules.length}
+          </span>
+        </div>
+
+        <div className="relative">
           <Search
             size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground-subtle"
           />
           <input
-            type="text"
-            placeholder="Search module..."
+            type="search"
+            aria-label="Search modules and actions"
+            placeholder="Search modules or actions"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="
-              w-full pl-9 pr-3 py-2 rounded-xl
-              bg-white/5 
-              border border-white/10
-              text-sm text-cyan-50
-              focus:outline-none
-              focus:ring-2 focus:ring-primary/50
-              focus:border-primary/50
-              placeholder:text-muted/60
-              transition-all
-            "
+            className="w-full rounded-lg border border-border bg-surface-1 py-2 pl-9 pr-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted-foreground-subtle/70 hover:border-border-strong focus:border-accent-light/60"
           />
         </div>
       </div>
 
-      {/* Module List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll">
-        {modules
-          .filter((m) => m.name.toLowerCase().includes(search.toLowerCase()))
-          .map((module) => {
+      <div className="custom-scroll flex-1 space-y-5 overflow-y-auto p-4">
+        {modules.length === 0 ? (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            No modules available on this chain yet. Switch chains from the header
+            to see what can be built.
+          </p>
+        ) : filteredModules.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nothing matches &ldquo;{search}&rdquo;.
+          </p>
+        ) : (
+          filteredModules.map((module) => {
             const isOpen = openModules.includes(module.id);
+            const panelId = `module-panel-${module.id}`;
 
             return (
-              <div key={module.id}>
-                {/* Module Header */}
+              <section key={module.id}>
                 <button
+                  type="button"
                   onClick={() => toggleModule(module.id)}
-                  className={`
-                      w-full flex items-center justify-between
-                      text-[11px] font-bold uppercase tracking-[0.15em]
-                      transition-colors duration-300
-                      ${isOpen ? "text-primary" : "text-muted hover:text-cyan-200"}
-                  `}
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                  className={`flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors duration-200 ${
+                    isOpen
+                      ? "text-accent-light"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   {module.name}
-
                   <ChevronDown
                     size={14}
-                    className={`transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    aria-hidden
+                    className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                   />
                 </button>
 
-                {/* Actions */}
                 {isOpen && (
-                  <div className="mt-3 space-y-2">
+                  <ul id={panelId} className="mt-3 space-y-1.5">
                     {module.actions && module.actions.length > 0 ? (
                       module.actions.map((action) => (
-                        <button
-                          key={action.id}
-                          onClick={() => onSelect(module, action)}
-                          className="
-                            w-full text-left
-                            px-4 py-3 rounded-xl
-                            ocean-card
-                            bg-white/[0.03]
-                            text-sm font-medium
-                            text-cyan-50/80
-                            hover:text-white
-                            hover:bg-primary/10
-                            group
-                            flex items-center justify-between
-                          "
-                        >
-                          {action.name}
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary text-xs">
-                             Add
-                          </span>
-                        </button>
+                        <li key={action.id}>
+                          <button
+                            type="button"
+                            onClick={() => onSelect(module, action)}
+                            className="group flex w-full items-center justify-between gap-2 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition-all duration-200 hover:border-accent/30 hover:bg-surface-2 hover:text-foreground active:translate-y-px"
+                          >
+                            {action.name}
+                            <Plus
+                              size={14}
+                              aria-hidden
+                              className="shrink-0 text-accent-light opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                            />
+                          </button>
+                        </li>
                       ))
                     ) : (
-                      <p className="text-sm text-neutral-600">No actions</p>
+                      <li className="px-3 text-sm text-muted-foreground-subtle">
+                        No actions
+                      </li>
                     )}
-                  </div>
+                  </ul>
                 )}
-              </div>
+              </section>
             );
-          })}
+          })
+        )}
       </div>
-    </div>
+    </nav>
   );
 }

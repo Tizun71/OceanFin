@@ -32,12 +32,17 @@ export class DefiModulesController {
   @ApiOperation({
     summary: "Get all DeFi modules",
   })
+  @ApiQuery({
+    name: "chain",
+    required: false,
+    description: "Filter modules by chain slug ('polkadot' | 'avalanche' | 'base' | 'arbitrum')",
+  })
   @ApiResponse({
     status: 200,
     description: "List of DeFi modules",
   })
-  public async getAllDefiModules() {
-    const defiModules = await this.defiModulesService.getAll();
+  public async getAllDefiModules(@Query("chain") chain?: string) {
+    const defiModules = await this.defiModulesService.getAll(chain);
     return defiModules;
   }
 

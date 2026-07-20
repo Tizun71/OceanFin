@@ -1,44 +1,56 @@
 import { Injectable } from '@nestjs/common';
-import { SupabaseService } from 'src/shared/infrastructure/supabase.service';
+import { PostgresService } from 'src/shared/infrastructure/postgres.service';
 import { StrategiesRepository } from '../domain/strategies.repository';
 import { Strategy } from '../domain/strategies.entity';
 import { UUID } from 'crypto';
 
+// Whitelist sortable columns — sortBy is caller-provided, so never interpolate raw.
+const SORTABLE = new Set(['apy', 'strategist_name']);
+
 @Injectable()
 export class StrategiesRepositoryImplement implements StrategiesRepository {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly db: PostgresService) {}
+
+  private mapRowToEntity(row: any): Strategy {
+    return new Strategy(
+      row.id,
+      row.strategist_name,
+      // pg returns numeric as a string to avoid float precision loss; the UI does
+      // arithmetic on apy (toFixed, sorting), so coerce it back at the boundary.
+      row.apy === null || row.apy === undefined ? row.apy : Number(row.apy),
+      row.tags ?? [],
+      row.strategist_handle ?? undefined,
+      row.assets ?? [],
+      row.agents ?? [],
+      row.chains ?? [],
+      row.title ?? undefined,
+    );
+  }
+
+  private orderClause(sortBy?: string, order: 'asc' | 'desc' = 'desc'): string {
+    if (sortBy && SORTABLE.has(sortBy)) {
+      return ` ORDER BY ${sortBy} ${order === 'asc' ? 'ASC' : 'DESC'}`;
+    }
+    return '';
+  }
 
   async findById(id: UUID): Promise<Strategy | null> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('strategies')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error || !data) return null;
-
-    return this.mapRowToEntity(data);
+    const row = await this.db.queryOne('SELECT * FROM strategies WHERE id = $1', [id]);
+    return row ? this.mapRowToEntity(row) : null;
   }
 
   async findAll(sortBy?: string, order: 'asc' | 'desc' = 'desc', limit?: number): Promise<Strategy[]> {
-  let query = this.supabase.getClient().from('strategies').select('*');
-
-  if (sortBy) {
-    query = query.order(sortBy, { ascending: order === 'asc' });
+    const params: unknown[] = [];
+    let sql = 'SELECT * FROM strategies' + this.orderClause(sortBy, order);
+    if (limit) {
+      params.push(limit);
+      sql += ` LIMIT $${params.length}`;
+    }
+    const rows = await this.db.query(sql, params);
+    return rows.map((r) => this.mapRowToEntity(r));
   }
 
-  if (limit) {
-    query = query.limit(limit);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`Failed to fetch strategies: ${error.message}`);
-
-  return (data ?? []).map((r) => this.mapRowToEntity(r));
-}
-
-async findAllWithFilters(params: {
+  async findAllWithFilters(params: {
     keyword?: string;
     tags?: string[];
     sortBy?: string;
@@ -46,74 +58,64 @@ async findAllWithFilters(params: {
     limit?: number;
   }): Promise<{ data: Strategy[]; total: number }> {
     const { keyword, tags, sortBy, order = 'desc', limit } = params;
+    const where: string[] = [];
+    const args: unknown[] = [];
 
-    let query = this.supabase
-      .getClient()
-      .from('strategies')
-      .select('*', { count: 'exact' });
     if (keyword) {
-      query = query.ilike('strategist_name', `%${keyword}%`);
+      args.push(`%${keyword}%`);
+      where.push(`(strategist_name ILIKE $${args.length} OR title ILIKE $${args.length})`);
     }
     if (tags && tags.length > 0) {
-      tags.forEach(tag => {
-        query = query.contains('tags', [tag]);
-      });
+      args.push(tags);
+      where.push(`tags @> $${args.length}::text[]`);
     }
-    if (sortBy) {
-      query = query.order(sortBy, { ascending: order === 'asc' });
-    }
+    const whereSql = where.length ? ` WHERE ${where.join(' AND ')}` : '';
+
+    const countRow = await this.db.queryOne<{ count: string }>(
+      `SELECT COUNT(*)::int AS count FROM strategies${whereSql}`,
+      args,
+    );
+    const total = countRow ? Number(countRow.count) : 0;
+
+    let sql = `SELECT * FROM strategies${whereSql}` + this.orderClause(sortBy, order);
     if (limit) {
-      query = query.limit(limit);
+      args.push(limit);
+      sql += ` LIMIT $${args.length}`;
     }
-    const { data, count, error } = await query;
-    if (error) {
-      throw new Error(`Failed to fetch with filters: ${error.message}`);
-    }
-    return {
-      data: (data ?? []).map(r => this.mapRowToEntity(r)),
-      total: count ?? 0,
-    };
+    const rows = await this.db.query(sql, args);
+
+    return { data: rows.map((r) => this.mapRowToEntity(r)), total };
   }
 
-
-
   async save(strategy: Strategy): Promise<void> {
-    const { error } = await this.supabase.getClient().from('strategies').upsert({
-      id: strategy.id,
-      strategist_name: strategy.strategistName,
-      strategist_handle: strategy.strategistHandle,
-      apy: strategy.apy,
-      tags: strategy.tags,
-      assets: strategy.assets,
-      agents: strategy.agents,
-      chains: strategy.chains,
-    });
-
-    if (error) throw new Error(`Failed to save strategy: ${error.message}`);
+    await this.db.query(
+      `INSERT INTO strategies
+         (id, strategist_name, strategist_handle, apy, tags, assets, agents, chains, title)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (id) DO UPDATE SET
+         strategist_name = EXCLUDED.strategist_name,
+         title = EXCLUDED.title,
+         strategist_handle = EXCLUDED.strategist_handle,
+         apy = EXCLUDED.apy,
+         tags = EXCLUDED.tags,
+         assets = EXCLUDED.assets,
+         agents = EXCLUDED.agents,
+         chains = EXCLUDED.chains`,
+      [
+        strategy.id,
+        strategy.strategistName,
+        strategy.strategistHandle,
+        strategy.apy,
+        strategy.tags,
+        strategy.assets,
+        strategy.agents,
+        strategy.chains,
+        strategy.title ?? null,
+      ],
+    );
   }
 
   async deleteById(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .getClient()
-      .from('strategies')
-      .delete()
-      .eq('id', id);
-    if (error) throw new Error(`Failed to delete strategy: ${error.message}`);
-  }
-
-  private mapRowToEntity(row: any): Strategy {
-    return new Strategy(
-      row.id,
-      row.strategist_name,
-      row.apy,
-      row.tags ?? [],
-      row.strategist_handle ?? undefined,
-      row.assets ?? [],
-      row.agents ?? [],
-      row.chains ?? [],
-    );
+    await this.db.query('DELETE FROM strategies WHERE id = $1', [id]);
   }
 }
-
-
-

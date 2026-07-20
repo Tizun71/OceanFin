@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import RunStrategyModal from '@/components/shared/run-strategy-modal';
 import Image from "next/image";
-import { assetIcons } from '@/lib/iconMap';
+import { resolveAssetIcon } from '@/lib/iconMap';
 import { deleteStrategy } from '@/services/defi-module-service';
 import { displayToast } from '@/components/shared/toast-manager';
 import ConfirmModal from '@/components/shared/confirm-modal';
@@ -185,9 +185,9 @@ export default function StrategyTable() {
                                         {/* Token Badge */}
                                         <div className="flex items-center gap-1.5 bg-neutral-900/50 pl-0.5 pr-2 py-0.5 rounded-full border border-white/20 shadow-inner group/token">
                                           <div className="w-5 h-5 rounded-full overflow-hidden border border-white/40 bg-black flex-shrink-0">
-                                            {assetIcons[symbol] ? (
+                                            {resolveAssetIcon(symbol) ? (
                                               <Image 
-                                                src={assetIcons[symbol]} 
+                                                src={resolveAssetIcon(symbol)!} 
                                                 alt={symbol} 
                                                 width={20} 
                                                 height={20} 
@@ -243,9 +243,9 @@ export default function StrategyTable() {
                             style={{ zIndex: 10 - i }}
                             title={symbol}
                           >
-                            {assetIcons[symbol] ? (
+                            {resolveAssetIcon(symbol) ? (
                               <Image 
-                                src={assetIcons[symbol]} 
+                                src={resolveAssetIcon(symbol)!} 
                                 alt={symbol} 
                                 fill 
                                 sizes="20px"

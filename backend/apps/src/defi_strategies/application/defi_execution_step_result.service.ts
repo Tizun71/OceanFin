@@ -3,34 +3,27 @@ import { DefiExecutionStepResultRepository } from '../domain/defi_execution_step
 import { CreateExecutionStepResultDto } from '../interfaces/dto/create_execution_step_result.dto';
 import { DefiExecutionStepResult } from '../domain/defi_execution_step_result.entity';
 import { v4 as uuidv4 } from 'uuid';
-import { SupabaseService } from '../../shared/infrastructure/supabase.service';
+import { PostgresService } from '../../shared/infrastructure/postgres.service';
 
 @Injectable()
 export class DefiExecutionStepResultService {
   constructor(
     private readonly defiExecutionStepResultRepository: DefiExecutionStepResultRepository,
-    private readonly supabaseService: SupabaseService,
+    private readonly db: PostgresService,
   ) {}
 
   async getNextStepIndex(executionId: string): Promise<number> {
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from('defi_execution_step_results')
-      .select('step_index')
-      .eq('execution_id', executionId)
-      .order('step_index', { ascending: false })
-      .limit(1)
-      .single();
+    const row = await this.db.queryOne<{ step_index: number }>(
+      `SELECT step_index FROM defi_execution_step_results
+       WHERE execution_id = $1 ORDER BY step_index DESC LIMIT 1`,
+      [executionId],
+    );
 
-    if (error && error.code !== 'PGRST116') {
-      throw new Error(`Failed to fetch latest step index: ${error.message}`);
-    }
-
-    if (!data) {
+    if (!row) {
       return 0;
     }
 
-    return data.step_index + 1;
+    return row.step_index + 1;
   }
 
   async createExecStepResult(data: CreateExecutionStepResultDto) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { displayToast } from "@/components/shared/toast-manager";
 import { AIStrategyService, BuildStrategyResponse } from "@/services/ai-strategy-service";
+import { useActiveChain } from "@/hooks/use-active-chain";
 
 type TokenOption = {
   label: string;
@@ -12,6 +13,7 @@ type TokenOption = {
 
 export function useStrategyPrompt() {
   const router = useRouter();
+  const { activeChain } = useActiveChain();
 
   const [loading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -61,6 +63,7 @@ export function useStrategyPrompt() {
         userIntent: prompt,
         additionalContext,
         tokenAmount, // Add token amount to API call
+        chainSlug: activeChain.slug, // inject chain capability matrix
       });
 
       console.log('Received strategy result:', result);

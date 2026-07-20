@@ -1,103 +1,69 @@
 import { DefiStrategyVersionRepository } from "../domain/defi_strategy_version.repository";
 import { Injectable } from "@nestjs/common";
 import { DefiStrategyVersion } from "../domain/defi_strategy_version.entity";
-import { SupabaseService } from "../../shared/infrastructure/supabase.service";
+import { PostgresService } from "../../shared/infrastructure/postgres.service";
+
+const jsonb = (v: unknown) => (v == null ? null : JSON.stringify(v));
 
 @Injectable()
 export class DefiStrategyVersionRepositoryImpl implements DefiStrategyVersionRepository {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly db: PostgresService) {}
 
-  public async save(defiStrategyVersion: DefiStrategyVersion): Promise<DefiStrategyVersion> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_strategy_versions")
-      .upsert({
-        id: defiStrategyVersion.id,
-        strategy_id: defiStrategyVersion.strategy_id,
-        version: defiStrategyVersion.version,
-        workflow_json: defiStrategyVersion.workflow_json,
-        workflow_graph: defiStrategyVersion.workflow_graph,
-        created_at: defiStrategyVersion.created_at,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to save DefiStrategyVersion: ${error.message}`);
-    }
-
-    return data;
+  public async save(v: DefiStrategyVersion): Promise<DefiStrategyVersion> {
+    const row = await this.db.queryOne(
+      `INSERT INTO defi_strategy_versions
+         (id, strategy_id, version, workflow_json, workflow_graph, created_at)
+       VALUES ($1, $2, $3, $4, $5, COALESCE($6, now()))
+       ON CONFLICT (id) DO UPDATE SET
+         strategy_id = EXCLUDED.strategy_id, version = EXCLUDED.version,
+         workflow_json = EXCLUDED.workflow_json, workflow_graph = EXCLUDED.workflow_graph
+       RETURNING *`,
+      [v.id, v.strategy_id, v.version, jsonb(v.workflow_json), jsonb(v.workflow_graph), v.created_at ?? null],
+    );
+    return row as DefiStrategyVersion;
   }
 
   public async update(
     id: string,
     updates: Partial<DefiStrategyVersion>,
   ): Promise<DefiStrategyVersion> {
-    const updateData: Record<string, unknown> = {};
-
-    if (updates.workflow_json !== undefined) updateData.workflow_json = updates.workflow_json;
-    if (updates.workflow_graph !== undefined) updateData.workflow_graph = updates.workflow_graph;
-
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_strategy_versions")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(`Failed to update DefiStrategyVersion: ${error.message}`);
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    if (updates.workflow_json !== undefined) {
+      params.push(jsonb(updates.workflow_json));
+      sets.push(`workflow_json = $${params.length}`);
     }
-
-    if (!data) {
-      throw new Error(`DefiStrategyVersion with id ${id} not found`);
+    if (updates.workflow_graph !== undefined) {
+      params.push(jsonb(updates.workflow_graph));
+      sets.push(`workflow_graph = $${params.length}`);
     }
-
-    return data;
+    if (sets.length === 0) {
+      const current = await this.getById(id);
+      if (!current) throw new Error(`DefiStrategyVersion with id ${id} not found`);
+      return current;
+    }
+    params.push(id);
+    const row = await this.db.queryOne(
+      `UPDATE defi_strategy_versions SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+      params,
+    );
+    if (!row) throw new Error(`DefiStrategyVersion with id ${id} not found`);
+    return row as DefiStrategyVersion;
   }
 
   public async delete(id: string): Promise<void> {
-    const { error } = await this.supabase
-      .getClient()
-      .from("defi_strategy_versions")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      throw new Error(`Failed to delete DefiStrategyVersion: ${error.message}`);
-    }
+    await this.db.query('DELETE FROM defi_strategy_versions WHERE id = $1', [id]);
   }
 
   public async getByStrategyId(strategy_id: string): Promise<DefiStrategyVersion[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_strategy_versions")
-      .select("*")
-      .eq("strategy_id", strategy_id)
-      .order("version", { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to get DefiStrategyVersions: ${error.message}`);
-    }
-
-    return data;
+    return (await this.db.query(
+      'SELECT * FROM defi_strategy_versions WHERE strategy_id = $1 ORDER BY version DESC',
+      [strategy_id],
+    )) as DefiStrategyVersion[];
   }
 
   public async getById(id: string): Promise<DefiStrategyVersion | null> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from("defi_strategy_versions")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error && error.code !== "PGRST116") {
-      throw new Error(`Failed to get DefiStrategyVersion: ${error.message}`);
-    }
-
-    if (!data) return null;
-
-    return data;
+    const row = await this.db.queryOne('SELECT * FROM defi_strategy_versions WHERE id = $1', [id]);
+    return (row as DefiStrategyVersion) ?? null;
   }
 }

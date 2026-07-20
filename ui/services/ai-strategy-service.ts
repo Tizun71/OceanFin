@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { withChainCapability } from '@/lib/ai/chain-capability-context';
+import type { ChainSlug } from '@/config/chains/chain-registry';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
@@ -52,12 +54,21 @@ export interface BuildStrategyRequest {
   userIntent: string;
   additionalContext?: string;
   tokenAmount?: number;
+  /** Active chain — injects the chain capability matrix so the AI stays in-bounds. */
+  chainSlug?: ChainSlug;
 }
 
 export class AIStrategyService {
   static async buildStrategy(request: BuildStrategyRequest): Promise<BuildStrategyResponse> {
     try {
-      const response = await apiClient.post('/ai-strategy-builder/build', request);
+      // Inject per-chain capability matrix so Gemini never proposes an op a chain
+      // can't do (e.g. SWAP on Base) and uses BRIDGE for cross-chain intents.
+      const { chainSlug, ...rest } = request;
+      const payload: BuildStrategyRequest = chainSlug
+        ? { ...rest, additionalContext: withChainCapability(chainSlug, request.additionalContext) }
+        : rest;
+
+      const response = await apiClient.post('/ai-strategy-builder/build', payload);
       return response.data;
     } catch (error: any) {
       console.error('Failed to build strategy:', error);

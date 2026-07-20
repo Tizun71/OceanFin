@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from '../domain/user.repository';
 import { User } from '../domain/user.entity';
 import { CreateUserDto } from '../interfaces/dtos/create-user.dto';
 import { HydrationSdkService } from '../../shared/infrastructure/hydration-sdk.service';
+import { WalletSignatureVerifier } from './wallet-signature.verifier';
 import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
@@ -10,9 +11,19 @@ export class UserService {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly hydrationSdk: HydrationSdkService,
+    private readonly signatureVerifier: WalletSignatureVerifier,
   ) {}
 
   async createUser(dto: CreateUserDto): Promise<User> {
+    // Proof of wallet ownership. Without this, anyone could register an
+    // account against someone else's address and take it over.
+    this.signatureVerifier.verify(dto.walletAddress, dto.issuedAt, dto.signature);
+
+    const existing = await this.userRepo.findByWalletAddress(dto.walletAddress);
+    if (existing) {
+      throw new ConflictException('An account already exists for this wallet address');
+    }
+
     const id = this.generateId();
     const user = new User(id, dto.walletAddress, dto.chainId, dto.username);
     await this.userRepo.save(user);

@@ -1,3 +1,22 @@
+/**
+ * Token payload carried by a workflow step. `address`/`decimals` are the EVM
+ * execution metadata (see build-evm-plan.ts); substrate tokens leave them
+ * undefined and are resolved by assetId instead.
+ */
+const buildToken = (
+  assetId: any,
+  symbol: any,
+  amount: any,
+  address?: string,
+  decimals?: number,
+) => ({
+  assetId,
+  symbol,
+  amount,
+  address,
+  decimals,
+});
+
 export const buildWorkflowJson = (nodes: any[]) => {
   let stepNumber = 1;
 
@@ -8,32 +27,40 @@ export const buildWorkflowJson = (nodes: any[]) => {
 
     if (index === 0) {
       if (config?.tokenInId) {
-        tokenIn = {
-          assetId: config.tokenInId,
-          symbol: config.tokenInSymbol,
-          amount: config.amount,
-        };
+        tokenIn = buildToken(
+          config.tokenInId,
+          config.tokenInSymbol,
+          config.amount,
+          config.tokenInAddress,
+          config.tokenInDecimals,
+        );
       }
     } else {
       const prevConfig = nodes[index - 1].data.config;
 
+      // This step's input is the previous step's output — carry that token's
+      // EVM metadata forward too, or the chained step loses its address.
       if (prevConfig?.tokenOutId) {
-        tokenIn = {
-          assetId: prevConfig.tokenOutId,
-          symbol: prevConfig.tokenOutSymbol,
-          amount: prevConfig.amountOut,
-        };
+        tokenIn = buildToken(
+          prevConfig.tokenOutId,
+          prevConfig.tokenOutSymbol,
+          prevConfig.amountOut,
+          prevConfig.tokenOutAddress,
+          prevConfig.tokenOutDecimals,
+        );
       }
     }
 
     let tokenOut;
 
     if (config?.tokenOutId) {
-      tokenOut = {
-        assetId: config.tokenOutId,
-        symbol: config.tokenOutSymbol,
-        amount: config.amountOut,
-      };
+      tokenOut = buildToken(
+        config.tokenOutId,
+        config.tokenOutSymbol,
+        config.amountOut,
+        config.tokenOutAddress,
+        config.tokenOutDecimals,
+      );
     }
 
     return {

@@ -1,4 +1,5 @@
 export class UpdateStrategyDto {
+  title?: string;
   strategistName?: string;
   apy?: number;
   tags?: string[];

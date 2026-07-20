@@ -7,7 +7,7 @@ import type { StrategySimulate } from "@/types/strategy.type"
 import { AnimatePresence, motion } from "framer-motion"
 import { displayToast } from "@/components/shared/toast-manager"
 import type { ActivityResponse } from "@/types/activity.interface"
-import { useLuno } from "@/app/contexts/luno-context"
+import { useWallet } from "@/hooks/use-wallet"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import Pagination from "@/components/shared/pagination"
 import { usePaginatedActivities } from "@/hooks/use-activity-service"
@@ -35,7 +35,7 @@ export type MyActivityRow = {
 const ITEMS_PER_PAGE = 10
 
 export const MyActivityTable = () => {
-  const { address } = useLuno()
+  const { address } = useWallet()
   const [page, setPage] = useState(1)
 
   const { activities: activitiesData, total, loading, error } = usePaginatedActivities({
@@ -96,7 +96,7 @@ export const MyActivityTable = () => {
       setSelectedStrategyId(row.strategyId)
       setExecutionModalOpen(true)
       
-      displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
+      displayToast("success", "Simulation loaded. Ready to re-execute.")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Re-execution failed"
       displayToast("error", message)

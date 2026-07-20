@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aave/contract-helpers": "1.23.1",
+    "@bgd-labs/aave-address-book": "^4.44.22",
     "@ethersproject/providers": "^5.7.2",
     "@galacticcouncil/descriptors": "^1.14.0",
     "@galacticcouncil/sdk": "^9.17.1",
@@ -48,6 +49,7 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@rainbow-me/rainbowkit": "^2.2.11",
     "@tanstack/react-query": "^5.90.10",
     "@vercel/analytics": "latest",
     "autoprefixer": "^10.4.20",
@@ -57,6 +59,7 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
+    "ethers": "^5.8.0",
     "framer-motion": "^12.23.24",
     "geist": "^1.3.1",
     "gsap": "^3.13.0",
@@ -76,6 +79,8 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
+    "viem": "^2.55.2",
+    "wagmi": "^2.19.5",
     "zod": "3.25.67"
   },
   "devDependencies": {

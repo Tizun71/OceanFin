@@ -9,8 +9,9 @@ import {
 } from "@/services/defi-module-service";
 import { useEdges, Node } from "reactflow";
 import { DefiOperationType } from "@/app/builder/components/nodes/defi-node.types";
+import type { Token } from "@/types/defi";
 import Image from "next/image";
-import { assetIcons } from "@/lib/iconMap";
+import { resolveAssetIcon } from "@/lib/iconMap";
 
 interface Props {
   node: Node<any>;
@@ -19,17 +20,11 @@ interface Props {
   onClose: () => void;
 }
 
+// Pairs come back from the API with their tokens embedded; reuse the shared
+// Token shape so EVM fields (address/decimals) stay in one place.
 type DefiPair = {
-  token_in?: {
-    id?: string;
-    asset_id?: string;
-    name?: string;
-  };
-  token_out?: {
-    id?: string;
-    asset_id?: string;
-    name?: string;
-  };
+  token_in?: Partial<Token>;
+  token_out?: Partial<Token>;
 };
 
 const normalizeOperationType = (value: unknown): DefiOperationType => {
@@ -492,6 +487,13 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
       tokenInSymbol: tokenInMeta?.name || "",
       tokenOutSymbol: requiresTokenOut ? tokenOutMeta?.name || "" : "",
 
+      // EVM execution metadata. Undefined for substrate tokens; without these
+      // buildEvmStepPlan cannot encode an amount and throws at execution time.
+      tokenInAddress: tokenInMeta?.address ?? undefined,
+      tokenInDecimals: tokenInMeta?.decimals ?? undefined,
+      tokenOutAddress: requiresTokenOut ? tokenOutMeta?.address ?? undefined : undefined,
+      tokenOutDecimals: requiresTokenOut ? tokenOutMeta?.decimals ?? undefined : undefined,
+
       amount: Number(amount),
 
       // raw preview estimate
@@ -528,14 +530,14 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           </div>
           <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Estimated Output</p>
           <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-3xl font-bold text-white leading-none">
+            <p className="text-3xl font-bold text-foreground leading-none">
               {Number(estimate?.amount_out ?? estimate?.output_amount ?? 0).toFixed(6)}
             </p>
             <p className="text-sm font-medium text-primary/80">{selectedPair?.token_out?.name}</p>
           </div>
           <div className="flex justify-between mt-4 pt-3 border-t border-white/5 text-[11px]">
             <span className="text-muted">Max Slippage</span>
-            <span className="text-white font-mono">{((estimate?.slippage || 0) * 100).toFixed(2)}%</span>
+            <span className="text-foreground font-mono">{((estimate?.slippage || 0) * 100).toFixed(2)}%</span>
           </div>
         </div>
       );
@@ -549,7 +551,7 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           </div>
           <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Supply Strategy</p>
           <div className="mt-2">
-            <p className="text-3xl font-bold text-white leading-none">
+            <p className="text-3xl font-bold text-foreground leading-none">
               {Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%
             </p>
             <p className="text-xs text-muted mt-2 tracking-wide font-medium">ESTIMATED NET APY</p>
@@ -566,13 +568,13 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           <div className="space-y-3 mt-3">
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted">Amount Out</span>
-              <span className="text-sm font-bold text-white">
+              <span className="text-sm font-bold text-foreground">
                 {Number(estimate?.borrow_amount ?? estimate?.amount_out ?? 0).toFixed(4)} {selectedPair?.token_out?.name}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted">Borrow APY</span>
-              <span className="text-sm font-bold text-red-400">
+              <span className="text-sm font-bold text-destructive">
                 {Number(estimate?.borrow_apy ?? estimate?.apy ?? 0).toFixed(2)}%
               </span>
             </div>
@@ -592,7 +594,7 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
         <div className={`${cardBaseStyle} bg-primary/10 border-primary/30 ocean-glow`}>
           <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Strategy Entry</p>
           <div className="mt-3">
-             <div className="text-2xl font-bold text-white">
+             <div className="text-2xl font-bold text-foreground">
                {Number(estimate?.amount_out ?? 0).toFixed(6)}
                <span className="text-xs ml-2 text-primary/70">SHARES</span>
              </div>
@@ -600,11 +602,11 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] pt-3 border-t border-white/5">
             <div>
               <p className="text-muted uppercase">APY</p>
-              <p className="text-white font-bold">{Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%</p>
+              <p className="text-foreground font-bold">{Number(estimate?.supply_apy ?? estimate?.apy ?? 0).toFixed(2)}%</p>
             </div>
             <div>
               <p className="text-muted uppercase">Slippage</p>
-              <p className="text-white font-bold">{((estimate?.slippage ?? 0) * 100).toFixed(2)}%</p>
+              <p className="text-foreground font-bold">{((estimate?.slippage ?? 0) * 100).toFixed(2)}%</p>
             </div>
           </div>
         </div>
@@ -618,63 +620,61 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
     <>
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-40"
+        className="fixed inset-0 z-[var(--z-overlay)] bg-[rgba(0,12,18,0.45)] backdrop-blur-[1px]"
       />
 
-      <div
-        className="
-          fixed
-          right-8
-          top-[56%] -translate-y-1/2
-          w-[360px]
-          h-[600px]
-          rounded-2xl
-          glass
-          border border-white/10
-          shadow-[0_20px_50px_rgba(0,0,0,0.5)]
-          z-50
-          flex flex-col
-          overflow-hidden
-          animate-in fade-in slide-in-from-right-10 duration-300
-        "
+      {/* Slide-over rather than a centred modal: the canvas behind it stays
+          visible so the step being configured keeps its context. */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Configure ${node.data.action.name}`}
+        className="fixed right-6 top-1/2 z-[var(--z-modal)] flex h-[min(640px,calc(100dvh-8rem))] w-[380px] -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-popover shadow-[var(--shadow-lg)] backdrop-blur-xl animate-in fade-in slide-in-from-right-6 duration-300"
       >
-        <div className="px-6 py-5 border-b border-white/10 flex justify-between items-start">
-          <div>
-            <p className="text-xs text-neutral-500 uppercase">
+        <header className="flex items-start justify-between gap-3 border-b border-border px-6 py-5">
+          <div className="min-w-0">
+            <p className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground-subtle">
               {node.data.module.name}
             </p>
 
-            <h2 className="text-lg font-semibold text-white mt-1">
+            <h2 className="mt-1 truncate text-lg font-semibold text-foreground">
               {node.data.action.name}
             </h2>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="text-neutral-400 hover:text-white transition"
+            aria-label="Close configuration"
+            className="rounded-md p-1 text-muted-foreground transition-colors duration-200 hover:bg-surface-2 hover:text-foreground"
           >
-            <X size={18} />
+            <X size={18} aria-hidden />
           </button>
-        </div>
+        </header>
 
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scroll">
+        <div className="custom-scroll flex-1 space-y-6 overflow-y-auto px-6 py-6">
           {pairsLoading && (
-            <div className="text-sm text-neutral-500 bg-[#141420] p-4 rounded-xl border border-white/10">
-              Loading action requirements...
+            // Skeleton matches the shape of the controls it replaces instead of
+            // a line of text that shifts layout when the real fields land.
+            <div className="space-y-3" role="status" aria-label="Loading action requirements">
+              <div className="h-3 w-20 animate-pulse rounded bg-surface-2" />
+              <div className="h-[54px] animate-pulse rounded-2xl bg-surface-2" />
+              <div className="h-[62px] animate-pulse rounded-2xl bg-surface-2" />
             </div>
           )}
 
           {!pairsLoading && pairs.length === 0 && (
-            <div className="text-sm text-red-400 bg-[#141420] p-4 rounded-xl border border-white/10">
-              No valid token pairs found for this action.
-            </div>
+            <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm leading-relaxed text-destructive">
+              This action has no token pairs configured on the current chain, so
+              it can&apos;t be set up yet. Remove the step or pick another action.
+            </p>
           )}
 
           {pairs.length > 0 && (
             <>
             {/* --- TOKEN IN SECTION --- */}
               <div className="space-y-3">
-                <label className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold ml-1">
+                <label className="ml-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground-subtle">
                   Token In
                 </label>
 
@@ -686,17 +686,17 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                     onClick={() => setIsTokenInOpen(!isTokenInOpen)}
                     className="
                       w-full flex items-center justify-between pl-4 pr-10 py-3.5 rounded-2xl 
-                      bg-white/[0.03] border border-white/10 text-white
-                      hover:bg-white/[0.07] hover:border-white/20 transition-all
+                      bg-surface-1 border border-border text-foreground
+                      hover:bg-surface-2 hover:border-border-strong transition-all
                       disabled:opacity-50 disabled:cursor-not-allowed
                     "
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full border border-white/20 overflow-hidden bg-neutral-800 flex items-center justify-center relative shadow-sm">
+                      <div className="w-6 h-6 rounded-full border border-border-strong overflow-hidden bg-surface-2 flex items-center justify-center relative shadow-sm">
                         {(() => {
                           const selectedToken = tokenInOptions.find((t: any) => t.id === tokenIn);
                           const symbol = selectedToken?.name || "";
-                          const iconSrc = assetIcons[symbol];
+                          const iconSrc = resolveAssetIcon(symbol);
                           return iconSrc ? (
                             <Image src={iconSrc} alt={symbol} fill sizes="24px" className="object-cover scale-110" />
                           ) : (
@@ -716,10 +716,10 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                   {/* Menu List */}
                   {isTokenInOpen && !incomingEdge && (
                     <>
-                      <div className="fixed inset-0 z-[60]" onClick={() => setIsTokenInOpen(false)} />
-                      <div className="absolute top-full left-0 w-full mt-2 py-2 bg-[#141420] border border-white/10 rounded-2xl shadow-2xl z-[70] max-h-[200px] overflow-y-auto custom-scroll">
+                      <div className="fixed inset-0 z-[var(--z-overlay)]" onClick={() => setIsTokenInOpen(false)} />
+                      <div className="absolute top-full left-0 w-full mt-2 py-2 bg-popover border border-border rounded-2xl shadow-[var(--shadow-lg)] z-[var(--z-modal)] max-h-[200px] overflow-y-auto custom-scroll">
                         {tokenInOptions.map((token: any) => {
-                          const iconSrc = assetIcons[token.name];
+                          const iconSrc = resolveAssetIcon(token.name);
                           return (
                             <div
                               key={token.id}
@@ -727,16 +727,16 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                                 setTokenIn(token.id);
                                 setIsTokenInOpen(false);
                               }}
-                              className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
+                              className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 cursor-pointer transition-colors"
                             >
-                              <div className="w-5 h-5 rounded-full border border-white/10 overflow-hidden bg-neutral-900 flex items-center justify-center relative">
+                              <div className="w-5 h-5 rounded-full border border-border overflow-hidden bg-surface-2 flex items-center justify-center relative">
                                 {iconSrc ? (
                                   <Image src={iconSrc} alt={token.name} fill sizes="20px" className="object-cover" />
                                 ) : (
                                   <span className="text-[8px] font-bold">{token.name.charAt(0)}</span>
                                 )}
                               </div>
-                              <span className="text-sm text-white">{token.name}</span>
+                              <span className="text-sm text-foreground">{token.name}</span>
                               {tokenIn === token.id && <div className="ml-auto w-1 h-1 rounded-full bg-primary animate-pulse" />}
                             </div>
                           );
@@ -758,20 +758,20 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                   }}
                   className="
                     w-full px-5 py-4 rounded-2xl 
-                    bg-white/[0.03] border border-white/10 
-                    text-white text-2xl font-semibold
-                    placeholder:text-white/20
+                    bg-surface-1 border border-border 
+                    text-foreground text-2xl font-semibold
+                    placeholder:text-muted-foreground-subtle/60
                     focus:outline-none focus:ring-2 focus:ring-primary/40
                     transition-all
                   "
                 />
-                {error && <p className="text-red-400 text-[11px] ml-1">{error}</p>}
+                {error && <p className="text-destructive text-[11px] ml-1">{error}</p>}
               </div>
 
               {/* --- TOKEN OUT SECTION --- */}
               {requiresTokenOut && (
                 <div className="space-y-3 pt-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold ml-1">
+                  <label className="ml-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground-subtle">
                     Token Out
                   </label>
 
@@ -779,14 +779,14 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                     <button
                       type="button"
                       onClick={() => setIsTokenOutOpen(!isTokenOutOpen)}
-                      className="w-full flex items-center justify-between pl-4 pr-10 py-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-white hover:bg-white/[0.07] transition-all"
+                      className="w-full flex items-center justify-between pl-4 pr-10 py-3.5 rounded-2xl bg-surface-1 border border-border text-foreground hover:bg-surface-2 transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-full border border-white/20 overflow-hidden bg-neutral-800 flex items-center justify-center relative">
+                        <div className="w-6 h-6 rounded-full border border-border-strong overflow-hidden bg-surface-2 flex items-center justify-center relative">
                           {(() => {
                             const selectedToken = tokenOutOptions.find((t: any) => t.id === tokenOut);
                             const symbol = selectedToken?.name || "";
-                            const iconSrc = assetIcons[symbol];
+                            const iconSrc = resolveAssetIcon(symbol);
                             return iconSrc ? (
                               <Image src={iconSrc} alt={symbol} fill sizes="24px" className="object-cover scale-110" />
                             ) : (
@@ -805,10 +805,10 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
 
                     {isTokenOutOpen && (
                       <>
-                        <div className="fixed inset-0 z-[60]" onClick={() => setIsTokenOutOpen(false)} />
-                        <div className="absolute top-full left-0 w-full mt-2 py-2 bg-[#141420] border border-white/10 rounded-2xl shadow-2xl z-[70] max-h-[200px] overflow-y-auto custom-scroll">
+                        <div className="fixed inset-0 z-[var(--z-overlay)]" onClick={() => setIsTokenOutOpen(false)} />
+                        <div className="absolute top-full left-0 w-full mt-2 py-2 bg-popover border border-border rounded-2xl shadow-[var(--shadow-lg)] z-[var(--z-modal)] max-h-[200px] overflow-y-auto custom-scroll">
                           {tokenOutOptions.map((token: any) => {
-                            const iconSrc = assetIcons[token.name];
+                            const iconSrc = resolveAssetIcon(token.name);
                             return (
                               <div
                                 key={token.id}
@@ -816,16 +816,16 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                                   setTokenOut(token.id);
                                   setIsTokenOutOpen(false);
                                 }}
-                                className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 cursor-pointer transition-colors"
+                                className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2 cursor-pointer transition-colors"
                               >
-                                <div className="w-5 h-5 rounded-full border border-white/10 overflow-hidden bg-neutral-900 flex items-center justify-center relative">
+                                <div className="w-5 h-5 rounded-full border border-border overflow-hidden bg-surface-2 flex items-center justify-center relative">
                                   {iconSrc ? (
                                     <Image src={iconSrc} alt={token.name} fill sizes="20px" className="object-cover" />
                                   ) : (
                                     <span className="text-[8px] font-bold">{token.name.charAt(0)}</span>
                                   )}
                                 </div>
-                                <span className="text-sm text-white">{token.name}</span>
+                                <span className="text-sm text-foreground">{token.name}</span>
                                 {tokenOut === token.id && <div className="ml-auto w-1 h-1 rounded-full bg-secondary animate-pulse" />}
                               </div>
                             );
@@ -838,9 +838,11 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
               )}
 
               {estimating && (
-                <div className="text-sm text-neutral-500 bg-[#141420] p-4 rounded-xl border border-white/10">
-                  Estimating...
-                </div>
+                <div
+                  role="status"
+                  aria-label="Estimating"
+                  className="h-[92px] animate-pulse rounded-xl bg-surface-2"
+                />
               )}
 
               {renderEstimate()}
@@ -848,21 +850,17 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           )}
         </div>
 
-        <div className="p-6 border-t border-white/10 bg-white/[0.02]">
+        <footer className="border-t border-border bg-surface-1 p-6">
           <button
+            type="button"
             onClick={handleSubmit}
-            className="
-              defi-btn-glass w-full py-4 ocean-glow
-              hover:scale-[1.02] active:scale-[0.98]
-              disabled:opacity-30 disabled:hover:scale-100
-              transition-all duration-300
-              text-base
-            "
+            disabled={loading || pairs.length === 0}
+            className="h-12 w-full rounded-lg bg-accent text-sm font-semibold text-accent-foreground shadow-[var(--shadow-accent)] transition-all duration-200 hover:bg-accent-light active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >
-            {loading ? "Processing..." : "Confirm & Save"}
+            {loading ? "Saving" : "Save step"}
           </button>
-        </div>
-      </div>
+        </footer>
+      </aside>
     </>
   );
 }

@@ -1,0 +1,62 @@
+# Full stack: Postgres + NestJS backend + Next.js frontend.
+# Usage: docker compose up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: oceanfin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: oceanfin
+      POSTGRES_PASSWORD: oceanfin
+      POSTGRES_DB: oceanfin
+    ports:
+      - "5433:5432" # host 5432 is often taken by a local Postgres
+    volumes:
+      - oceanfin_pgdata:/var/lib/postgresql/data
+      - ./backend/apps/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oceanfin -d oceanfin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend/apps
+    container_name: oceanfin-backend
+    restart: unless-stopped
+    # Secrets (GEMINI_API_KEY, RPCs, LIFI...) come from the dev env file.
+    env_file:
+      - ./backend/apps/.env.development
+    environment:
+      # Override so the containerized backend reaches Postgres over the compose network.
+      DATABASE_URL: postgresql://oceanfin:oceanfin@postgres:5432/oceanfin
+      DATABASE_SSL: "false"
+      NODE_ENV: production
+      PORT: "8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./ui
+      args:
+        # Browser-reachable backend URL (host-published port).
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: oceanfin-frontend
+    restart: unless-stopped
+    environment:
+      # Server-side rendering runs inside the compose network, where the published
+      # localhost port is not the backend. Browser requests still use the build-arg
+      # NEXT_PUBLIC_API_URL above.
+      INTERNAL_API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  oceanfin_pgdata:

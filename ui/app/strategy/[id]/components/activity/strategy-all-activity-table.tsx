@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useMemo, useState } from "react"
-import { useLuno } from "@/app/contexts/luno-context"
+import { useWallet } from "@/hooks/use-wallet"
 import { CommonTable, TableColumn } from "@/app/common/common-table"
 import Pagination from "@/components/shared/pagination"
 import { AnimatePresence, motion } from "framer-motion"
@@ -37,7 +37,7 @@ function mapActivityToRow(a:ActivityResponse): AllActivityRow {
 }
 
 export const AllActivityTable: React.FC = () => {
-  const { address } = useLuno()
+  const { address } = useWallet()
   const [page, setPage] = useState<number>(1)
   const limit = 10
 

@@ -1,7 +1,14 @@
 import { ActivityFilter } from '@/types/activity.interface';
 import axios from 'axios';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+// Server components run inside the container, where NEXT_PUBLIC_API_URL's host
+// (localhost:8000, the browser-reachable published port) resolves to the frontend
+// itself. INTERNAL_API_URL carries the compose-network address for those requests;
+// it is server-only, so the browser bundle keeps using the public URL.
+export const API_BASE_URL =
+  typeof window === 'undefined'
+    ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL
+    : process.env.NEXT_PUBLIC_API_URL;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -32,6 +39,11 @@ export const API_ENDPOINTS = {
     CREATE: () => `/activities`,
     UPDATE_PROGRESS: () => `/activities/progress`,
     RESUME: (id: string) => `/activities/progress/${id}`,
+  },
+
+  DEFI_TOKENS: {
+    LIST: (chain?: string) =>
+      chain ? `/defi-token?chain=${encodeURIComponent(chain)}` : `/defi-token`,
   },
 
   USERS: {

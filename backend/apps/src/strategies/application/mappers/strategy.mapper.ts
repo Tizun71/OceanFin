@@ -5,6 +5,7 @@ export class StrategyMapper {
   static toResponse(entity: Strategy): StrategyResponseDto {
     return {
       id: entity.id,
+      title: entity.title,
       strategistName: entity.strategistName,
       strategistHandle: entity.strategistHandle,
       apy: entity.apy,

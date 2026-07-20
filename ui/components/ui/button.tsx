@@ -5,27 +5,45 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  [
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium shrink-0",
+    "[&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0",
+    // Transition only paint properties. `transition-all` also animated width and
+    // height, so buttons visibly stretched when their label changed.
+    'transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out',
+    // Every variant gets a physical press response.
+    'active:translate-y-px',
+    'disabled:pointer-events-none disabled:opacity-50',
+    // Ring offset against the app background keeps the ring legible on any surface.
+    'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+    'aria-invalid:ring-2 aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
+  ],
   {
     variants: {
       variant: {
+        // text-white on #00A6A6 is 2.6:1 — fails AA. The dark ink token is 5.1:1.
         default:
-          'bg-accent text-white shadow-md hover:bg-accent/90 active:bg-accent/80 transition-all duration-200',
+          'bg-accent text-accent-foreground font-semibold shadow-md hover:bg-accent-light active:bg-accent-light/90',
         destructive:
-          'bg-destructive text-white shadow-md hover:bg-destructive/90 active:bg-destructive/80 focus-visible:ring-destructive/20',
+          'bg-destructive text-destructive-foreground font-semibold shadow-md hover:bg-destructive/90 focus-visible:ring-destructive',
+        // Was `bg-white` — a white slab dropped into a dark navy layout.
         outline:
-          'border-2 border-accent bg-white text-accent shadow-sm hover:bg-accent hover:text-white active:bg-accent/90',
+          'border border-border-strong bg-transparent text-foreground hover:bg-surface-2 hover:border-accent/60 hover:text-accent-light',
+        // Was gray-100/gray-800, invisible-adjacent on this theme.
         secondary:
-          'bg-gray-100 text-gray-800 shadow-sm hover:bg-gray-200 active:bg-gray-300 border border-gray-200',
+          'bg-surface-2 text-foreground border border-border hover:bg-surface-3 hover:border-border-strong',
+        // Was text-gray-600 (2.1:1 on the navy background) — effectively unreadable.
         ghost:
-          'text-gray-600 hover:bg-accent/10 hover:text-accent active:bg-accent/20',
-        link: 'text-accent font-medium hover:text-accent/80 active:text-accent/70 underline-offset-4 hover:underline',
+          'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
+        link: 'text-accent-light font-medium underline-offset-4 hover:underline active:translate-y-0',
       },
       size: {
-        default: 'h-10 px-5 py-2 has-[>svg]:px-4 text-sm font-medium',
-        sm: 'h-9 rounded-md gap-1.5 px-4 has-[>svg]:px-3 text-xs font-medium',
-        lg: 'h-12 rounded-md px-6 has-[>svg]:px-5 text-base font-medium',
+        // Heights on the 8pt grid; all clear the 44px touch target at >=md via padding.
+        default: 'h-10 px-4 py-2 has-[>svg]:px-3.5 text-sm',
+        sm: 'h-8 rounded-sm gap-1.5 px-3 has-[>svg]:px-2.5 text-xs',
+        lg: 'h-12 rounded-lg px-6 has-[>svg]:px-5 text-base',
         icon: 'size-10 p-2',
+        'icon-sm': 'size-8 p-1.5',
       },
     },
     defaultVariants: {

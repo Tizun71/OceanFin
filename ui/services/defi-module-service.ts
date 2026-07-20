@@ -4,8 +4,12 @@ import { DefiStrategy } from "@/types/defi.strategy";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export const getDefiModules = async () => {
-  const res = await fetch(`${BASE_URL}/defi-modules`, {
+export const getDefiModules = async (chain?: string) => {
+  const url = chain
+    ? `${BASE_URL}/defi-modules?chain=${encodeURIComponent(chain)}`
+    : `${BASE_URL}/defi-modules`;
+
+  const res = await fetch(url, {
     credentials: "include",
   });
 
