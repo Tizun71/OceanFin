@@ -1,32 +1,72 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import dynamic from "next/dynamic"
+
+// The shader touches window/WebGL on mount, so it is client-only. Loading it
+// lazily also keeps the GLSL out of the initial bundle — the CSS layer below
+// paints immediately and the canvas fades in over it once ready.
+const ShaderBackground = dynamic(
+  () => import("@/components/ui/oceanic-depths").then((m) => m.ShaderBackground),
+  { ssr: false },
+)
+
 /**
- * Ambient background — replaces the 2.2MB looping <video>.
+ * Ambient background.
  *
- * Why the video went:
- *  - 2.2MB mp4 on every visit, before any content painted.
- *  - The <source> pointed at a .webm that does not exist in /public/videos,
- *    so every load also fired a 404.
- *  - It decoded continuously on the GPU (and drained battery on laptops and
- *    phones) while sitting behind two stacked overlays that hid ~70% of it.
- *  - autoPlay video ignores prefers-reduced-motion.
+ * Layer 1 (CSS): a static ocean gradient. Always painted. This was the whole
+ * background before the shader landed, and it now doubles as the fallback — if
+ * WebGL is missing, blocked by policy, or the browser refuses a new context,
+ * the page still has a finished background rather than a flat fill.
  *
- * What replaces it: layered radial gradients in the existing ocean palette plus
- * a grain overlay. Costs zero network requests, paints on the first frame, and
- * the drift stops entirely under prefers-reduced-motion.
+ * Layer 2 (WebGL): the shader, fading in on top once its context is live.
+ *
+ * Both replaced the original 2.2MB looping <video>, which blocked first paint,
+ * requested a .webm that does not exist in /public/videos, decoded on the GPU
+ * continuously behind two opaque scrims, and ignored prefers-reduced-motion.
+ * The shader ships no bytes over the network, pauses when the tab is hidden or
+ * the canvas leaves the viewport, and draws a single static frame when the
+ * user has asked for reduced motion.
  */
 export function BackgroundAmbient() {
+  const [failed, setFailed] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  // The canvas mounts before its first draw. Waiting two frames before fading
+  // it in avoids a flash of undrawn (black) canvas over the gradient.
+  useEffect(() => {
+    if (failed) return
+    const id = requestAnimationFrame(() =>
+      requestAnimationFrame(() => setReady(true)),
+    )
+    return () => cancelAnimationFrame(id)
+  }, [failed])
+
   return (
     <div aria-hidden className="fixed inset-0 -z-0 pointer-events-none overflow-hidden">
-      {/* Base wash. A flat fill would read as dead space; the deep-teal
-          vignette at the bottom keeps the "underwater" depth cue the video
-          was carrying. */}
+      {/* CSS layer — paints on the first frame and stays as the fallback. */}
       <div className="absolute inset-0 bg-ocean-depth" />
-
-      {/* Two slow-drifting light sources. Offset and different sizes so the
-          composition never resolves into a symmetric centred glow. */}
       <div className="absolute inset-0 bg-ocean-caustics" />
 
-      {/* Grain breaks up the gradient banding that large smooth ramps show on
-          8-bit displays, and keeps the surface from feeling like flat vector. */}
+      {!failed && (
+        <div
+          className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+            ready ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <ShaderBackground
+            className="h-full w-full"
+            // Field units of drift per viewport scrolled. Small on purpose:
+            // the background should read as ambient depth, not as a second
+            // scrolling surface competing with the content.
+            parallax={0.16}
+            onContextFail={() => setFailed(true)}
+          />
+        </div>
+      )}
+
+      {/* Grain sits above both layers so the shader gets the same surface
+          treatment as the CSS fallback and the two match in texture. */}
       <div className="absolute inset-0 bg-grain opacity-[0.045]" />
     </div>
   )

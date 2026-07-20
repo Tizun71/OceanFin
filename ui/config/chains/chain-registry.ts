@@ -92,7 +92,7 @@ export const CHAIN_REGISTRY: Record<ChainSlug, ChainMeta> = {
     nativeCurrency: { symbol: "AVAX", decimals: 18 },
     rpcUrl: AVALANCHE_RPC,
     explorerUrl: "https://snowtrace.io",
-    iconUrl: "/chain-icon/avalanche.png",
+    iconUrl: "/icons/chains/avax.png",
     protocols: {
       aaveV3: aaveAddresses(AaveV3Avalanche),
       traderJoe: TRADER_JOE_V2_2,

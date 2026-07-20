@@ -9,11 +9,13 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { usePreloader } from "@/providers/preloader-provider";
+import { useWallet } from "@/hooks/use-wallet";
 
 export function HeroSection() {
   const pathname = usePathname();
   const router = useRouter();
   const { show } = usePreloader();
+  const { isConnected } = useWallet();
   const [visible, setVisible] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
@@ -49,11 +51,16 @@ export function HeroSection() {
 
   // Sentence case: the previous ALL CAPS labels slow reading (word shapes are
   // lost) and read as shouting in a nav bar.
+  // "Your strategies" is personal data keyed to an address — it only means
+  // anything once a wallet is connected, so it stays hidden until then and
+  // sits last so the public links keep a stable position.
   const navItems = [
     { icon: Layers, label: "Strategies", href: "/" },
     { icon: Workflow, label: "Builder", href: "/builder" },
-    { icon: Bookmark, label: "Your strategies", href: "/strategy" },
     { icon: Sparkles, label: "Prompt", href: "/prompt" },
+    ...(isConnected
+      ? [{ icon: Bookmark, label: "Your strategies", href: "/strategy" }]
+      : []),
   ];
 
   // Close the mobile sheet whenever the route changes, otherwise it stays

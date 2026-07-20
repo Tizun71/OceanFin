@@ -1,4 +1,4 @@
-import { assetIcons } from "@/lib/iconMap";
+import { resolveAssetIcon } from "@/lib/iconMap";
 import Image from "next/image";
 
 
@@ -20,7 +20,7 @@ export default function TokenIcon({
   if (!symbol) return null;
 
   const s = symbol.toUpperCase();
-  const iconSrc = assetIcons[s];
+  const iconSrc = resolveAssetIcon(s);
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>

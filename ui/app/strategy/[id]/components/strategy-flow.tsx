@@ -1,9 +1,8 @@
 "use client"
 
-import { ArrowDown, Bot, Workflow, Coins, Repeat, DollarSign } from "lucide-react"
+import { ArrowDown, Bot, Coins, Repeat, DollarSign } from "lucide-react"
 import { motion } from "framer-motion";
-import { assetIcons } from "@/lib/iconMap";
-import { Badge } from "@/components/ui/badge";
+import { resolveAssetIcon } from "@/lib/iconMap";
 
 interface TokenInfo {
   assetId?: string | number
@@ -26,6 +25,45 @@ interface StrategyFlowProps {
   fee?: number
 }
 
+const iconFor = (symbol?: string) => resolveAssetIcon(symbol) || "/icons/default.png"
+
+/** One side of a step: the token going in, or the token coming out. */
+function TokenRow({
+  token,
+  direction,
+}: {
+  token: TokenInfo
+  direction: "in" | "out"
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      {/* The two rows were styled identically, so "what went in" and "what came
+          out" were told apart only by vertical position. */}
+      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        {direction === "in" ? "In" : "Out"}
+      </span>
+      <span className="flex items-center gap-1.5 min-w-0">
+        <span data-numeric className="text-sm text-foreground truncate">
+          {token.amount ?? "—"}
+        </span>
+        <img
+          src={iconFor(token.symbol)}
+          alt=""
+          aria-hidden
+          className="w-4 h-4 shrink-0 rounded-full object-contain bg-white/95"
+        />
+        <span
+          className={`text-sm font-medium ${
+            direction === "out" ? "text-accent-light" : "text-foreground/80"
+          }`}
+        >
+          {token.symbol || "—"}
+        </span>
+      </span>
+    </div>
+  )
+}
+
 export function StrategyFlow({
   steps = [],
   initialCapital,
@@ -36,212 +74,132 @@ export function StrategyFlow({
 
   if (!validSteps.length) {
     return (
-      <div className="rounded-lg p-6 text-center text-muted-foreground bg-card border border-border">
-        No flow data available. Please run a simulation first.
+      <div className="rounded-lg border border-dashed border-border bg-card/40 p-8 text-center text-sm text-muted-foreground">
+        No flow data yet. Run a simulation to generate the steps.
       </div>
     )
   }
 
-  return (
-    <div className="p-3">
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-          <Workflow className="w-5 h-5 text-primary" />
-          Strategy Flow
-        </h3>
-        <Badge variant={"outline"}>
-          <span className="text-xs text-muted-foreground">
-            Total Steps:{" "}
-            <span className="text-primary font-bold">{validSteps.length}</span>
-          </span>
-        </Badge>
+  const stats = [
+    {
+      icon: Coins,
+      label: "Initial capital",
+      sub: "Base asset",
+      value: (
+        <span className="inline-flex items-center gap-1.5">
+          <span data-numeric>{initialCapital?.amount ?? "0"}</span>
+          {initialCapital?.symbol && (
+            <img
+              src={iconFor(initialCapital.symbol)}
+              alt=""
+              aria-hidden
+              className="w-4 h-4 rounded-full object-contain bg-white/95"
+            />
+          )}
+          <span>{initialCapital?.symbol || "—"}</span>
+        </span>
+      ),
+    },
+    { icon: Repeat, label: "Loops", sub: "Total cycles", value: <span data-numeric>{loops ?? "—"}</span> },
+    { icon: DollarSign, label: "Fee", sub: "Execution cost", value: <span data-numeric>{fee ?? 0}</span> },
+  ]
 
+  return (
+    <div>
+      {/* The old header repeated "Strategy Flow" — the exact label of the tab
+          the user had just clicked to get here. Only the step count is new
+          information, so only that remains. */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Execution steps
+        </h2>
+        <span className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground">
+          <span data-numeric className="font-medium text-foreground">{validSteps.length}</span> steps
+        </span>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* LEFT SIDE */}
-        <div className="lg:col-span-7 flex flex-col items-center gap-6 relative max-h-[350px] overflow-y-auto pr-2">
-
-          {validSteps.map((step, idx) => {
-            const hasIn = !!step.tokenIn
-            const hasOut = !!step.tokenOut
-            const hasBoth = hasIn && hasOut
-
-            return (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className="relative w-full max-w-[360px] bg-card backdrop-blur-md border
-                           border-border rounded-lg shadow-lg hover:shadow-xl hover:border-accent/50
-                           transition-all duration-300 p-3 flex flex-col min-h-[120px]"
-              >
-
-                {/* Step Header */}
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent 
-                                   text-primary-foreground flex items-center justify-center 
-                                   text-[11px] font-bold shadow-md">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Steps. Was `items-center` with `max-w-[360px]` cards inside a 7-col
+            cell, so the cards floated in the middle of a much wider column,
+            and `max-h-[350px] overflow-y-auto` clipped the connector arrows
+            that were positioned at -bottom-5. */}
+        <ol className="lg:col-span-7 flex flex-col gap-0 min-w-0">
+          {validSteps.map((step, idx) => (
+            <motion.li
+              key={idx}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: Math.min(idx * 0.06, 0.4), ease: [0.22, 1, 0.36, 1] }}
+              className="min-w-0"
+            >
+              <div className="rounded-lg border border-border bg-surface-1 p-3 transition-colors duration-200 hover:border-accent/40">
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      data-numeric
+                      className="grid size-6 shrink-0 place-items-center rounded-full bg-accent/15 text-[11px] font-semibold text-accent-light"
+                    >
                       {step.step}
-                    </div>
-                    <h4 className="text-sm font-semibold text-foreground tracking-wide">
-                      {step.type}
-                    </h4>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <Bot className="w-3 h-3 text-primary" />
-                    <span className="font-semibold">{step.agent || "N/A"}</span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-col flex-1">
-
-                  {/* Token In */}
-                  <div className="flex-1 flex justify-between items-center text-xs 
-                                  text-card-foreground border-t border-border pt-1 px-1">
-                    {hasIn ? (
-                      <>
-                        <span>{step.tokenIn?.amount ?? "N/A"}</span>
-
-                        <span className="font-semibold text-primary flex items-center gap-1">
-                          {step.tokenIn?.symbol && (
-                            <img
-                              src={
-                                assetIcons[step.tokenIn.symbol] ||
-                                assetIcons[step.tokenIn.symbol?.toUpperCase()] ||
-                                assetIcons[step.tokenIn.symbol?.toLowerCase()] ||
-                                "/icons/default.png"
-                              }
-                              alt={step.tokenIn.symbol}
-                              className="w-4 h-4 rounded-full object-contain bg-white border border-border"
-                            />
-                          )}
-                          <span>{step.tokenIn?.symbol || "N/A"}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <span className="opacity-0">placeholder</span>
-                    )}
-                  </div>
-
-                  {/* Arrow */}
-                  <div className="flex-1 flex justify-center items-center">
-                    {hasBoth ? (
-                      <ArrowDown className="w-3 h-3 text-primary animate-bounce" />
-                    ) : (
-                      <span className="opacity-0">placeholder</span>
-                    )}
-                  </div>
-
-                  {/* Token Out */}
-                  <div className="flex-1 flex justify-between items-center text-xs 
-                                  text-card-foreground border-t border-border pt-1 px-1">
-                    {hasOut ? (
-                      <>
-                        <span>{step.tokenOut?.amount ?? "N/A"}</span>
-
-                        <span className="font-semibold text-primary flex items-center gap-1">
-                          {step.tokenOut?.symbol && (
-                            <img
-                              src={
-                                assetIcons[step.tokenOut.symbol] ||
-                                assetIcons[step.tokenOut.symbol?.toUpperCase()] ||
-                                assetIcons[step.tokenOut.symbol?.toLowerCase()] ||
-                                "/icons/default.png"
-                              }
-                              alt={step.tokenOut.symbol}
-                              className="w-4 h-4 rounded-full object-contain bg-white border border-border"
-                            />
-                          )}
-                          <span>{step.tokenOut?.symbol || "N/A"}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <span className="opacity-0">placeholder</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Connector Arrow */}
-                {idx < validSteps.length - 1 && (
-                  <div className="absolute left-1/2 -bottom-5 transform -translate-x-1/2">
-                    <ArrowDown className="w-4 h-4 text-primary/60 animate-bounce" />
-                  </div>
-                )}
-              </motion.div>
-            )
-          })}
-        </div>
-
-        {/* RIGHT: STATISTICS */}
-        <div className="lg:col-span-5">
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="bg-card backdrop-blur-md rounded-xl border border-border
-                       shadow-lg hover:shadow-xl hover:border-accent/50 transition-all duration-500"
-          >
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-              <h4 className="text-sm font-bold text-foreground tracking-wide">
-                Statistics Overview
-              </h4>
-            </div>
-
-            <div className="flex flex-col divide-y divide-border">
-              {[
-                {
-                  icon: <Coins className="w-4 h-4" />,
-                  label: "Initial Capital",
-                  value: (
-                    <span className="flex items-center gap-1 text-xs">
-                      {initialCapital?.amount || "0"}
-                      {initialCapital?.symbol && (
-                        <img
-                          src={
-                            assetIcons[initialCapital.symbol] ||
-                            assetIcons[initialCapital.symbol?.toUpperCase()] ||
-                            assetIcons[initialCapital.symbol?.toLowerCase()] ||
-                            "/icons/default.png"
-                          }
-                          alt={initialCapital.symbol}
-                          className="w-4 h-4 rounded-full object-contain bg-white border border-border"
-                        />
-                      )}
-                      <span>{initialCapital?.symbol || "N/A"}</span>
                     </span>
-                  ),
-                  sub: "Base asset",
-                },
-                { icon: <Repeat className="w-4 h-4" />, label: "Loops", value: loops ?? "N/A", sub: "Total cycle count" },
-                { icon: <DollarSign className="w-4 h-4" />, label: "Fee", value: `${fee ?? 0}`, sub: "Execution fee" },
-              ].map((info, i) => (
-                <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                      {info.icon}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm">{info.label}</div>
-                      <div className="text-[11px] text-muted-foreground">{info.sub}</div>
+                    <h3 className="text-sm font-semibold text-foreground truncate">
+                      {step.type}
+                    </h3>
+                  </div>
+
+                  <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                    <Bot className="w-3.5 h-3.5" aria-hidden />
+                    {step.agent || "—"}
+                  </span>
+                </div>
+
+                {/* Rows render only when they exist. The previous version
+                    always rendered all three slots and filled the empty ones
+                    with `<span className="opacity-0">placeholder</span>` — a
+                    spacer that screen readers still announced as the word
+                    "placeholder", three times per step. */}
+                <div className="divide-y divide-border border-t border-border">
+                  {step.tokenIn && <TokenRow token={step.tokenIn} direction="in" />}
+                  {step.tokenOut && <TokenRow token={step.tokenOut} direction="out" />}
+                </div>
+              </div>
+
+              {/* Connector. Was `animate-bounce` on every arrow in the list
+                  plus another inside each card — continuous motion carrying no
+                  state, on a data view users need to read carefully. */}
+              {idx < validSteps.length - 1 && (
+                <div className="flex justify-center py-1" aria-hidden>
+                  <ArrowDown className="w-4 h-4 text-border-strong" />
+                </div>
+              )}
+            </motion.li>
+          ))}
+        </ol>
+
+        {/* Stats */}
+        <aside className="lg:col-span-5 lg:sticky lg:top-28">
+          <div className="rounded-lg border border-border bg-surface-1">
+            <h2 className="border-b border-border px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Summary
+            </h2>
+
+            <dl className="divide-y divide-border">
+              {stats.map((info) => (
+                <div key={info.label} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2">
+                      <info.icon className="w-4 h-4 text-accent" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <dt className="text-sm font-medium text-foreground">{info.label}</dt>
+                      <p className="text-[11px] text-muted-foreground">{info.sub}</p>
                     </div>
                   </div>
-                  <div className="text-right text-xs font-semibold text-accent">
-                    {info.value}
-                  </div>
+                  <dd className="shrink-0 text-sm font-semibold text-foreground">{info.value}</dd>
                 </div>
               ))}
-            </div>
-          </motion.div>
-        </div>
-
+            </dl>
+          </div>
+        </aside>
       </div>
     </div>
   )

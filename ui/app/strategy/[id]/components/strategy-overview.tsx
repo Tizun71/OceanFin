@@ -1,4 +1,5 @@
 import { Bot } from "lucide-react";
+import { resolveAgentIcon } from "@/lib/iconMap";
 
 interface StrategyOverviewProps {
   strategy?: {
@@ -31,10 +32,6 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
     strategy?.description ||
     `Strategy simulation with ${simulateData?.loops || 0} loops, starting from ${simulateData?.initialCapital?.symbol || "DOT"}.`;
 
-  const AGENT_ICONS: Record<string, string> = {
-    HYDRATION:
-      "https://cdn.jsdelivr.net/gh/galacticcouncil/intergalactic-asset-metadata@latest/v2/polkadot/2034/assets/0/icon.svg",
-  };
   const uniqueAgents = Array.from(new Set(safeAgents));
 
   return (
@@ -66,7 +63,7 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
             </h3>
             <ul className="flex flex-wrap gap-2">
               {uniqueAgents.map((agent, idx) => {
-                const iconUrl = AGENT_ICONS[String(agent)] || null;
+                const iconUrl = resolveAgentIcon(String(agent));
                 return (
                   // The chips were icon-only with the agent name hidden in an
                   // alt attribute, so sighted users had to recognise protocols

@@ -1,4 +1,4 @@
-import { assetIcons } from "@/lib/iconMap";
+import { resolveAssetIcon } from "@/lib/iconMap";
 import { ASSET_ID } from "@/utils/constant";
 import type { DefiTokenDto } from "@/services/defi-token-service";
 import type { ChainMeta } from "@/config/chains/chain-registry";
@@ -46,7 +46,7 @@ export function resolveStrategyInputToken(
 
   const symbol = String(declared?.symbol ?? "").trim();
   const key = symbol.toUpperCase();
-  const icon = assetIcons[key];
+  const icon = resolveAssetIcon(key);
 
   if (!chain || chain.kind === "substrate") {
     const assetId =

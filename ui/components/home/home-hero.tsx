@@ -20,15 +20,6 @@ export function HomeHero() {
           grid below, so the eye gets one consistent left margin down the page
           instead of a centred block over left-aligned lists. */}
       <div className="max-w-2xl">
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-light mb-4"
-        >
-          Polkadot &amp; Avalanche DeFi
-        </motion.p>
-
         {/* Real text, not a canvas. The wordmark used to be rendered by
             ParticleTextEffect, which meant the page had no readable <h1> for
             search engines or screen readers and shipped a particle simulation
@@ -39,8 +30,8 @@ export function HomeHero() {
           transition={{ duration: 0.5, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
           className="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]"
         >
-          Put your capital to work
-          <span className="block text-accent-light">across chains.</span>
+          Maximize your DeFi growth
+          <span className="block text-accent-light">with smart strategies.</span>
         </motion.h1>
 
         <motion.p
@@ -76,7 +67,7 @@ export function HomeHero() {
             href="/prompt"
             className="inline-flex h-11 items-center rounded-lg border border-border-strong px-5 text-sm font-medium text-foreground transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            Describe it in plain English
+            Describe your strategy
           </Link>
         </motion.div>
       </div>

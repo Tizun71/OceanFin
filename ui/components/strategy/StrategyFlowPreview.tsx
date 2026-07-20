@@ -3,7 +3,7 @@
 import { ArrowDown, Workflow, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { BuildStrategyResponse, StrategyStep } from "@/services/ai-strategy-service";
-import { assetIcons } from "@/lib/iconMap";
+import { resolveAssetIcon } from "@/lib/iconMap";
 
 interface StrategyFlowPreviewProps {
   strategy: BuildStrategyResponse;
@@ -118,10 +118,7 @@ export function StrategyFlowPreview({
                       {hasIn ? (
                         <div className="flex items-center gap-1 text-white/80">
                           <img 
-                            src={assetIcons[step.tokenIn!.symbol] || 
-                                 assetIcons[step.tokenIn!.symbol?.toUpperCase()] || 
-                                 assetIcons[step.tokenIn!.symbol?.toLowerCase()] || 
-                                 "/icons/default.png"}
+                            src={resolveAssetIcon(step.tokenIn!.symbol) || "/icons/default.png"}
                             alt={step.tokenIn!.symbol}
                             className="w-4 h-4 rounded-full object-contain bg-white border border-white/20"
                           />
@@ -141,10 +138,7 @@ export function StrategyFlowPreview({
                       {hasOut ? (
                         <div className="flex items-center gap-1 text-white/80">
                           <img 
-                            src={assetIcons[step.tokenOut!.symbol] || 
-                                 assetIcons[step.tokenOut!.symbol?.toUpperCase()] || 
-                                 assetIcons[step.tokenOut!.symbol?.toLowerCase()] || 
-                                 "/icons/default.png"}
+                            src={resolveAssetIcon(step.tokenOut!.symbol) || "/icons/default.png"}
                             alt={step.tokenOut!.symbol}
                             className="w-4 h-4 rounded-full object-contain bg-white border border-white/20"
                           />
@@ -177,10 +171,7 @@ export function StrategyFlowPreview({
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <img 
-                  src={assetIcons[initialToken] || 
-                       assetIcons[initialToken?.toUpperCase()] || 
-                       assetIcons[initialToken?.toLowerCase()] || 
-                       "/icons/default.png"}
+                  src={resolveAssetIcon(initialToken) || "/icons/default.png"}
                   alt={initialToken}
                   className="w-4 h-4 rounded-full object-contain bg-white border border-white/20"
                 />

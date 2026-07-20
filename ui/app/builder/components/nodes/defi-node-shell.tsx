@@ -67,7 +67,7 @@ export default function DefiNodeShell({
             </h3>
 
             <div className="mt-3 flex items-center gap-2">
-              <ProtocolIcon />
+              <ProtocolIcon name={protocolName} />
               <span className="text-[14px] text-white/85 leading-none">
                 {protocolName}
               </span>

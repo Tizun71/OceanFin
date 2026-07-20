@@ -96,7 +96,7 @@ export const MyActivityTable = () => {
       setSelectedStrategyId(row.strategyId)
       setExecutionModalOpen(true)
       
-      displayToast("success", "Simulation loaded successfully! Ready to re-execute.")
+      displayToast("success", "Simulation loaded. Ready to re-execute.")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Re-execution failed"
       displayToast("error", message)
