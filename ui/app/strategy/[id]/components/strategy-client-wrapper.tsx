@@ -3,47 +3,33 @@
 import { useState } from "react";
 import { StrategyInput } from "./strategy-input";
 import { StrategyTabs } from "./strategy-tabs";
-import { Menu } from "lucide-react";
+import { StrategyHeader } from "./strategy-header";
 
 export function StrategyClientWrapper({ strategy }: { strategy: any }) {
   const [simulateData, setSimulateData] = useState<any>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="flex h-[calc(100vh-60px)] overflow-hidden bg-[--background] text-[--foreground]">
-      {/* SIDEBAR */}
-      <div
-        className={`flex flex-col  transition-all duration-300 ease-in-out
-          ${isCollapsed ? "w-[60px]" : "w-1/4"}
-        `}
-      >
-        <div className="flex items-center justify-between px-4 py-3 mt-12">
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 hover:bg-gray-700/40 rounded-lg"
-            title={isCollapsed ? "Expand" : "Collapse"}
-          >
-            <Menu size={20} />
-          </button>
-        </div>
-        {!isCollapsed && (
-          <div className="flex-1 overflow-y-auto p-4 mt-2">
-            <StrategyInput
-              strategy={strategy}
-              onSimulateSuccess={setSimulateData}
-            />
-          </div>
-        )}
-      </div>
-      {/* MAIN CONTENT */}
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out
-          ${isCollapsed ? "w-[calc(100%-60px)]" : "w-[75%]"}
-        `}
-      >
-        <div className="h-full overflow-y-auto p-6 flex flex-col gap-6">
+    <div className="space-y-6">
+      {/* Promoted to page level. The header — title, status, APY, author —
+          used to render inside the Overview tab, so switching to "Strategy
+          Flow" or "All Activities" dropped every trace of which strategy you
+          were looking at. Identity belongs above the tabs, not inside one. */}
+      <StrategyHeader strategy={strategy} />
+
+      {/* Replaces the collapsible 25% / 75% split. That sidebar toggled with
+          an unlabelled hamburger that mirrored the global nav icon, animated
+          `width` (a layout property, so every frame reflowed the flow chart
+          beside it), and at `w-1/4` on a phone left the amount field about
+          80px wide. The action panel now sits in a fixed-width rail that
+          stacks above the tabs on small screens. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+        <div className="min-w-0 order-2 lg:order-1">
           <StrategyTabs strategy={strategy} simulateData={simulateData} />
         </div>
+
+        <aside className="order-1 lg:order-2 lg:sticky lg:top-28">
+          <StrategyInput strategy={strategy} onSimulateSuccess={setSimulateData} />
+        </aside>
       </div>
     </div>
   );
