@@ -11,15 +11,23 @@ export interface SimulationStepDto {
   step: number;
   type: string;
   agent: string;
+  /** EVM lending-protocol selector for the frontend executor (build-evm-plan). */
+  protocol?: string;
   tokenIn: {
     assetId: string;
     symbol: string;
     amount: number;
+    // EVM execution metadata carried through from the workflow so the frontend
+    // can build the on-chain call. Undefined for substrate (Hydration) tokens.
+    address?: string;
+    decimals?: number;
   },
   tokenOut: {
     assetId: string;
     symbol: string;
     amount: number;
+    address?: string;
+    decimals?: number;
   };
 }
 export interface SimulationStepResult {

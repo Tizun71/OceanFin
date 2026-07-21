@@ -114,15 +114,22 @@ export class StrategySimulationService implements SimulationEngine {
           step: result.step_index,
           type: result.action_type,
           agent: result.agent,
+          // Carry EVM execution metadata through from the source workflow step;
+          // the simulators only compute amounts/apy and drop address/protocol.
+          protocol: step.protocol,
           tokenIn: {
             assetId: result.token_in.asset_id,
             symbol: result.token_in.symbol,
             amount: Math.floor(result.token_in.amount * 100000) / 100000,
+            address: step.tokenIn?.address,
+            decimals: step.tokenIn?.decimals,
           },
           tokenOut: {
             assetId: result.token_out.asset_id,
             symbol: result.token_out.symbol,
             amount: Math.floor(result.token_out.amount * 100000) / 100000,
+            address: step.tokenOut?.address,
+            decimals: step.tokenOut?.decimals,
           },
         });
       } catch (error) {
