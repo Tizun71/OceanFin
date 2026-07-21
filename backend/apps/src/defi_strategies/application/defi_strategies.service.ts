@@ -27,7 +27,7 @@ export class DefiStrategiesService {
         data.status,
         data.is_public,
         data.chain_context,
-        '',
+        null,
         new Date(),
       ),
     );
