@@ -24,5 +24,5 @@ export const hydration = defineChain({
     },
   },
   testnet: false,
-  chainIconUrl: '/chain-icon/hydration.png', 
+  chainIconUrl: '/icons/chains/hydration.png', 
 })

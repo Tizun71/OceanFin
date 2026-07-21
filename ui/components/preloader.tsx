@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import Image from 'next/image';
 import { usePreloader } from '@/providers/preloader-provider';
@@ -10,7 +10,6 @@ export function Preloader() {
   const logoRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const percentageRef = useRef<HTMLSpanElement>(null);
-  const [isHidden, setIsHidden] = useState(false);
 
   const { visible, hide } = usePreloader();
 
@@ -23,110 +22,103 @@ export function Preloader() {
 
     if (!container || !logo || !progressBar || !percentage) return;
 
-    let hasHidden = false;
+    // Honour reduced-motion: skip the animation and hand off immediately.
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      percentage.textContent = '100%';
+      const t = window.setTimeout(hide, 400);
+      return () => window.clearTimeout(t);
+    }
 
+    let hasHidden = false;
     const tl = gsap.timeline();
 
-    // Logo entrance
-    tl.from(logo, { scale: 0.5, opacity: 0, rotation: -15, duration: 1, ease: 'back.out(1.7)' });
+    // Logo entrance with spring-like overshoot.
+    tl.from(logo, { scale: 0.6, opacity: 0, rotation: -12, duration: 0.9, ease: 'back.out(1.7)' });
 
-    // Subtle continuous animations
-    const logoY = gsap.to(logo, { y: -10, duration: 2, ease: 'sine.inOut', repeat: -1, yoyo: true });
-    const glow = gsap.to('.logo-glow', { opacity: 0.7, scale: 1.3, duration: 2.5, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    // Ambient float + breathing glow (GPU transform/opacity only).
+    const logoY = gsap.to(logo, { y: -8, duration: 2, ease: 'sine.inOut', repeat: -1, yoyo: true });
+    const glow = gsap.to('.logo-glow', { opacity: 0.6, scale: 1.25, duration: 2.5, repeat: -1, yoyo: true, ease: 'sine.inOut' });
 
-    // Progress bar — update percentage and hide when complete
+    // Progress: scaleX transform instead of width for GPU compositing.
     tl.fromTo(
       progressBar,
-      { width: '0%' },
+      { scaleX: 0 },
       {
-        width: '100%',
-        duration: 1.5,
+        scaleX: 1,
+        duration: 1.6,
         ease: 'power2.inOut',
         onUpdate: function () {
-          // @ts-ignore
+          // @ts-ignore gsap tween `this`
           const p = Math.round(this.progress() * 100);
           percentage.textContent = `${p}%`;
           if (p >= 100 && !hasHidden) {
             hasHidden = true;
-            gsap.to(container, { opacity: 0, duration: 0.6, onComplete: () => hide() });
+            gsap.to(container, { opacity: 0, scale: 1.04, duration: 0.6, ease: 'power2.in', onComplete: hide });
           }
         },
       },
-      '-=0.5'
+      '-=0.4'
     );
 
     return () => {
       tl.kill();
       logoY.kill();
       glow.kill();
-      gsap.killTweensOf('*');
     };
   }, [visible, hide]);
 
-  if (!visible || isHidden) return null;
+  if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#001F2D]">
-      {/* Main Container */}
+    <div
+      ref={containerRef}
+      role="status"
+      aria-live="polite"
+      aria-label="Loading Ocean Fin"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#001922]"
+    >
+      {/* Mesh gradient: two off-center radial pools instead of a flat fill. */}
       <div
-        ref={containerRef}
-        className="relative w-48 h-48 flex items-center justify-center"
-      >
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(60% 55% at 30% 25%, rgba(0,194,203,0.18), transparent 60%), radial-gradient(70% 60% at 78% 82%, rgba(0,120,150,0.20), transparent 62%)',
+        }}
+      />
+      {/* Grain overlay to break digital flatness. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-soft-light"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        }}
+      />
 
-        <div ref={logoRef} className="relative w-32 h-32">
-          <Image
-            src="/logo-ocean-fin.svg"
-            alt="Ocean Fin"
-            fill
-            className="object-contain drop-shadow-2xl"
-          />
+      {/* Logo */}
+      <div className="relative flex h-40 w-40 items-center justify-center">
+        <div ref={logoRef} className="relative h-28 w-28">
+          <Image src="/logo-ocean-fin.svg" alt="" fill className="object-contain drop-shadow-2xl" priority />
         </div>
-
-        {/* Glow effect */}
-        <div className="absolute inset-0 bg-accent/20 blur-3xl rounded-full -z-10"></div>
+        <div className="logo-glow absolute inset-0 -z-10 rounded-full bg-accent/25 blur-3xl opacity-40" />
       </div>
 
-      {/* Progress Bar */}
-      <div className="mt-12 w-64 space-y-3">
-        <div className="h-1.5 bg-border/30 rounded-full overflow-hidden backdrop-blur-sm">
-          <div className="h-full bg-gradient-to-r from-accent via-accent-light to-secondary rounded-full shadow-[0_0_20px_rgba(0,194,203,0.5)]"
-            style={{ width: '0%' }}
-            ref={progressBarRef}></div>
-        </div>
-        <span ref={percentageRef} className="text-xs text-white text-right block mt-1">0%</span>
- 
-      </div>
-
-      {/* Loading Text */}
-      <p className="mt-8 text-white text-center text-lg font-light tracking-wide drop-shadow-lg">
-        Diving into the Ocean...
-      </p>
-
-      {/* Animated dots */}
-      <div className="mt-6 flex gap-2 justify-center">
-        {[0, 1, 2].map((i) => (
+      {/* Progress */}
+      <div className="mt-10 flex w-64 flex-col gap-2">
+        <div className="h-1 overflow-hidden rounded-full bg-white/10">
           <div
-            key={i}
-            className="w-2 h-2 rounded-full bg-cyan-300 opacity-60"
-            style={{
-              animation: `pulse 1.5s ease-in-out ${i * 0.2}s infinite`,
-            }}
+            ref={progressBarRef}
+            className="h-full origin-left rounded-full bg-gradient-to-r from-accent via-accent-light to-secondary shadow-[0_0_16px_rgba(0,194,203,0.6)]"
+            style={{ transform: 'scaleX(0)' }}
           />
-        ))}
+        </div>
+        <div className="flex items-center justify-between text-[11px] font-medium tracking-wide text-white/70">
+          <span>Diving into the ocean</span>
+          <span ref={percentageRef} className="tabular-nums text-white/90">0%</span>
+        </div>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 0.3;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.2);
-          }
-        }
-      `}</style>
     </div>
   );
 }

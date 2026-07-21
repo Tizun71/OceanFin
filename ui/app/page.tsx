@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { StrategyList } from "./strategy/[id]/components/strategy-list"
 import { HomeHero } from "@/components/home/home-hero"
 import { StrategyPaths } from "@/components/home/strategy-paths"
@@ -9,16 +9,13 @@ import { Preloader } from "@/components/preloader"
 import { usePreloader } from "@/providers/preloader-provider"
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false)
   const preloader = usePreloader()
 
   useEffect(() => {
-    if (mounted) {
-      preloader.hide()
-    }
-    preloader.show()
-    setMounted(true)
-  }, [mounted])
+    // Plays only on the first app entry per session; sessionStorage-gated.
+    preloader.showOnce()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <>

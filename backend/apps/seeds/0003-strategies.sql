@@ -12,9 +12,8 @@
 -- starting point — rates move, and a loop that clears its borrow cost today can invert.
 --
 -- assets/agents/chains hold ICON PATHS: the cards render them with <Image src={asset} />.
--- Avalanche has no icon assets in ui/public yet (no avalanche chain icon, no sAVAX/WAVAX
--- token icons, no Trader Joe agent icon), so those slots point at /placeholder.svg until
--- real artwork is added.
+-- Icons resolve to ui/public: /icons/assets/{savax,avax,usdc,usdt}.*, /icons/agents/aave.png,
+-- /icons/chains/avax.png.
 
 INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags, assets, agents, chains) VALUES
   (
@@ -24,9 +23,9 @@ INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags
     '@oceanfin',
     5.62,
     ARRAY['Looping', 'Liquid Staking', 'E-Mode', 'Avalanche'],
-    ARRAY['/placeholder.svg', '/placeholder.svg'],
+    ARRAY['/icons/assets/savax.png', '/icons/assets/avax.png'],
     ARRAY['/icons/agents/aave.png'],
-    ARRAY['/placeholder.svg']
+    ARRAY['/icons/chains/avax.png']
   ),
   (
     'a7c31e00-0002-4a10-9a01-0000000000a2',
@@ -35,9 +34,9 @@ INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags
     '@oceanfin',
     4.50,
     ARRAY['Looping', 'Liquid Staking', 'Low Leverage', 'Avalanche'],
-    ARRAY['/placeholder.svg', '/placeholder.svg'],
+    ARRAY['/icons/assets/savax.png', '/icons/assets/avax.png'],
     ARRAY['/icons/agents/aave.png'],
-    ARRAY['/placeholder.svg']
+    ARRAY['/icons/chains/avax.png']
   ),
   (
     'a7c31e00-0003-4a10-9a01-0000000000a3',
@@ -48,7 +47,7 @@ INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags
     ARRAY['Lending', 'Stablecoin', 'No Leverage', 'Avalanche'],
     ARRAY['/icons/assets/usdc.svg'],
     ARRAY['/icons/agents/aave.png'],
-    ARRAY['/placeholder.svg']
+    ARRAY['/icons/chains/avax.png']
   ),
   (
     'a7c31e00-0004-4a10-9a01-0000000000a4',
@@ -59,7 +58,7 @@ INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags
     ARRAY['Lending', 'Stablecoin', 'No Leverage', 'Avalanche'],
     ARRAY['/icons/assets/usdt.svg'],
     ARRAY['/icons/agents/aave.png'],
-    ARRAY['/placeholder.svg']
+    ARRAY['/icons/chains/avax.png']
   ),
   (
     'a7c31e00-0005-4a10-9a01-0000000000a5',
@@ -68,9 +67,9 @@ INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags
     '@oceanfin',
     4.31,
     ARRAY['Carry', 'Stablecoin Collateral', 'Liquid Staking', 'Avalanche'],
-    ARRAY['/icons/assets/usdc.svg', '/placeholder.svg'],
+    ARRAY['/icons/assets/usdc.svg', '/icons/assets/savax.png'],
     ARRAY['/icons/agents/aave.png'],
-    ARRAY['/placeholder.svg']
+    ARRAY['/icons/chains/avax.png']
   )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,

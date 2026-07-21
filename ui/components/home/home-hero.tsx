@@ -42,7 +42,7 @@ export function HomeHero() {
           className="mt-5 text-base md:text-lg text-muted-foreground max-w-[52ch] leading-relaxed"
         >
           Browse strategies built by the community, simulate the outcome before
-          you commit, and run them in a single transaction.
+          you commit, and run them in a single click.
         </motion.p>
 
         {/* The hero had no call to action at all — it introduced the product

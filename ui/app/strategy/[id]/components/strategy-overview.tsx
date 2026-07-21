@@ -1,5 +1,6 @@
 import { Bot } from "lucide-react";
 import { resolveAgentIcon } from "@/lib/iconMap";
+import Image from "next/image";
 
 interface StrategyOverviewProps {
   strategy?: {
@@ -73,11 +74,13 @@ export function StrategyOverview({ strategy, simulateData }: StrategyOverviewPro
                     className="flex items-center gap-2 rounded-lg border border-border bg-surface-1 px-3 py-2"
                   >
                     {iconUrl ? (
-                      <img
+                      <Image
                         src={iconUrl}
                         alt=""
+                        width={20}
+                        height={20}
                         aria-hidden
-                        className="w-5 h-5 rounded-full object-contain"
+                        className="rounded-full object-contain"
                       />
                     ) : (
                       <span className="grid size-5 place-items-center rounded-full bg-accent/15">

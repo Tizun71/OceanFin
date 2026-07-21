@@ -68,7 +68,7 @@ export const agentIcons: Record<string, string> = {
   UNISWAP: "/icons/agents/uniswap.png",
   BENQI: "/icons/agents/benqi.png",
   TRADERJOE: "/icons/agents/trader-joe.png",
-  HYDRATION: "/chain-icon/hydration.png",
+  HYDRATION: "/icons/chains/hydration.png",
 };
 
 /**
@@ -87,12 +87,12 @@ export function resolveAgentIcon(agent?: string | null): string | undefined {
 
 /** Keyed by chain slug; display names are aliased onto the same paths. */
 export const chainIcons: Record<string, string> = {
-  POLKADOT: "/chain-icon/hydration.png",
-  HYDRATION: "/chain-icon/hydration.png",
+  POLKADOT: "/icons/chains/hydration.png",
+  HYDRATION: "/icons/chains/hydration.png",
   AVALANCHE: "/icons/chains/avax.png",
   AVAX: "/icons/chains/avax.png",
-  BASE: "/chain-icon/base.png",
-  ARBITRUM: "/chain-icon/arbitrum.png",
+  BASE: "/icons/chains/base.png",
+  ARBITRUM: "/icons/chains/arbitrum.png",
 };
 
 export function resolveChainIcon(chain?: string | null): string | undefined {

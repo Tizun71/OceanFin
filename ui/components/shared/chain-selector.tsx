@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,33 +11,45 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useSwitchChain } from "wagmi";
 import {
   SELECTABLE_CHAINS,
   ChainMeta,
-  ChainSlug,
 } from "@/config/chains/chain-registry";
 import { useActiveChain } from "@/hooks/use-active-chain";
 import { displayToast } from "@/components/shared/toast-manager";
 
-const CHAIN_COLORS: Record<ChainSlug, string> = {
-  polkadot: "bg-pink-500",
-  avalanche: "bg-red-500",
-  base: "bg-blue-500",
-  arbitrum: "bg-sky-500",
-};
-
 const substrateChains = SELECTABLE_CHAINS.filter((c) => c.kind === "substrate");
 const evmChains = SELECTABLE_CHAINS.filter((c) => c.kind === "evm");
 
-function ChainBadge({ chain }: { chain: ChainMeta }) {
+/**
+ * Chain logo. Uses the registry iconUrl; falls back to a tinted initial when the
+ * asset is missing (some chains have no icon in ui/public yet).
+ */
+function ChainBadge({ chain, size = 20 }: { chain: ChainMeta; size?: number }) {
+  const [errored, setErrored] = useState(false);
+
+  if (errored || !chain.iconUrl) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-full bg-muted text-[10px] font-bold text-foreground"
+        style={{ width: size, height: size }}
+      >
+        {chain.name.charAt(0)}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`w-5 h-5 rounded-full ${CHAIN_COLORS[chain.slug]} flex items-center justify-center text-white text-xs font-bold`}
-    >
-      {chain.name.charAt(0)}
-    </div>
+    <Image
+      src={chain.iconUrl}
+      alt=""
+      width={size}
+      height={size}
+      className="rounded-full object-contain"
+      onError={() => setErrored(true)}
+    />
   );
 }
 
@@ -60,13 +74,13 @@ export function ChainSelector() {
     <DropdownMenuItem
       key={chain.slug}
       onClick={() => handleSelect(chain)}
-      className="flex items-center justify-between"
+      className="flex items-center justify-between gap-3 cursor-pointer"
     >
       <div className="flex items-center gap-2">
         <ChainBadge chain={chain} />
         <span>{chain.name}</span>
       </div>
-      {activeChain.slug === chain.slug && <Check className="w-4 h-4" />}
+      {activeChain.slug === chain.slug && <Check className="w-4 h-4 text-accent-light" />}
     </DropdownMenuItem>
   );
 
@@ -75,10 +89,13 @@ export function ChainSelector() {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-2 bg-transparent">
           <ChainBadge chain={activeChain} />
-          <span>{activeChain.name}</span>
+          <span className="max-w-[7rem] truncate">{activeChain.name}</span>
+          <ChevronDown className="w-4 h-4 opacity-60" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      {/* z-[60]: the header is fixed at z-50, so a z-50 portal can render behind
+          it and the menu looks like it never opened. */}
+      <DropdownMenuContent align="end" className="w-56 z-[60]">
         {substrateChains.length > 0 && (
           <>
             <DropdownMenuLabel>Polkadot</DropdownMenuLabel>
