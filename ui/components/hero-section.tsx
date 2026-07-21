@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bookmark, Layers, Menu, Sparkles, Workflow, X } from "lucide-react";
+import { Bookmark, Layers, Menu, Workflow, X } from "lucide-react";
 import { WalletButton } from "./shared/wallet-button";
 import { ChainSelector } from "./shared/chain-selector";
 import Image from "next/image";
@@ -57,7 +57,8 @@ export function HeroSection() {
   const navItems = [
     { icon: Layers, label: "Strategies", href: "/" },
     { icon: Workflow, label: "Builder", href: "/builder" },
-    { icon: Sparkles, label: "Prompt", href: "/prompt" },
+    // Temporarily hidden — re-enable to expose the Prompt route in the header.
+    // { icon: Sparkles, label: "Prompt", href: "/prompt" },
     ...(isConnected
       ? [{ icon: Bookmark, label: "Your strategies", href: "/strategy" }]
       : []),
