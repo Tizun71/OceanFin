@@ -60,6 +60,7 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
 
   const [loading, setLoading] = useState(false);
   const [estimating, setEstimating] = useState(false);
+  const [estimateError, setEstimateError] = useState("");
   const [error, setError] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
   
@@ -319,14 +320,15 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
   };
 
   /**
-   * Estimate only for preview
+   * Single source of truth for running an estimate — used both by the manual
+   * trigger and the debounced auto-estimate so the payload never drifts.
+   * Surfaces the backend error message instead of silently blanking the panel.
    */
-  const handleEstimate = async () => {
+  const runEstimate = async () => {
     if (!amount || Number(amount) <= 0 || !tokenIn) {
       setEstimate(null);
       return;
     }
-
     if (requiresTokenOut && !tokenOut) {
       setEstimate(null);
       return;
@@ -334,6 +336,7 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
 
     try {
       setEstimating(true);
+      setEstimateError("");
 
       const payload: EstimateDefiOperationPayload = {
         operation_type: resolvedType,
@@ -341,6 +344,7 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
         amount_in: Number(amount),
         module_id: node?.data?.module?.id,
         action_id: node?.data?.action?.id,
+        protocol: node?.data?.module?.protocol,
       };
 
       if (requiresTokenOut && tokenOut) {
@@ -348,65 +352,35 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
       }
 
       const res = await estimateDefiOperation(payload);
-
       setEstimate(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error("CONFIG PANEL ESTIMATE ERROR:", err);
       setEstimate(null);
+      setEstimateError(err?.message || "Failed to estimate this operation.");
     } finally {
       setEstimating(false);
     }
   };
 
+  const handleEstimate = runEstimate;
+
   /**
    * Auto estimate when enough data (with debounce and initialization check)
    */
   useEffect(() => {
-    // Skip if still initializing
-    if (isInitializing) {
-      return;
-    }
+    if (isInitializing) return;
 
-    if (!amount || Number(amount) <= 0 || !tokenIn) {
+    if (!amount || Number(amount) <= 0 || !tokenIn || (requiresTokenOut && !tokenOut)) {
       setEstimate(null);
+      setEstimateError("");
       return;
     }
 
-    if (requiresTokenOut && !tokenOut) {
-      setEstimate(null);
-      return;
-    }
-
-    // Debounce: wait 500ms after user stops typing
-    const timeoutId = setTimeout(async () => {
-      try {
-        setEstimating(true);
-
-        const payload: EstimateDefiOperationPayload = {
-          operation_type: resolvedType,
-          token_in_id: tokenIn,
-          amount_in: Number(amount),
-          module_id: node?.data?.module?.id,
-          action_id: node?.data?.action?.id,
-        };
-
-        if (requiresTokenOut && tokenOut) {
-          payload.token_out_id = tokenOut;
-        }
-
-        const res = await estimateDefiOperation(payload);
-        setEstimate(res);
-      } catch (err) {
-        console.error("CONFIG PANEL ESTIMATE ERROR:", err);
-        setEstimate(null);
-      } finally {
-        setEstimating(false);
-      }
-    }, 500);
-
+    // Debounce: wait 500ms after user stops typing.
+    const timeoutId = setTimeout(runEstimate, 500);
     return () => clearTimeout(timeoutId);
-    
-  }, [amount, tokenIn, tokenOut, resolvedType, requiresTokenOut, isInitializing, node?.data?.module?.id, node?.data?.action?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amount, tokenIn, tokenOut, resolvedType, requiresTokenOut, isInitializing, node?.data?.module?.id, node?.data?.action?.id, node?.data?.module?.protocol]);
 
   const handleSubmit = async () => {
     if (!isValid) return;
@@ -845,7 +819,16 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
                 />
               )}
 
-              {renderEstimate()}
+              {!estimating && estimateError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-xs text-destructive"
+                >
+                  {estimateError}
+                </div>
+              )}
+
+              {!estimating && !estimateError && renderEstimate()}
             </>
           )}
         </div>

@@ -34,6 +34,8 @@ services:
       DATABASE_SSL: "false"
       NODE_ENV: production
       PORT: "8000"
+      # Temporary: silence the Hydration WS reconnect spam while Avalanche-focused.
+      HYDRATION_DISABLED: "true"
     ports:
       - "8000:8000"
     depends_on:

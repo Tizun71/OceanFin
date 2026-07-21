@@ -5,6 +5,12 @@ import { H160, createSdkContext } from '@galacticcouncil/sdk';
 import { ethers } from 'ethers';
 const DEFAULT_RPC_ENDPOINT = 'wss://rpc.hydradx.cloud';
 
+// Temporary kill-switch: while the app is Avalanche-focused the Hydration WS
+// (wss://rpc.hydradx.cloud) only drops and reconnect-spams the logs with
+// "API-WS: disconnected ... 1006 Abnormal Closure". Set HYDRATION_DISABLED=true
+// to never open the socket; Hydration-only features fail with a clear message.
+const HYDRATION_DISABLED = process.env.HYDRATION_DISABLED === 'true';
+
 @Injectable()
 export class HydrationSdkService implements OnModuleDestroy {
   private api: ApiPromise | null = null;
@@ -23,6 +29,11 @@ export class HydrationSdkService implements OnModuleDestroy {
   }
 
   async getApi(): Promise<ApiPromise> {
+    if (HYDRATION_DISABLED) {
+      throw new Error(
+        'Hydration RPC is temporarily disabled (HYDRATION_DISABLED=true).',
+      );
+    }
     if (this.api) return this.api;
     if (this.pendingInit) return this.pendingInit;
     this.connecting = true;

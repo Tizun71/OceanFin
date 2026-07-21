@@ -34,4 +34,14 @@ export class EstimateDefiPairDto {
   @IsNumber()
   @IsPositive()
   amount_in: number;
+
+  @ApiProperty({
+    description:
+      'Lending protocol for EVM estimates (e.g. AAVE, BENQI). Routes SUPPLY/BORROW to the right on-chain market; ignored for Hydration tokens.',
+    example: 'AAVE',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  protocol?: string;
 }

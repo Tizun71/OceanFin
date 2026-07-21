@@ -41,6 +41,40 @@ export async function getReserveApys(
   };
 }
 
+export interface AaveReserveInfo extends AaveReserveApys {
+  /** Loan-to-value as a fraction (e.g. 0.75). */
+  ltv: number;
+  /** Liquidation threshold as a fraction. */
+  liquidationThreshold: number;
+}
+
+/**
+ * Reserve rates plus risk params in one getReserveData call. LTV and liquidation
+ * threshold are packed into the reserve `configuration` bitmask (Aave v3):
+ * bits 0-15 = LTV, bits 16-31 = liquidation threshold, both in basis points.
+ */
+export async function getReserveInfo(
+  chainId: number,
+  pool: Address,
+  asset: Address,
+): Promise<AaveReserveInfo> {
+  const client = getEvmPublicClient(chainId);
+  const data: any = await client.readContract({
+    address: pool,
+    abi: AAVE_V3_POOL_ABI,
+    functionName: 'getReserveData',
+    args: [asset],
+  });
+
+  const config = BigInt(data.configuration as bigint);
+  return {
+    supplyApy: rayRateToApy(data.currentLiquidityRate as bigint),
+    variableBorrowApy: rayRateToApy(data.currentVariableBorrowRate as bigint),
+    ltv: Number(config & 0xffffn) / 10000,
+    liquidationThreshold: Number((config >> 16n) & 0xffffn) / 10000,
+  };
+}
+
 export async function getUserAccountData(
   chainId: number,
   pool: Address,

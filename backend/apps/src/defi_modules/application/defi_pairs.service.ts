@@ -11,6 +11,12 @@ import { OperationType } from "../domain/operation-type.enum";
 import { UiPoolDataProvider } from "@aave/contract-helpers";
 import { PolkadotEvmRpcProvider } from "../../strategies/infrastructure/helpers/hydration/utils/polkadotEVMProvider";
 import { ASSET_ID } from "src/strategies/infrastructure/helpers";
+import {
+  estimateEvmSupply,
+  estimateEvmBorrow,
+  estimateEvmSwap,
+  type EvmToken,
+} from "./estimate-evm";
 
 const POOL_DATA_PROVIDER = "0x112b087b60C1a166130d59266363C45F8aa99db0";
 const POOL = "0xf3Ba4D1b50f78301BDD7EAEa9B67822A15FCA691";
@@ -70,6 +76,14 @@ export class DefiPairsService {
   }
 
   async estimateDefiPair(dto: EstimateDefiPairDto): Promise<EstimateDefiPairResponseDto> {
+    // EVM tokens carry an on-chain address and no Hydration asset_id — route
+    // them to the live Aave/Benqi/Trader Joe readers instead of the Hydration
+    // SDK (which would throw on the missing asset_id).
+    const tokenIn = await this.defiTokenService.getDefiTokenById(dto.token_in_id);
+    if (tokenIn.isExecutableOnEvm()) {
+      return this.estimateEvmPair(dto, tokenIn);
+    }
+
     switch (dto.operation_type) {
       case OperationType.SWAP:
         return this.estimateSwap(dto.token_in_id, dto.token_out_id!, dto.amount_in);
@@ -82,6 +96,59 @@ export class DefiPairsService {
       default:
         throw new Error(`Unsupported operation type: ${dto.operation_type}`);
     }
+  }
+
+  private evmToken(token: DefiToken): EvmToken {
+    if (!token.address || token.decimals === null || token.decimals === undefined) {
+      throw new BadRequestException(
+        `Token ${token.name} is missing an EVM address/decimals`,
+      );
+    }
+    return { address: token.address as `0x${string}`, decimals: token.decimals };
+  }
+
+  /** Live on-chain estimate for Avalanche EVM tokens (see estimate-evm.ts). */
+  private async estimateEvmPair(
+    dto: EstimateDefiPairDto,
+    tokenIn: DefiToken,
+  ): Promise<EstimateDefiPairResponseDto> {
+    const base = {
+      operation_type: dto.operation_type,
+      token_in_id: dto.token_in_id,
+      token_out_id: dto.token_out_id,
+      amount_in: dto.amount_in,
+    };
+
+    if (dto.operation_type === OperationType.SUPPLY) {
+      const { supply_apy } = await estimateEvmSupply(dto.protocol, this.evmToken(tokenIn));
+      return { ...base, token_out_id: dto.token_in_id, supply_apy };
+    }
+
+    // SWAP / JOIN_STRATEGY / BORROW all need the output token.
+    if (!dto.token_out_id) {
+      throw new BadRequestException(
+        `${dto.operation_type} requires token_out_id`,
+      );
+    }
+    const tokenOut = await this.defiTokenService.getDefiTokenById(dto.token_out_id);
+
+    if (dto.operation_type === OperationType.BORROW) {
+      const res = await estimateEvmBorrow(
+        dto.protocol,
+        this.evmToken(tokenIn),
+        this.evmToken(tokenOut),
+        dto.amount_in,
+      );
+      return { ...base, amount_out: res.max_borrow_amount, ...res };
+    }
+
+    // SWAP and JOIN_STRATEGY both resolve to a Trader Joe quote on EVM.
+    const { amount_out, slippage } = await estimateEvmSwap(
+      this.evmToken(tokenIn),
+      this.evmToken(tokenOut),
+      dto.amount_in,
+    );
+    return { ...base, amount_out, slippage };
   }
 
   private async estimateJoinStrategy(

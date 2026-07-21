@@ -21,13 +21,24 @@ export async function getTraderJoeQuote(
   tokenOut: Address,
   amountIn: bigint,
   slippage = 0.005,
+  // Intermediate hop tokens (e.g. WAVAX) inserted between in/out. Required for
+  // pairs without a direct Liquidity Book market — findBestPathFromAmountIn
+  // treats `route` as the exact ordered hop sequence, not a candidate set.
+  intermediates: Address[] = [],
 ): Promise<TraderJoeSwapQuote> {
   const client = getEvmPublicClient(chainId);
+  // Build the ordered route, dropping any hop that coincides with an endpoint.
+  const lower = (a: Address) => a.toLowerCase();
+  const hops = intermediates.filter(
+    (h) => lower(h) !== lower(tokenIn) && lower(h) !== lower(tokenOut),
+  );
+  const route: Address[] = [tokenIn, ...hops, tokenOut];
+
   const quote: any = await client.readContract({
     address: lbQuoter,
     abi: LB_QUOTER_ABI,
     functionName: 'findBestPathFromAmountIn',
-    args: [[tokenIn, tokenOut], amountIn],
+    args: [route, amountIn],
   });
 
   const amounts = quote.amounts as bigint[];

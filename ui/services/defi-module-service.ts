@@ -67,6 +67,9 @@ export type EstimateDefiOperationPayload = {
   amount_in?: number;
   module_id?: string;
   action_id?: string;
+  // Lending protocol ('AAVE' | 'BENQI' | ...) so the backend routes EVM
+  // SUPPLY/BORROW estimates to the right on-chain market.
+  protocol?: string;
 };
 
 export const estimateDefiOperation = async (data: EstimateDefiOperationPayload) => {
