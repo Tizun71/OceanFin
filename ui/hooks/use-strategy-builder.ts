@@ -7,13 +7,16 @@ import {
   Connection,
   Edge,
 } from "reactflow";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Module, Action, CreateStrategyPayload } from "@/types/defi";
 import { displayToast } from "@/components/shared/toast-manager";
 import { useUser } from "@/providers/user-provider";
 
 import { validateAddNode } from "@/lib/defi-builder-validation";
+import { nodeRequiresInput } from "@/lib/defi-node-input";
+import { resolveDefiOperationType } from "@/app/builder/components/nodes/defi-node-utils";
+import { estimateDefiOperation } from "@/services/defi-module-service";
 import {
   createDefiNode,
   createDefiEdge,
@@ -21,6 +24,7 @@ import {
 } from "@/lib/defi-node-factory";
 import { buildWorkflowJson } from "@/lib/defi-workflow-builder";
 import { submitStrategy } from "@/services/defi-strategy-builder";
+import { useActiveChain } from "@/hooks/use-active-chain";
 import { useRouter } from "next/navigation";
 
 type SaveConfigPayload = CreateStrategyPayload & {
@@ -82,6 +86,7 @@ const getEstimateOutputSymbol = (est: any, payload: SaveConfigPayload) => {
 
 export function useDefiBuilder() {
   const { user } = useUser();
+  const { activeChain } = useActiveChain();
   const router = useRouter();
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -225,7 +230,7 @@ export function useDefiBuilder() {
    */
   
   const saveConfig = useCallback(
-    async (payload: SaveConfigPayload) => {
+    async (payload: SaveConfigPayload, opts?: { silent?: boolean }) => {
       const currentNode = nodes.find((node) => node.id === payload.nodeId);
       const action = currentNode?.data?.action;
       const actionName =
@@ -241,17 +246,19 @@ export function useDefiBuilder() {
         let finalTokenInAssetId = payload.tokenInId;
         let finalTokenOutAssetId = rawTokenOutId;
 
-        if (action?.defi_pairs) {
-          
+        if (Array.isArray(action?.defi_pairs)) {
+
           const pairForIn = action.defi_pairs.find(
-            (p: any) => p.token_in.id === payload.tokenInId
+            (p: any) => p?.token_in?.id === payload.tokenInId
           );
-          if (pairForIn) finalTokenInAssetId = pairForIn.token_in.asset_id;
+          if (pairForIn?.token_in?.asset_id)
+            finalTokenInAssetId = pairForIn.token_in.asset_id;
 
           const pairForOut = action.defi_pairs.find(
-            (p: any) => p.token_out.id === rawTokenOutId
+            (p: any) => p?.token_out?.id === rawTokenOutId
           );
-          if (pairForOut) finalTokenOutAssetId = pairForOut.token_out.asset_id;
+          if (pairForOut?.token_out?.asset_id)
+            finalTokenOutAssetId = pairForOut.token_out.asset_id;
         }
 
         const finalConfig = {
@@ -292,7 +299,9 @@ export function useDefiBuilder() {
             : prev
         );
 
-        displayToast("success", "Configuration saved successfully.");
+        if (!opts?.silent) {
+          displayToast("success", "Configuration saved successfully.");
+        }
       } catch (error) {
         console.error("SAVE CONFIG ERROR:", error);
         displayToast("error", "Failed to save configuration.");
@@ -300,7 +309,88 @@ export function useDefiBuilder() {
     },
     [nodes, setNodes]
   );
-  
+
+  /*
+   * AUTO-CONFIGURE no-input steps (e.g. a chained SUPPLY). Its input token and
+   * amount come from the previous step's output, so there is nothing for the
+   * user to enter — estimate and persist it silently instead of opening a panel
+   * full of locked fields.
+   */
+  const autoConfiguringRef = useRef<Set<string>>(new Set());
+
+  const autoConfigureStep = useCallback(
+    async (node: any, prevConfig: any) => {
+      try {
+        const action = node?.data?.action;
+        const module = node?.data?.module;
+        const pairs: any[] = Array.isArray(action?.defi_pairs)
+          ? action.defi_pairs
+          : [];
+
+        const prevTokenId = prevConfig?.tokenOutId || prevConfig?.tokenInId;
+        const amount = prevConfig?.amountOut ?? prevConfig?.amount;
+        if (prevTokenId == null || amount == null) return;
+
+        const pair =
+          pairs.find(
+            (p) =>
+              p?.token_in?.asset_id === prevTokenId ||
+              p?.token_in?.id === prevTokenId
+          ) || pairs[0];
+        const meta = pair?.token_in;
+        if (!meta) return;
+
+        const operationType = resolveDefiOperationType(node.data) || "SUPPLY";
+
+        const estimate = await estimateDefiOperation({
+          operation_type: operationType,
+          token_in_id: meta.id,
+          amount_in: Number(amount),
+          module_id: module?.id,
+          action_id: action?.id,
+          protocol: module?.protocol,
+        });
+
+        await saveConfig(
+          {
+            nodeId: node.id,
+            moduleId: module?.id,
+            actionId: action?.id,
+            operationType,
+            tokenInPairId: meta.id,
+            tokenInId: meta.asset_id || meta.id,
+            tokenInSymbol: meta.name || "",
+            tokenInAddress: meta.address ?? undefined,
+            tokenInDecimals: meta.decimals ?? undefined,
+            amount: Number(amount),
+            estimate,
+            apy: estimate?.supply_apy ?? estimate?.apy ?? null,
+          } as any,
+          { silent: true }
+        );
+      } catch (err) {
+        console.error("AUTO CONFIG ERROR:", err);
+      }
+    },
+    [saveConfig]
+  );
+
+  useEffect(() => {
+    const last = nodes[nodes.length - 1];
+    if (!last || last.data?.config) return;
+    if (nodeRequiresInput(last, edges)) return;
+    if (autoConfiguringRef.current.has(last.id)) return;
+
+    const incoming = edges.find((e) => e.target === last.id);
+    const prev = nodes.find((n) => n.id === incoming?.source);
+    const prevConfig = prev?.data?.config;
+    if (!prevConfig) return;
+
+    autoConfiguringRef.current.add(last.id);
+    void autoConfigureStep(last, prevConfig).finally(() => {
+      autoConfiguringRef.current.delete(last.id);
+    });
+  }, [nodes, edges, autoConfigureStep]);
 
   /*
    * CREATE STRATEGY
@@ -321,6 +411,7 @@ export function useDefiBuilder() {
           userId: user.id,
           name,
           workflowJson,
+          chainContext: activeChain.name,
         });
 
         displayToast("success", "Strategy created successfully.");
@@ -335,7 +426,7 @@ export function useDefiBuilder() {
         setCreating(false);
       }
     },
-    [user, nodes, router],
+    [user, nodes, router, activeChain],
   );
 
   return {
