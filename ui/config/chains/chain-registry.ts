@@ -28,6 +28,13 @@ export interface BenqiAddresses {
   /** Compound-fork qiToken markets. qiAVAX is the native market (payable mint). */
   qiAvax: `0x${string}`;
   qiSAvax: `0x${string}`;
+  /**
+   * ERC-20 lending markets keyed by the LOWERCASED underlying token address.
+   * Supply = mint(qiToken), Borrow = borrow(qiToken). Native AVAX (qiAVAX) is
+   * intentionally excluded — it needs the payable path, so WAVAX is not a Benqi
+   * builder market. Addresses from docs.benqi.fi/resources/contracts.
+   */
+  markets: Record<`0x${string}`, { qiToken: `0x${string}`; symbol: string }>;
 }
 
 export interface ChainProtocols {
@@ -81,7 +88,7 @@ export const CHAIN_REGISTRY: Record<ChainSlug, ChainMeta> = {
     nativeCurrency: { symbol: "HDX", decimals: 12 },
     rpcUrl: "wss://rpc.hydradx.cloud",
     explorerUrl: "https://hydration.subscan.io",
-    iconUrl: "/chain-icon/hydration.png",
+    iconUrl: "/icons/chains/hydration.png",
     protocols: {},
   },
   avalanche: {
@@ -102,6 +109,18 @@ export const CHAIN_REGISTRY: Record<ChainSlug, ChainMeta> = {
         sAvax: "0x2b2C81e08f1Af8835a78Bb2A90AE924ACE0eA4bE",
         qiAvax: "0x5C0401e81Bc07Ca70fAD469b451682c0d747Ef1c",
         qiSAvax: "0xF362feA9659cf036792c9cb02f8ff8198E21B4cB",
+        // ERC-20 markets: underlying (lowercased) -> qiToken. Underlying
+        // addresses match seeds/0001-defi-token.sql (Aave Avalanche reserves).
+        markets: {
+          "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be": { qiToken: "0xF362feA9659cf036792c9cb02f8ff8198E21B4cB", symbol: "sAVAX" },
+          "0x152b9d0fdc40c096757f570a51e494bd4b943e50": { qiToken: "0x89a415b3D20098E6A6C8f7a59001C67BD3129821", symbol: "BTC.b" },
+          "0x50b7545627a5162f82a992c33b87adc75187b218": { qiToken: "0xe194c4c5aC32a3C9ffDb358d9Bfd523a0B6d1568", symbol: "WBTC.e" },
+          "0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab": { qiToken: "0x334AD834Cd4481BB02d09615E7c11a00579A7909", symbol: "WETH.e" },
+          "0x5947bb275c521040051d82396192181b413227a3": { qiToken: "0x4e9f683A27a6BdAD3FC2764003759277e93696e6", symbol: "LINK.e" },
+          "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7": { qiToken: "0xd8fcDa6ec4Bdc547C0827B8804e89aCd817d56EF", symbol: "USDT" },
+          "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e": { qiToken: "0xB715808a78F6041E46d61Cb123C9B4A27056AE9C", symbol: "USDC" },
+          "0xd586e7f844cea2f87f50152665bcbc2c279d8d70": { qiToken: "0x835866d37AFB8CB8F8334dCCdaf66cf01832Ff5D", symbol: "DAI.e" },
+        },
       },
     },
   },
@@ -113,7 +132,7 @@ export const CHAIN_REGISTRY: Record<ChainSlug, ChainMeta> = {
     nativeCurrency: { symbol: "ETH", decimals: 18 },
     rpcUrl: BASE_RPC,
     explorerUrl: "https://basescan.org",
-    iconUrl: "/chain-icon/base.png",
+    iconUrl: "/icons/chains/base.png",
     protocols: {
       aaveV3: aaveAddresses(AaveV3Base),
     },
@@ -126,7 +145,7 @@ export const CHAIN_REGISTRY: Record<ChainSlug, ChainMeta> = {
     nativeCurrency: { symbol: "ETH", decimals: 18 },
     rpcUrl: ARBITRUM_RPC,
     explorerUrl: "https://arbiscan.io",
-    iconUrl: "/chain-icon/arbitrum.png",
+    iconUrl: "/icons/chains/arbitrum.png",
     protocols: {
       aaveV3: aaveAddresses(AaveV3Arbitrum),
       traderJoe: TRADER_JOE_V2_2,
