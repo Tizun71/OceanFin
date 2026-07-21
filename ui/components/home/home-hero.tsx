@@ -63,12 +63,6 @@ export function HomeHero() {
               aria-hidden
             />
           </Link>
-          <Link
-            href="/prompt"
-            className="inline-flex h-11 items-center rounded-lg border border-border-strong px-5 text-sm font-medium text-foreground transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          >
-            Describe your strategy
-          </Link>
         </motion.div>
       </div>
     </section>

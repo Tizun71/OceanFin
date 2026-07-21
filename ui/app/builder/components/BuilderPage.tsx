@@ -198,7 +198,7 @@ function Builder() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 gap-5">
+      <div className="flex min-h-[72vh] flex-1 gap-5">
         {/* Sidebar */}
         <div className="w-80 shrink-0">
           <Sidebar modules={modules} onSelect={handleAddNode} />
