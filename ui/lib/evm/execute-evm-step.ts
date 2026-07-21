@@ -57,6 +57,13 @@ export async function executeEvmStep(
     }
   }
 
+  // 2b. Idempotent setup calls (e.g. Benqi enterMarkets) — simulate + write in
+  // order so collateral is enabled before the primary call needs it.
+  for (const pre of plan.preCalls ?? []) {
+    const preHash = await simulateAndWrite(pre, deps);
+    await publicClient.waitForTransactionReceipt({ hash: preHash });
+  }
+
   // 3 + 4. Simulate (mandatory) then write the primary call.
   const txHash = await simulateAndWrite(plan.call, deps);
   await publicClient.waitForTransactionReceipt({ hash: txHash });

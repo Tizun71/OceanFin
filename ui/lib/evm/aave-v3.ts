@@ -9,6 +9,12 @@ const NO_REFERRAL = 0;
 export interface EvmStepPlan {
   /** Approvals to satisfy before `call` (checked against live allowance). */
   approvals: ApprovalRequirement[];
+  /**
+   * Idempotent setup writes run after approvals and before `call` (each
+   * simulated then written in order). Used by Benqi supply to enterMarkets so
+   * the minted qiToken counts as collateral for a later borrow.
+   */
+  preCalls?: EvmCall[];
   /** The primary contract write for this step. */
   call: EvmCall;
 }

@@ -11,6 +11,7 @@ import {
 import { quoteTraderJoe } from "./trader-joe-quote";
 import { buildTraderJoeSwap } from "./trader-joe";
 import { resolveEModeCategoryId } from "./aave-emode";
+import { buildBenqiMintErc20, buildBenqiBorrow, buildEnterMarkets } from "./benqi";
 
 const DEFAULT_SLIPPAGE = 0.005; // 0.5%
 
@@ -18,6 +19,17 @@ function requireAave(chain: ChainMeta): Address {
   const pool = chain.protocols.aaveV3?.pool;
   if (!pool) throw new Error(`Aave v3 not configured for chain ${chain.slug}`);
   return pool;
+}
+
+/** Resolve the Benqi qiToken market for an underlying token, or throw. */
+function requireBenqiMarket(chain: ChainMeta, underlying: Address): Address {
+  const benqi = chain.protocols.benqi;
+  if (!benqi) throw new Error(`Benqi not configured for chain ${chain.slug}`);
+  const market = benqi.markets[underlying.toLowerCase() as `0x${string}`];
+  if (!market) {
+    throw new Error(`Benqi has no market for token ${underlying} on ${chain.slug}`);
+  }
+  return market.qiToken;
 }
 
 function requireEvmToken(token: { address?: Address; decimals?: number; amount?: number }) {
@@ -44,22 +56,33 @@ export function buildEvmStepPlan(
   user: Address,
   opts?: { eModeCategoryId?: number },
 ): EvmStepPlan | null {
-  const pool = requireAave(chain);
+  const isBenqi = step.protocol === "BENQI";
 
   switch (step.type) {
     case STEP_TYPE.SUPPLY: {
       const { address, amount } = requireEvmToken(step.tokenIn!);
-      return buildAaveSupply({ pool, asset: address, amount, user });
+      if (isBenqi) {
+        const qiToken = requireBenqiMarket(chain, address);
+        const plan = buildBenqiMintErc20({ qiToken, underlying: address, amount });
+        // enterMarkets is idempotent; running it on every supply guarantees the
+        // minted qiToken is usable as collateral for a subsequent borrow.
+        plan.preCalls = [buildEnterMarkets(chain.protocols.benqi!.comptroller, [qiToken]).call];
+        return plan;
+      }
+      return buildAaveSupply({ pool: requireAave(chain), asset: address, amount, user });
     }
     case STEP_TYPE.BORROW: {
       const { address, amount } = requireEvmToken(step.tokenOut!);
-      return buildAaveBorrow({ pool, asset: address, amount, user });
+      if (isBenqi) {
+        return buildBenqiBorrow(requireBenqiMarket(chain, address), amount);
+      }
+      return buildAaveBorrow({ pool: requireAave(chain), asset: address, amount, user });
     }
     case STEP_TYPE.ENABLE_E_MODE: {
       if (opts?.eModeCategoryId === undefined) {
         throw new Error("ENABLE_E_MODE requires an on-chain-resolved category id");
       }
-      return buildAaveSetEMode({ pool, categoryId: opts.eModeCategoryId });
+      return buildAaveSetEMode({ pool: requireAave(chain), categoryId: opts.eModeCategoryId });
     }
     case STEP_TYPE.ENABLE_BORROWING:
       // No-op on Aave v3 (borrowing enabled per-reserve, not per-user).
