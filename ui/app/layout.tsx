@@ -46,12 +46,12 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://oceanfin.app';
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: "Ocean Fin",
-  description: "Maximize your DeFi investments with Ocean Fin. AI-powered strategies to earn yield, track performance, and optimize crypto portfolios across the Polkadot ecosystem.",
-  keywords: ["Ocean Fin", "Polkadot", "DeFi", "Yield Farming", "Crypto Investment", "AI Strategies", "Blockchain"],
+  description: "DeFi, minus the headache. Snap together a strategy like LEGO or borrow one a pro built, simulate the outcome, then run it in one click on Avalanche. Non-custodial — your keys stay yours.",
+  keywords: ["Ocean Fin", "Avalanche", "AVAX", "DeFi", "Yield Farming", "DeFi Builder", "Strategy Library", "AI Strategies", "Non-custodial", "Aave", "Benqi", "Trader Joe"],
   authors: [{ name: "Ocean Fin Team", url: baseUrl }],
   openGraph: {
     title: "Ocean Fin",
-    description: "Maximize your DeFi investments with Ocean Fin. Explore AI-driven strategies and earn yield across the Polkadot ecosystem.",
+    description: "DeFi, minus the headache. Build or borrow a strategy, simulate it, run it in one click on Avalanche. Non-custodial — your keys stay yours.",
     url: baseUrl,
     siteName: "Ocean Fin",
     images: [
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ocean Fin – Polkadot DeFi Strategies & AI Yield Optimization",
-    description: "Maximize your DeFi investments with Ocean Fin. Explore AI-driven strategies and earn yield across the Polkadot ecosystem.",
+    title: "Ocean Fin – Avalanche DeFi Strategies, Built or Borrowed",
+    description: "DeFi, minus the headache. Build or borrow a strategy, simulate it, run it in one click on Avalanche. Non-custodial — your keys stay yours.",
     images: ["/logo-ocean-fin.svg"],
     site: "@OceanFinApp",
     creator: "@OceanFinApp",
