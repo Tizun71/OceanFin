@@ -12,33 +12,41 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  AaveV3Avalanche,
-  AaveV3Base,
-  AaveV3Arbitrum,
-} from '@bgd-labs/aave-address-book';
+import { AaveV3Avalanche } from '@bgd-labs/aave-address-book';
 import { deterministicUuid } from './lib/deterministic-uuid.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = join(__dirname, '..', 'seeds', '0002-defi-modules.sql');
 
+// Avalanche-only builder palette. Only protocols with a live client-side data
+// path (ui/lib/evm) are seeded: Aave V3 (on-chain reserves/rates + execution)
+// and Trader Joe (on-chain lbQuoter). Token addresses come from the Aave V3
+// Avalanche market.
 const CHAINS = {
   avalanche: { chainId: 43114, market: AaveV3Avalanche },
-  base: { chainId: 8453, market: AaveV3Base },
-  arbitrum: { chainId: 42161, market: AaveV3Arbitrum },
 };
 
-// Trader Joe (LFJ) is deployed on Avalanche + Arbitrum only — matches
-// CHAIN_SUPPORTED_NODES in ui/config/chains/chain-registry.ts, where Base has no SWAP.
-const SWAP_CHAINS = ['avalanche', 'arbitrum'];
+const SWAP_CHAINS = ['avalanche'];
 
 // Swap routing hubs. Pairing every token with every other token would seed
 // hundreds of combinations that have no real liquidity; DEXes route through
 // these hubs anyway. First match per chain wins, missing symbols are skipped.
 const SWAP_HUBS = {
   avalanche: ['WAVAX', 'WETHe', 'USDC'],
-  arbitrum: ['WETH', 'USDC', 'WBTC'],
 };
+
+// Benqi ERC-20 lending markets (lowercased underlying addresses). Kept in sync
+// with the `benqi.markets` map in ui/config/chains/chain-registry.ts.
+const BENQI_MARKET_ADDRESSES = [
+  '0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be', // sAVAX
+  '0x152b9d0fdc40c096757f570a51e494bd4b943e50', // BTC.b
+  '0x50b7545627a5162f82a992c33b87adc75187b218', // WBTC.e
+  '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab', // WETH.e
+  '0x5947bb275c521040051d82396192181b413227a3', // LINK.e
+  '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7', // USDT
+  '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e', // USDC
+  '0xd586e7f844cea2f87f50152665bcbc2c279d8d70', // DAI.e
+];
 
 const MODULES = [
   {
@@ -48,8 +56,26 @@ const MODULES = [
     category: 'LENDING',
     description: 'Supply collateral and borrow against it on Aave v3.',
     website: 'https://aave.com',
-    icon: '/icons/aave.png',
+    icon: '/icons/agents/aave.png',
     chains: Object.keys(CHAINS),
+    actions: [
+      { name: 'Supply', risk: 'LOW', description: 'Deposit a token as collateral.' },
+      { name: 'Borrow', risk: 'MEDIUM', description: 'Borrow a token against supplied collateral.' },
+    ],
+  },
+  {
+    key: 'benqi',
+    name: 'Benqi',
+    protocol: 'BENQI',
+    category: 'LENDING',
+    description: 'Supply collateral and borrow against it on Benqi, the native Avalanche money market.',
+    website: 'https://benqi.fi',
+    icon: '/icons/agents/benqi.png',
+    chains: ['avalanche'],
+    // Only Benqi's ERC-20 qiToken markets (must match the `markets` map in
+    // ui/config/chains/chain-registry.ts). Native AVAX (qiAVAX) is excluded —
+    // it needs the payable mint path, so WAVAX is not a Benqi builder market.
+    tokenAddresses: BENQI_MARKET_ADDRESSES,
     actions: [
       { name: 'Supply', risk: 'LOW', description: 'Deposit a token as collateral.' },
       { name: 'Borrow', risk: 'MEDIUM', description: 'Borrow a token against supplied collateral.' },
@@ -62,7 +88,7 @@ const MODULES = [
     category: 'DEX',
     description: 'Swap tokens through Trader Joe (LFJ) Liquidity Book v2.2.',
     website: 'https://lfj.gg',
-    icon: '/icons/trader-joe.png',
+    icon: '/icons/agents/trader-joe.png',
     chains: SWAP_CHAINS,
     actions: [{ name: 'Swap', risk: 'LOW', description: 'Swap one token for another.' }],
   },
@@ -106,7 +132,10 @@ for (const mod of MODULES) {
       ].join(', ')})`,
     );
 
-    const tokens = tokensOf(slug);
+    // Modules may restrict their token universe (e.g. Benqi supports fewer
+    // markets than the full Aave reserve list).
+    const allow = mod.tokenAddresses ? new Set(mod.tokenAddresses) : null;
+    const tokens = tokensOf(slug).filter((t) => !allow || allow.has(t.address));
 
     for (const action of mod.actions) {
       const actionId = deterministicUuid(`action:${mod.key}:${slug}:${action.name}`);
