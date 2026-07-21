@@ -63,71 +63,61 @@ export default function RunStrategyModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px] bg-neutral-900/90 border-white/20 backdrop-blur-3xl p-0 overflow-hidden rounded-[28px] shadow-2xl ring-1 ring-white/10">
-        
-        <div className="absolute top-0 left-0 right-0 h-[100px] bg-gradient-to-b from-primary/10 to-transparent pointer-events-none" />
-
-        <div className="p-8 relative z-10">
-          <DialogHeader className="flex flex-col items-center text-center space-y-3 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
-              <Rocket className="w-7 h-7 text-primary" />
-            </div>
-            <DialogTitle className="text-2xl font-extrabold text-white">
-              Initialize Strategy
-            </DialogTitle>
-            <p className="text-sm text-neutral-400">Enter the amount to simulate execution</p>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="relative flex items-center group">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={handleChange}
-                  className="w-full bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 
-                             p-4 pl-14 pr-24 rounded-2xl text-white font-bold text-xl placeholder:text-neutral-600 transition-all outline-none"
-                />
-
-                <div className="absolute right-4 z-20 pointer-events-none">
-                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                    Amount
-                  </span>
-                </div>
-              </div>
-
-              {error ? (
-                <p className="text-red-400 text-[11px] font-bold flex items-center gap-1.5 ml-2">
-                  <span className="w-1 h-1 rounded-full bg-red-400 animate-ping" />
-                  {error}
-                </p>
-              ) : (
-                <p className="text-neutral-500 text-[11px] flex items-center gap-1.5 ml-2">
-                  <Info size={12} />
-                  Simulated results based on current market data.
-                </p>
-              )}
-            </div>
-
-            <Button
-              disabled={!amount || Number(amount) <= 0 || loading}
-              onClick={handleRun}
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl transition-all duration-300 shadow-[0_8px_20px_rgba(var(--primary-rgb),0.2)]"
-            >
-              {loading ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span className="uppercase tracking-widest text-xs">Processing...</span>
-                </div>
-              ) : (
-                <span className="tracking-widest uppercase">Run Simulation</span>
-              )}
-            </Button>
+      <DialogContent className="sm:max-w-[420px] bg-popover border border-border rounded-xl p-6 shadow-lg">
+        <DialogHeader className="space-y-3 mb-5">
+          <div className="w-11 h-11 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center">
+            <Rocket className="w-5 h-5 text-accent-light" />
           </div>
+          <DialogTitle className="text-lg font-semibold text-foreground">
+            Simulate strategy
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Enter the amount of capital to model a dry-run.
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Amount</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amount}
+              onChange={handleChange}
+              autoFocus
+              className="w-full bg-surface-2 border border-border focus:border-accent/60 focus:ring-2 focus:ring-accent/20
+                         p-3 rounded-lg text-foreground font-semibold text-lg placeholder:text-muted-foreground/60 transition-all outline-none"
+            />
+
+            {error ? (
+              <p className="text-destructive text-xs flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-destructive" />
+                {error}
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs flex items-center gap-1.5">
+                <Info size={12} />
+                Estimated with current market prices.
+              </p>
+            )}
+          </div>
+
+          <Button
+            disabled={!amount || Number(amount) <= 0 || loading}
+            onClick={handleRun}
+            className="w-full h-11"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                <span className="text-sm">Simulating…</span>
+              </div>
+            ) : (
+              'Run simulation'
+            )}
+          </Button>
         </div>
-        <div className="h-1 w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       </DialogContent>
     </Dialog>
   );
