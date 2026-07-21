@@ -67,6 +67,10 @@ export const buildWorkflowJson = (nodes: any[]) => {
       step: stepNumber++,
       type: node.data.action.name.toUpperCase().replace(" ", "_"),
       agent: node.data.module.name.toUpperCase(),
+      // EVM lending-protocol selector consumed by build-evm-plan. Straight from
+      // the module's protocol column ('AAVE' | 'BENQI' | ...); SUPPLY/BORROW
+      // route to Benqi qiToken markets when this is 'BENQI', else Aave.
+      protocol: node.data.module.protocol,
       tokenIn,
       tokenOut,
     };

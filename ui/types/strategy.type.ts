@@ -4,6 +4,12 @@ export interface Step {
     step: number;
     type: STEP_TYPE;
     agent?: AGENT;
+    /**
+     * EVM lending protocol for SUPPLY/BORROW routing. Defaults to AAVE when
+     * absent (back-compat). BENQI routes to its qiToken markets in
+     * lib/evm/build-evm-plan. Set from the builder module's protocol.
+     */
+    protocol?: "AAVE" | "BENQI";
     tokenIn?: Token;
     tokenOut?: Token;
     /**
