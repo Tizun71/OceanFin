@@ -2,283 +2,144 @@
   <img src="https://ocean-fin.s3.ap-southeast-1.amazonaws.com/logo-ocean-fin.png" alt="OceanFin Logo" width="120" height="120" />
 
   <h1>Ocean Fin</h1>
+
+  <strong>DeFi, minus the headache.</strong>
 </div>
 
-# About OceanFin
+---
 
-**Optimizing Avalanche DeFi Earnings**
+## 🌊 What is OceanFin?
 
-OceanFin is a non-custodial platform that maximizes your Avalanche DeFi earnings with automated, data-driven strategies—no middlemen, just high-yield opportunities.
+DeFi yields are real. Chasing them usually isn't fun: you hop between five protocols, do math in a spreadsheet, and pray you didn't fat-finger a transaction.
+
+OceanFin makes that whole dance disappear. Snap together a strategy like LEGO, or borrow one a pro already built, preview exactly what happens, then run it in **one click**. Your money never leaves your wallet. We don't hold your keys, ever.
+
+> **Non-custodial. Data-driven. Built for Avalanche.**
 
 ---
 
-## 🚀 Features
-
-* **Non-custodial:** Users retain 100% control of assets
-* **DeFi Builder:** Visual drag-and-drop interface for composing complex strategies
-* **AI-Powered Strategy Generation:** Create strategies from natural language prompts
-* **One-Click Execution:** Eliminate manual protocol hopping and spreadsheet math
-* **Real-time Simulation:** Preview strategy outcomes before execution
-* **Transparent & Secure:** Full visibility into strategies and execution
-* **Multi-chain Ready:** Avalanche C-Chain first, with Base and Arbitrum on the same EVM rail
-
----
-
-## 🎯 Core Objectives
-
-* Make DeFi simple and accessible—no expert knowledge required
-* Keep assets fully under user control
-* Automate strategy discovery and execution
-* Provide clear, real-time activity tracking
-* Enable seamless cross-chain operations
-
----
-
-## 🎨 Key Features
-
-### DeFi Builder - Visual Strategy Composer
-
-Build complex DeFi strategies with a drag-and-drop interface. No coding required.
-
-**Key Features:**
-* Visual workflow canvas powered by ReactFlow
-* Drag-and-drop operation nodes (SWAP, SUPPLY, BORROW, JOIN_STRATEGY, BRIDGE)
-* Smart connection validation with business rules
-* Real-time price estimation and APY calculations
-* Interactive configuration panels
-* One-click strategy deployment
-
-**Supported Operations:**
-* `SWAP` - Exchange tokens via Trader Joe (LFJ) v2.2
-* `SUPPLY` - Deposit tokens to Aave v3 or Benqi markets
-* `BORROW` - Borrow tokens against collateral
-* `JOIN_STRATEGY` - Convert AVAX to liquid staking derivatives (sAVAX)
-* `BRIDGE` - Move assets across chains via LI.FI
-
-**Access:** Navigate to `/builder` in the app
-
----
-
-### AI Prompt to Strategy
-
-Generate executable DeFi strategies from natural language using Google Gemini AI.
-
-**How it works:**
-1. Describe your strategy in plain English
-2. AI generates a complete strategy with validation
-3. Review the visual preview and risk analysis
-4. Execute with one click
-
-**Example Prompts:**
-* "Loop sAVAX three times to compound the staking yield"
-* "Supply AVAX as collateral and borrow USDC against it"
-* "Route idle USDC into the highest paying lending market"
-
-**Features:**
-* Natural language processing with Gemini AI
-* Automatic strategy validation
-* Real-time simulation with accurate amounts
-* AI-powered risk analysis
-* Interactive strategy preview
-
-**Access:** Navigate to `/prompt` in the app
-
----
-
-## 🏗️ Architecture
-
-### System Overview
+## 🗺️ How it works
 
 ```mermaid
-graph TB
-    subgraph Frontend["🎨 Frontend (Next.js)"]
-        Home[Home Dashboard]
-        Builder[DeFi Builder<br/>Visual Editor]
-        Prompt[AI Prompt<br/>Strategy Generator]
-    end
+flowchart LR
+    U([You]) --> A{Pick your style}
 
-    subgraph Backend["⚙️ Backend (NestJS)"]
-        subgraph AIModule["AI Strategy Builder Module"]
-            Gemini[Gemini AI Service]
-            Parser[Strategy Parser]
-            Validator[Strategy Validator]
-        end
+    A -->|Build it| B[🧱 DeFi Builder<br/>drag &amp; drop blocks]
+    A -->|Borrow it| C[📈 Strategy Library<br/>browse top APY]
 
-        subgraph StrategyModule["DeFi Strategies Module"]
-            Simulation[Simulation Service]
-            Execution[Execution Service]
-            Tracking[Activity Tracking]
-        end
+    B --> S[👀 Simulate<br/>see the outcome first]
+    C --> S
 
-        subgraph DefiModule["DeFi Modules"]
-            Aave[Aave v3 Adapter]
-            Benqi[Benqi Adapter]
-            Pairs[Token Pairs Service]
-        end
-    end
+    S --> E[✅ One-click run]
+    E --> W[(Your wallet<br/>keys stay yours)]
 
-    subgraph Blockchain["⛓️ Blockchain Layer"]
-        Avalanche[Avalanche C-Chain]
-        Base[Base]
-        Arbitrum[Arbitrum]
-    end
+    W --> P[Aave v3 · Benqi<br/>Trader Joe · sAVAX · LI.FI]
+    P --> Y[💰 Yield]
 
-    Frontend -->|REST API| Backend
-    Backend -->|viem / wagmi| Blockchain
-
-    Gemini --> Parser
-    Parser --> Validator
-    Validator --> Simulation
-
-    style Frontend fill:#1e293b,stroke:#4f46e5,stroke-width:2px,color:#fff
-    style Backend fill:#1e293b,stroke:#10b981,stroke-width:2px,color:#fff
-    style Blockchain fill:#1e293b,stroke:#f59e0b,stroke-width:2px,color:#fff
-    style Gemini fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style Avalanche fill:#e84142,stroke:#b91c1c,color:#fff
+    style B fill:#4f46e5,stroke:#4338ca,color:#fff
+    style C fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style S fill:#f59e0b,stroke:#d97706,color:#fff
+    style E fill:#10b981,stroke:#059669,color:#fff
+    style Y fill:#10b981,stroke:#059669,color:#fff
 ```
 
-### Data Flow
-
-#### 1. DeFi Builder Flow
-
-```mermaid
-graph TD
-    A[User Action: Drag & Drop] --> B[Add Node to Canvas]
-    B --> C[Configure Node<br/>Token, Amount]
-    C --> D[Fetch Estimate API]
-    D --> E[Aave v3 / Benqi / Trader Joe]
-    E --> F[Live Prices]
-    F --> G[Display Preview]
-    G --> H[Connect Nodes<br/>Validate Rules]
-    H --> I[Create Strategy]
-    I --> J[Execute on Avalanche]
-
-    style A fill:#4f46e5,stroke:#4338ca,color:#fff
-    style J fill:#10b981,stroke:#059669,color:#fff
-    style D fill:#f59e0b,stroke:#d97706,color:#fff
-    style H fill:#ec4899,stroke:#db2777,color:#fff
-```
-
-#### 2. AI Prompt to Strategy Flow
-
-```mermaid
-graph TD
-    A[User Prompt<br/>Natural Language] --> B[Gemini AI Service]
-    B --> C[Parse Intent]
-    C --> D[Strategy Parser]
-    D --> E[Structure Steps]
-    E --> F[Strategy Validator]
-    F --> G[Check Business Rules]
-    G --> H[Simulation Service]
-    H --> I[Calculate Amounts]
-    I --> J[Risk Analyzer]
-    J --> K[Assess Risk Level]
-    K --> L[Display Preview]
-    L --> M[User Approval]
-    M --> N[Execute on Avalanche]
-
-    style A fill:#4f46e5,stroke:#4338ca,color:#fff
-    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style F fill:#ec4899,stroke:#db2777,color:#fff
-    style H fill:#f59e0b,stroke:#d97706,color:#fff
-    style J fill:#ef4444,stroke:#dc2626,color:#fff
-    style N fill:#10b981,stroke:#059669,color:#fff
-```
-
-### Key Components
-
-**Frontend:**
-- **ReactFlow Canvas:** Visual workflow editor for DeFi Builder
-- **AI Prompt Interface:** Natural language input for strategy generation
-- **Strategy Preview:** Interactive visualization of generated strategies
-- **Wallet Integration:** RainbowKit + wagmi (MetaMask, Core, WalletConnect)
-
-**Backend:**
-- **AI Strategy Builder:** Gemini AI integration for NLP
-- **Strategy Simulation:** Accurate amount calculations with live prices
-- **DeFi Modules:** Protocol integrations (Aave v3, Benqi, Trader Joe, LI.FI)
-- **Validation Engine:** Business rules enforcement
-
-**Blockchain:**
-- **Avalanche C-Chain (43114):** Primary network — Aave v3, Benqi, Trader Joe v2.2
-- **Base (8453) & Arbitrum (42161):** Aave v3 markets on the same EVM rail
-- **Smart Contracts:** Aave v3 Pool, Benqi comptroller/qiTokens, sAVAX, LFJ router
-
-### Technology Stack by Layer
-
-| Layer          | Technologies                                       |
-| -------------- | -------------------------------------------------- |
-| **Frontend**   | Next.js 14, React 18, TypeScript, Tailwind CSS     |
-| **UI Library** | ReactFlow, Radix UI, Framer Motion, shadcn/ui      |
-| **Backend**    | NestJS, TypeScript, Clean Architecture (DDD)       |
-| **Database**   | Supabase (PostgreSQL)                              |
-| **AI**         | Google Gemini AI (gemini-1.5-pro)                  |
-| **Blockchain** | viem, wagmi, Aave v3, Benqi, Trader Joe, LI.FI     |
-| **Wallets**    | RainbowKit (MetaMask, Core, WalletConnect)         |
-| **DevOps**     | Railway, GitHub Actions, Docker (planned)          |
+Two paths in, same happy ending: preview, click, earn.
 
 ---
 
-## 📦 Tech Stack
+## ✨ Two ways to earn
 
-* **Frontend:** Next.js, React, Tailwind CSS, TypeScript, ReactFlow
-* **Backend:** NestJS, Supabase
-* **AI:** Google Gemini AI (gemini-1.5-pro)
-* **Blockchain:** Avalanche C-Chain via viem/wagmi; Aave v3, Benqi, Trader Joe v2.2, LI.FI
-* **Wallets:** EVM wallets through RainbowKit (MetaMask, Core, WalletConnect)
-* **Automation:** Agent wallet, strategy simulation
+### 🧱 1. Build your own: the DeFi Builder
 
----
+Think of it as a canvas for money moves. Drag operation blocks, snap them together, watch OceanFin figure out the plumbing.
 
-## 🛠️ Current Status
+- Drag-and-drop blocks: **Swap → Supply → Borrow → Loop → Bridge**
+- Connect them however you like. Invalid combos get caught before you commit.
+- Live prices and APY estimates update as you build
+- Hit deploy, sign once, done
 
-| Status | Feature                                     |
-| ------ | ------------------------------------------- |
-| ✅      | EVM wallet connect & account binding        |
-| ✅      | Benqi looping strategies (AVAX / sAVAX)     |
-| ✅      | Strategy simulation & execution             |
-| ✅      | Activity tracking & progress updates        |
-| ✅      | Aave v3 supply & borrow on Avalanche        |
-| ✅      | **DeFi Builder - Visual strategy composer** |
-| ✅      | **AI Prompt to Strategy with Gemini AI**    |
+No Solidity. No spreadsheets. Just blocks.
 
----
+👉 Find it at **`/builder`**
 
-## 🗓️ Roadmap
+### 📈 2. Steal a good one: the Strategy Library
 
-* [x] Stable Dapp
-* [x] DeFi protocols on Avalanche (Aave v3, Benqi, Trader Joe)
-* [x] **DeFi Builder - Visual workflow editor**
-* [x] **AI-Powered Strategy Generation**
-* [ ] Full protocol coverage on Base
-* [ ] Full protocol coverage on Arbitrum
-* [ ] Withdraw Strategies
-* [ ] Executing by Agent Wallet (x402 Protocol)
-* [ ] Cross-chain bridging via LI.FI in every strategy
-* [ ] More Strategies
-* [ ] Metrics and Monitors
-* [ ] Apply Grants
+Not everyone wants to build from scratch. Browse strategies other people already tuned, sorted by what's actually paying the most right now.
+
+- See the hottest APY at a glance
+- Simulate the full outcome *before* a single dollar moves
+- Like it? Run it in one click on your own wallet.
+
+Great strategies, ready to borrow.
+
+👉 Browse them right on the **home page**
 
 ---
 
-## ⚡ Getting Started
+## 🎯 Why people use it
 
-Ready to dive in? Check out our comprehensive setup guide:
-
-👉 **[Quick Start Guide](./QUICK_START.md)** - Complete installation and setup instructions
-
-**What you'll find:**
-- Prerequisites and environment setup
-- Step-by-step installation guide
-- Local development server configuration
-- Usage examples for DeFi Builder and AI Prompt
-- Troubleshooting common issues
-
-
-## 📬 Contact
-
-For questions, feedback, or contributions, please reach out via [Telegram](https://web.telegram.org/k/#@mtd_71).
+- **Your keys, your coins.** Non-custodial, always.
+- **No expert badge required.** The hard parts are handled for you.
+- **Look before you leap.** Every strategy is simulated up front.
+- **One click, not ten tabs.** No more manual protocol-hopping.
+- **Room to grow.** Avalanche first, with Base and Arbitrum on the same rails.
 
 ---
 
-**OceanFin — Navigate DeFi with confidence.**
+## 🔌 What's under the hood
+
+OceanFin plugs straight into the protocols people actually trust on Avalanche:
+
+| You do | We route it through |
+| ------ | ------------------- |
+| Swap tokens | Trader Joe (LFJ) v2.2 |
+| Earn on deposits | Aave v3, Benqi |
+| Borrow against collateral | Aave v3, Benqi |
+| Stake AVAX | sAVAX liquid staking |
+| Cross chains | LI.FI |
+
+Built with Next.js on the front, NestJS on the back, and viem/wagmi doing the on-chain talking. Wallets connect through RainbowKit (MetaMask, Core, WalletConnect).
+
+---
+
+## 🛠️ Where things stand
+
+| Status | Feature |
+| ------ | ------- |
+| ✅ | Wallet connect &amp; account binding |
+| ✅ | **DeFi Builder: visual strategy composer** |
+| ✅ | **Strategy Library: browse, simulate, one-click run** |
+| ✅ | Benqi looping (AVAX / sAVAX) |
+| ✅ | Aave v3 supply &amp; borrow |
+| ✅ | Activity tracking &amp; progress updates |
+
+---
+
+## 🗓️ What's next
+
+- [ ] Full protocol coverage on Base &amp; Arbitrum
+- [ ] Withdraw strategies
+- [ ] Agent-wallet execution (x402 protocol)
+- [ ] Cross-chain bridging baked into every strategy
+- [ ] More strategy templates
+- [ ] Metrics &amp; monitoring dashboard
+
+---
+
+## ⚡ Get started
+
+Ready to dive in?
+
+👉 **[Quick Start Guide](./QUICK_START.md):** install, run locally, and take both features for a spin.
+
+---
+
+## 📬 Say hi
+
+Questions, feedback, or ideas? Ping us on [Telegram](https://web.telegram.org/k/#@mtd_71).
+
+---
+
+<div align="center">
+  <strong>OceanFin: navigate DeFi with confidence.</strong>
+</div>
