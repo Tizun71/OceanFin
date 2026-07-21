@@ -11,7 +11,7 @@ export function JoinStrategyRightLabel({ apy }: { apy?: number }) {
     <div className="leading-none">
       <div className="text-[12px] text-white/70">APY</div>
       <div className="mt-1 text-[18px] font-bold text-white">
-        {formatPercent(apy, 0)}
+        {formatPercent(apy, 2)}
       </div>
     </div>
   );

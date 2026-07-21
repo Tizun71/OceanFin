@@ -3,6 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Plus, Search } from "lucide-react";
 import { Action, Module } from "@/types/defi";
+import { resolveAgentIcon } from "@/lib/iconMap";
+
+/** Circular protocol/agent logo shown beside each module in the library. */
+function AgentIcon({ name }: { name?: string }) {
+  const src = resolveAgentIcon(name);
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface-2">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={name || "Protocol"}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="text-[11px] font-bold text-accent-light">
+          {(name || "?").charAt(0).toUpperCase()}
+        </span>
+      )}
+    </span>
+  );
+}
 
 interface SidebarProps {
   modules: Module[];
@@ -90,17 +112,18 @@ export default function Sidebar({ modules, onSelect }: SidebarProps) {
                   onClick={() => toggleModule(module.id)}
                   aria-expanded={isOpen}
                   aria-controls={panelId}
-                  className={`flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors duration-200 ${
-                    isOpen
-                      ? "text-accent-light"
-                      : "text-muted-foreground hover:text-foreground"
+                  className={`flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition-colors duration-200 hover:bg-surface-2 ${
+                    isOpen ? "text-accent-light" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {module.name}
+                  <AgentIcon name={module.name} />
+                  <span className="flex-1 truncate text-left text-[13px] font-semibold tracking-tight">
+                    {module.name}
+                  </span>
                   <ChevronDown
                     size={14}
                     aria-hidden
-                    className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    className={`shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                   />
                 </button>
 

@@ -157,8 +157,27 @@ for (const mod of MODULES) {
         ].join(', ')})`,
       );
 
+      if (action.name === 'Borrow') {
+        // Borrow needs an output token: any listed asset in the market can be
+        // borrowed against any collateral. token_in = collateral, token_out =
+        // borrowed asset. Self-pairs are skipped (that's a looping strategy,
+        // handled separately), so the UI always offers a distinct borrow token.
+        for (const collateral of tokens) {
+          for (const t of tokens) {
+            if (t.address === collateral.address) continue;
+            pushPair(
+              deterministicUuid(`pair:${actionId}:${collateral.address}:${t.address}`),
+              actionId,
+              tokenRef(slug, collateral.address),
+              tokenRef(slug, t.address),
+            );
+          }
+        }
+        continue;
+      }
+
       if (!isSwap) {
-        // Lending actions take a single token; token_out stays null.
+        // Supply and other single-token lending actions carry no output token.
         for (const t of tokens) {
           pushPair(
             deterministicUuid(`pair:${actionId}:${t.address}`),

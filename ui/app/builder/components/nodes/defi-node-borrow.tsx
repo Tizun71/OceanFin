@@ -11,7 +11,7 @@ export function BorrowRightLabel({ apy }: { apy?: number }) {
     <div className="leading-none text-right">
       <div className="text-[11px] uppercase tracking-wide text-white/65">APY</div>
       <div className="mt-1 text-[18px] font-bold leading-none text-white">
-        {formatPercent(apy, 0)}
+        {formatPercent(apy, 2)}
       </div>
     </div>
   );

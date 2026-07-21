@@ -24,6 +24,7 @@ export default function DefiNode({ data, selected }: DefiNodeProps) {
     selected,
     title: normalized.title,
     protocolName: normalized.protocolName,
+    operationType: normalized.isConfigured ? resolvedType : undefined,
     onDelete: data?.onDelete,
   };
 

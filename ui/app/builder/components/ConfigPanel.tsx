@@ -16,7 +16,7 @@ import { resolveAssetIcon } from "@/lib/iconMap";
 interface Props {
   node: Node<any>;
   nodes: Node<any>[];
-  onSave: (payload: any) => void;
+  onSave: (payload: any, opts?: { silent?: boolean }) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -58,7 +58,9 @@ export default function ConfigPanel({ node, nodes, onSave, onClose }: Props) {
   const [amount, setAmount] = useState("");
   const [estimate, setEstimate] = useState<any>(null);
 
-  const [loading, setLoading] = useState(false);
+  // Signature of the config last persisted to the node. Auto-save is skipped
+  // while this matches the current selection, and it drives the "Saved" chip.
+  const [savedSig, setSavedSig] = useState("");
   const [estimating, setEstimating] = useState(false);
   const [estimateError, setEstimateError] = useState("");
   const [error, setError] = useState("");
@@ -223,8 +225,13 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
       const prevOutputAmount = prevConfig?.amountOut ?? prevConfig?.amount;
 
       if (prevOutputTokenId) {
+        // EVM tokens have no Hydration asset_id, so the previous step carries a
+        // token id instead. Match either so a chained borrow inherits exactly
+        // the collateral that was supplied, not pairs[0].
         let pair = pairs.find(
-          (p: DefiPair) => p?.token_in?.asset_id === prevOutputTokenId,
+          (p: DefiPair) =>
+            p?.token_in?.asset_id === prevOutputTokenId ||
+            p?.token_in?.id === prevOutputTokenId,
         );
 
         if (!pair) {
@@ -382,9 +389,12 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amount, tokenIn, tokenOut, resolvedType, requiresTokenOut, isInitializing, node?.data?.module?.id, node?.data?.action?.id, node?.data?.module?.protocol]);
 
-  const handleSubmit = async () => {
-    if (!isValid) return;
+  // Identifies a unique, saveable selection. Auto-save fires once per change of
+  // this signature, and the "Saved" chip lights when it matches what's stored.
+  const currentSig = `${resolvedType}|${tokenIn}|${tokenOut}|${amount}`;
+  const isSaved = isValid && savedSig === currentSig;
 
+  const buildPayload = () => {
     const tokenInMeta =
       selectedPair?.token_in || tokenInOptions.find((t) => t.id === tokenIn);
 
@@ -480,16 +490,23 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
       ltv: estimate?.ltv ?? estimate?.max_ltv ?? null,
     };
 
-    try {
-      setLoading(true);
-      await onSave(payload);
-      onClose();
-    } catch (err) {
-      console.error("CONFIG PANEL SAVE ERROR:", err);
-    } finally {
-      setLoading(false);
-    }
+    return payload;
   };
+
+  /**
+   * Auto-save: whenever a fresh estimate lands for a valid, not-yet-saved
+   * selection, persist it to the node silently. Keyed off `estimate` so it only
+   * runs on a real estimate (never on stale inputs mid-typing), and deduped by
+   * signature so re-opening a saved node doesn't rewrite it. No Save button.
+   */
+  useEffect(() => {
+    if (isInitializing || estimating || !isValid || !estimate) return;
+    if (currentSig === savedSig) return;
+
+    onSave(buildPayload(), { silent: true });
+    setSavedSig(currentSig);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estimate, estimating, isInitializing]);
 
   const renderEstimate = () => {
     if (!estimate) return null;
@@ -833,14 +850,32 @@ const [isTokenOutOpen, setIsTokenOutOpen] = useState(false);
           )}
         </div>
 
-        <footer className="border-t border-border bg-surface-1 p-6">
+        <footer className="flex items-center gap-3 border-t border-border bg-surface-1 px-6 py-5">
+          {/* Save is automatic — this chip tells the user the node is up to date
+              instead of asking them to press a button every time. */}
+          <div className="flex-1 text-xs font-medium" aria-live="polite">
+            {isSaved ? (
+              <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                Saved automatically
+              </span>
+            ) : estimating ? (
+              <span className="text-muted-foreground">Estimating…</span>
+            ) : isValid ? (
+              <span className="text-muted-foreground">Saving…</span>
+            ) : (
+              <span className="text-muted-foreground-subtle">
+                Pick tokens and an amount
+              </span>
+            )}
+          </div>
+
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={loading || pairs.length === 0}
-            className="h-12 w-full rounded-lg bg-accent text-sm font-semibold text-accent-foreground shadow-[var(--shadow-accent)] transition-all duration-200 hover:bg-accent-light active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            onClick={onClose}
+            className="h-11 rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-[var(--shadow-accent)] transition-all duration-200 hover:bg-accent-light active:translate-y-px"
           >
-            {loading ? "Saving" : "Save step"}
+            Done
           </button>
         </footer>
       </aside>

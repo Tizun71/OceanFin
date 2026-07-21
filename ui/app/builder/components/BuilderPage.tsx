@@ -22,6 +22,7 @@ import { usePreloader } from "@/providers/preloader-provider";
 import { displayToast } from "@/components/shared/toast-manager";
 import { canBeFirstStep, validateConnection } from "@/lib/defi-connection-rules";
 import { resolveDefiOperationType } from "@/app/builder/components/nodes/defi-node-utils";
+import { nodeRequiresInput } from "@/lib/defi-node-input";
 
 const nodeTypes = {
   defiNode: DefiNode,
@@ -222,7 +223,14 @@ function Builder() {
             onEdgesChange={onEdgesChange}
             onConnect={handleConnect}
             isValidConnection={isValidConnection}
-            onNodeClick={(_, node) => setSelectedNode(node)}
+            onNodeClick={(_, node) => {
+              // Only steps that actually need input open the panel. A chained
+              // SUPPLY is auto-configured, so opening it would just show locked
+              // fields — unless auto-config hasn't landed a config yet.
+              if (nodeRequiresInput(node, edges) || !node.data?.config) {
+                setSelectedNode(node);
+              }
+            }}
             fitView
           >
             <MiniMap className="defi-minimap" style={{ width: 140, height: 90 }} />
