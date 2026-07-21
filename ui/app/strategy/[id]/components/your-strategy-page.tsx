@@ -5,8 +5,7 @@ import { useStrategies } from '@/hooks/use-strategies';
 import { useUser } from '@/providers/user-provider';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import RunStrategyModal from '@/components/shared/run-strategy-modal';
-import { deleteStrategy } from '@/services/defi-module-service';
+import { deleteStrategy, simulateStrategy } from '@/services/defi-module-service';
 import { displayToast } from '@/components/shared/toast-manager';
 import ConfirmModal from '@/components/shared/confirm-modal';
 import { usePreloader } from '@/providers/preloader-provider';
@@ -24,7 +23,6 @@ export default function StrategyTable() {
   const { strategies, loading, refetch } = useStrategies(user?.id);
 
   const [strategyId, setStrategyId] = useState<string | null>(null);
-  const [runModal, setRunModal] = useState(false);
   const [flowDrawer, setFlowDrawer] = useState(false);
   const [executionModal, setExecutionModal] = useState(false);
   const [simulateData, setSimulateData] = useState<any>(null);
@@ -34,9 +32,34 @@ export default function StrategyTable() {
 
   const { show, hide } = usePreloader();
 
-  const handleSimulate = (id: string) => {
+  // Amount is baked into the strategy workflow — no user input. Fall back to a
+  // sensible default for workflows that seed positions without an entry amount.
+  const DEFAULT_AMOUNT = 1000;
+
+  const getPredefinedAmount = (strategy: any): number => {
+    const versions = strategy?.defi_strategy_versions ?? [];
+    const active =
+      versions.find((v: any) => v.id === strategy?.current_version_id) ?? versions[0];
+    const firstStep = active?.workflow_json?.steps?.[0];
+    return Number(firstStep?.tokenIn?.amount) || DEFAULT_AMOUNT;
+  };
+
+  const handleSimulate = async (id: string) => {
+    const strategy = strategies.find((s: any) => s.id === id);
+    if (!strategy) return;
+
     setStrategyId(id);
-    setRunModal(true);
+    show();
+    try {
+      const res = await simulateStrategy(id, getPredefinedAmount(strategy));
+      setSimulateData(res);
+      setFlowDrawer(true);
+      displayToast('success', 'Strategy simulated successfully!');
+    } catch {
+      displayToast('error', 'Failed to simulate strategy');
+    } finally {
+      hide();
+    }
   };
 
   const handleDeleteClick = (id: string) => {
@@ -72,7 +95,7 @@ export default function StrategyTable() {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2 tracking-tight">
             <Target className="w-6 h-6 text-primary" />
-            Your strategies
+            My strategies
           </h1>
           <p className="mt-1 text-sm text-neutral-400">
             Simulate a strategy before you commit funds. Pick one to run a dry-run
@@ -137,18 +160,6 @@ export default function StrategyTable() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setOpenConfirm(false)}
       />
-
-      {strategyId && (
-        <RunStrategyModal
-          open={runModal}
-          onOpenChange={setRunModal}
-          strategyId={strategyId}
-          onSimulated={(data) => {
-            setSimulateData(data);
-            setFlowDrawer(true);
-          }}
-        />
-      )}
 
       <StrategyFlowDrawer
         open={flowDrawer}
