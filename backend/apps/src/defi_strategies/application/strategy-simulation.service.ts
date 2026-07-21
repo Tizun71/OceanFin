@@ -13,6 +13,24 @@ import { SupplySimulator } from './simulators/supply-simulator';
 import { EnableEModeSimulator } from './simulators/enable-e-mode-simulator';
 import { SimulationResultDto } from '../interfaces/dtos/simulation-result.dto';
 import { DefiStrategyVersionService } from './defi_strategy_version.service';
+import { EvmWorkflowSimulationService } from 'src/strategies/application/evm-workflow-simulation.service';
+
+/** chain_context label (set by the builder from activeChain.name) -> EVM chainId. */
+const CHAIN_CONTEXT_TO_ID: Record<string, number> = {
+  avalanche: 43114,
+  base: 8453,
+  arbitrum: 42161,
+};
+
+/** A step touching an on-chain 0x address means the strategy runs on an EVM rail. */
+function isEvmWorkflow(workflow: any): boolean {
+  const steps = workflow?.steps ?? [];
+  return steps.some(
+    (s: any) =>
+      String(s?.tokenIn?.address ?? '').startsWith('0x') ||
+      String(s?.tokenOut?.address ?? '').startsWith('0x'),
+  );
+}
 
 @Injectable()
 export class StrategySimulationService implements SimulationEngine {
@@ -26,6 +44,7 @@ export class StrategySimulationService implements SimulationEngine {
     private readonly borrowSimulator: BorrowSimulator,
     private readonly supplySimulator: SupplySimulator,
     private readonly enableEModeSimulator: EnableEModeSimulator,
+    private readonly evmSimulation: EvmWorkflowSimulationService,
   ) {
     this.simulators = new Map([
       ['SWAP', this.swapSimulator],
@@ -52,6 +71,12 @@ export class StrategySimulationService implements SimulationEngine {
       );
     }
 
+    if (!strategy.current_version_id) {
+      throw new NotFoundException(
+        `Strategy with id ${strategy_id} has no current version`,
+      );
+    }
+
     const version = await this.strategyVersionService.getById(
       strategy.current_version_id,
     );
@@ -62,7 +87,20 @@ export class StrategySimulationService implements SimulationEngine {
       );
     }
 
-    const workflow_json = version.workflow_json;
+    const workflow_json: any = version.workflow_json;
+
+    // EVM strategies (Aave/Benqi/Trader Joe on Avalanche etc.) price legs via the
+    // Aave oracle + Trader Joe quoter, not the Hydration SDK. The builder stores
+    // no chainId on the workflow, so derive it from the strategy's chain_context.
+    if (isEvmWorkflow(workflow_json)) {
+      const chainId = CHAIN_CONTEXT_TO_ID[String(strategy.chain_context ?? '').toLowerCase()];
+      if (!chainId) {
+        throw new NotFoundException(
+          `Unsupported EVM chain_context "${strategy.chain_context}" for strategy ${strategy_id}`,
+        );
+      }
+      return this.evmSimulation.simulate({ ...workflow_json, chainId }, amount_in);
+    }
 
     const result = await this.simulate(workflow_json, amount_in, options);
 

@@ -103,7 +103,9 @@ export class EvmWorkflowSimulationService {
 
         case 'BORROW': {
           const out = this.tokenOf(raw.tokenOut);
-          const ratio = Number(raw.collateralRatio ?? 0);
+          // Builder-authored workflows don't persist a collateralRatio; fall back
+          // to a conservative 70% LTV (matches the Hydration borrow simulator).
+          const ratio = Number(raw.collateralRatio) > 0 ? Number(raw.collateralRatio) : 0.7;
           const borrowUsd = lastSupplyUsd * ratio;
           const amount = borrowUsd / this.priceOf(prices, out.address);
 

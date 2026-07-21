@@ -28,6 +28,7 @@ import { SupplySimulator } from './application/simulators/supply-simulator';
 import { EnableEModeSimulator } from './application/simulators/enable-e-mode-simulator';
 import { HydrationStrategyService } from 'src/strategies/application/hydration-strategy.service';
 import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.service';
+import { EvmWorkflowSimulationService } from 'src/strategies/application/evm-workflow-simulation.service';
 
 @Module({
   imports: [DatabaseModule, UsersModule],
@@ -51,6 +52,7 @@ import { HydrationSdkService } from 'src/shared/infrastructure/hydration-sdk.ser
     EnableEModeSimulator,
     HydrationStrategyService,
     HydrationSdkService,
+    EvmWorkflowSimulationService,
     {
       provide: DefiStrategiesRepository,
       useClass: DefiStrategiesRepositoryImplement,
