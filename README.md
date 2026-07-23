@@ -33,7 +33,7 @@ flowchart LR
     S --> E[✅ One-click run]
     E --> W[(Your wallet<br/>keys stay yours)]
 
-    W --> P[Aave v3 · Benqi<br/>Trader Joe · sAVAX · LI.FI]
+    W --> P[Aave v3 · Aave v4 · Benqi<br/>Trader Joe · sAVAX · LI.FI]
     P --> Y[💰 Yield]
 
     style B fill:#4f46e5,stroke:#4338ca,color:#fff
@@ -93,10 +93,12 @@ OceanFin plugs straight into the protocols people actually trust on Avalanche:
 | You do | We route it through |
 | ------ | ------------------- |
 | Swap tokens | Trader Joe (LFJ) v2.2 |
-| Earn on deposits | Aave v3, Benqi |
-| Borrow against collateral | Aave v3, Benqi |
+| Earn on deposits | Aave v3, Aave v4, Benqi |
+| Borrow against collateral | Aave v3, Aave v4, Benqi |
 | Stake AVAX | sAVAX liquid staking |
 | Cross chains | LI.FI |
+
+Aave v4 ships as three spokes on the shared Liquidity Hub — **Main** (WAVAX, BTC.b, WETH.e, USDC, USDt, EURC), **AVAX Correlated** (sAVAX collateral at 95% CF, WAVAX borrow — the v4 replacement for e-mode looping), and **Forex** (EURC/USDC/USDt at 90% CF).
 
 Built with Next.js on the front, NestJS on the back, and viem/wagmi doing the on-chain talking. Wallets connect through RainbowKit (MetaMask, Core, WalletConnect).
 
@@ -111,6 +113,7 @@ Built with Next.js on the front, NestJS on the back, and viem/wagmi doing the on
 | ✅ | **Strategy Library: browse, simulate, one-click run** |
 | ✅ | Benqi looping (AVAX / sAVAX) |
 | ✅ | Aave v3 supply &amp; borrow |
+| ✅ | **Aave v4 spokes: Main, AVAX Correlated, Forex** |
 | ✅ | Activity tracking &amp; progress updates |
 
 ---
@@ -123,7 +126,6 @@ The builder is only as good as the blocks it can snap together. Next up, in roug
 
 **Lending &amp; borrowing**
 
-- [ ] **Aave v4** — new hub-and-spoke architecture, unified liquidity layer. Ship as soon as it lands on Avalanche mainnet.
 - [ ] **Euler v2** — modular vaults (EVK/EVC), custom collateral pairs the big pools won't list
 - [ ] **Silo Finance** — isolated risk markets, so a long-tail token can't drag down the rest
 - [ ] **Morpho** — peer-to-peer matching layered on top of existing pools for a better rate on both sides
@@ -163,9 +165,37 @@ Each protocol lands as a first-class builder block: same drag-and-drop, same sim
 
 ## ⚡ Get started
 
-Ready to dive in?
+The whole stack — Postgres, the NestJS API, the Next.js app — runs from one compose file.
 
-👉 **[Quick Start Guide](./QUICK_START.md):** install, run locally, and take both features for a spin.
+**1. Secrets.** Create `backend/apps/.env.development` (GEMINI_API_KEY, Avalanche RPC, LI.FI key…). It is git-ignored; never commit it.
+
+**2. Boot everything:**
+
+```bash
+docker compose up -d --build
+```
+
+| Service | URL |
+| ------- | --- |
+| Frontend | http://localhost:3000 |
+| API | http://localhost:8000 |
+| Swagger | http://localhost:8000/api/docs |
+| Postgres | `postgresql://oceanfin:oceanfin@localhost:5433/oceanfin` |
+
+Migrations in `backend/apps/migrations/` run automatically the first time the Postgres volume is created.
+
+**3. Seed the DeFi catalog** (tokens → modules → strategies; order matters, and every file is idempotent so re-running just updates rows in place):
+
+```bash
+for f in 0001-defi-token 0002-defi-modules 0003-strategies 0004-defi-strategies; do
+  docker exec -i oceanfin-postgres psql -U oceanfin -d oceanfin -v ON_ERROR_STOP=1 \
+    < backend/apps/seeds/$f.sql
+done
+```
+
+`0001` and `0002` are generated — regenerate them with `node scripts/generate-token-seed.mjs` and `node scripts/generate-module-seed.mjs` from `backend/apps/` rather than editing by hand.
+
+**Running without Docker?** `cd backend/apps && npm install && npm run start:dev`, and `cd ui && npm install && npm run dev`. You still need a Postgres reachable at `DATABASE_URL`.
 
 ---
 

@@ -48,6 +48,31 @@ const BENQI_MARKET_ADDRESSES = [
   '0xd586e7f844cea2f87f50152665bcbc2c279d8d70', // DAI.e
 ];
 
+// Aave V4 (Hub & Spoke, live on Avalanche 2026-07-15). Borrowing is spoke-local
+// — collateral and debt must sit on the same spoke — so each spoke is its own
+// builder module with its own reserve list. Reserve addresses were read from the
+// deployed spokes (getReserveCount/getReserve) and must match
+// `aaveV4.spokes` in ui/config/chains/chain-registry.ts.
+const AAVE_V4_RESERVES = {
+  main: [
+    '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7', // WAVAX
+    '0x152b9d0fdc40c096757f570a51e494bd4b943e50', // BTC.b
+    '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e', // USDC
+    '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7', // USDt
+    '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab', // WETH.e
+    '0xc891eb4cbdeff6e073e859e987815ed1505c2acd', // EURC
+  ],
+  avaxCorrelated: [
+    '0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be', // sAVAX (collateral, CF 95%)
+    '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7', // WAVAX (borrow only)
+  ],
+  forex: [
+    '0xc891eb4cbdeff6e073e859e987815ed1505c2acd', // EURC
+    '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e', // USDC
+    '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7', // USDt
+  ],
+};
+
 const MODULES = [
   {
     key: 'aave-v3',
@@ -58,6 +83,54 @@ const MODULES = [
     website: 'https://aave.com',
     icon: '/icons/agents/aave.png',
     chains: Object.keys(CHAINS),
+    actions: [
+      { name: 'Supply', risk: 'LOW', description: 'Deposit a token as collateral.' },
+      { name: 'Borrow', risk: 'MEDIUM', description: 'Borrow a token against supplied collateral.' },
+    ],
+  },
+  {
+    key: 'aave-v4-main',
+    name: 'Aave V4 · Main',
+    protocol: 'AAVE_V4_MAIN',
+    category: 'LENDING',
+    description:
+      "Supply and borrow on Aave v4's Main spoke — the broad market (WAVAX, BTC.b, WETH.e, USDC, USDt, EURC) against the shared Liquidity Hub.",
+    website: 'https://aave.com/docs/aave-v4',
+    icon: '/icons/agents/aave.png',
+    chains: ['avalanche'],
+    tokenAddresses: AAVE_V4_RESERVES.main,
+    actions: [
+      { name: 'Supply', risk: 'LOW', description: 'Deposit a token as collateral.' },
+      { name: 'Borrow', risk: 'MEDIUM', description: 'Borrow a token against supplied collateral.' },
+    ],
+  },
+  {
+    key: 'aave-v4-avax-correlated',
+    name: 'Aave V4 · AVAX Correlated',
+    protocol: 'AAVE_V4_AVAX_CORRELATED',
+    category: 'LENDING',
+    description:
+      'Aave v4 spoke isolated to AVAX-correlated assets: sAVAX collateral at a 95% collateral factor with WAVAX as the only borrowable — the v4 replacement for v3 e-mode looping.',
+    website: 'https://aave.com/docs/aave-v4',
+    icon: '/icons/agents/aave.png',
+    chains: ['avalanche'],
+    tokenAddresses: AAVE_V4_RESERVES.avaxCorrelated,
+    actions: [
+      { name: 'Supply', risk: 'LOW', description: 'Deposit a token as collateral.' },
+      { name: 'Borrow', risk: 'MEDIUM', description: 'Borrow a token against supplied collateral.' },
+    ],
+  },
+  {
+    key: 'aave-v4-forex',
+    name: 'Aave V4 · Forex',
+    protocol: 'AAVE_V4_FOREX',
+    category: 'LENDING',
+    description:
+      'Aave v4 stablecoin spoke (EURC, USDC, USDt) at a 90% collateral factor — built for stable-to-stable carry and FX positions.',
+    website: 'https://aave.com/docs/aave-v4',
+    icon: '/icons/agents/aave.png',
+    chains: ['avalanche'],
+    tokenAddresses: AAVE_V4_RESERVES.forex,
     actions: [
       { name: 'Supply', risk: 'LOW', description: 'Deposit a token as collateral.' },
       { name: 'Borrow', risk: 'MEDIUM', description: 'Borrow a token against supplied collateral.' },

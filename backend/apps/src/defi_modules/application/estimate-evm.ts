@@ -7,6 +7,11 @@ import {
 } from '../../defi_strategies/infrastructure/evm/benqi-reader';
 import { getTraderJoeQuote } from '../../defi_strategies/infrastructure/evm/trader-joe-reader';
 import { getAssetPricesUsd } from '../../defi_strategies/infrastructure/evm/aave-oracle';
+import {
+  getAaveV4Reserve,
+  isAaveV4Protocol,
+  requireAaveV4Spoke,
+} from '../../defi_strategies/infrastructure/evm/aave-v4-api';
 
 /**
  * On-chain estimate for Avalanche EVM tokens — the counterpart to the
@@ -66,6 +71,14 @@ export async function estimateEvmSupply(
   protocol: string | undefined,
   token: EvmToken,
 ): Promise<{ supply_apy: number }> {
+  if (isAaveV4Protocol(protocol)) {
+    const reserve = await getAaveV4Reserve(
+      AVALANCHE_CHAIN_ID,
+      requireAaveV4Spoke(protocol as string),
+      token.address,
+    );
+    return { supply_apy: reserve.supplyApy * 100 };
+  }
   if (isBenqi(protocol)) {
     const { supplyApy } = await getQiTokenApys(
       AVALANCHE_CHAIN_ID,
@@ -103,6 +116,22 @@ export async function estimateEvmBorrow(
     borrow.address,
   );
   const priceScale = priceBorrow === 0 ? 1 : priceCollateral / priceBorrow;
+
+  if (isAaveV4Protocol(protocol)) {
+    // V4 caps the borrow at the *collateral* reserve's spoke-level collateral
+    // factor; both legs must live on the same spoke (borrowing is spoke-local).
+    const spoke = requireAaveV4Spoke(protocol as string);
+    const [collateralReserve, borrowReserve] = await Promise.all([
+      getAaveV4Reserve(AVALANCHE_CHAIN_ID, spoke, collateral.address),
+      getAaveV4Reserve(AVALANCHE_CHAIN_ID, spoke, borrow.address),
+    ]);
+    const ltv = collateralReserve.collateralFactor;
+    return {
+      borrow_apy: borrowReserve.borrowApy * 100,
+      ltv: ltv * 100,
+      max_borrow_amount: collateralAmount * ltv * priceScale * BORROW_BUFFER,
+    };
+  }
 
   if (isBenqi(protocol)) {
     const [{ borrowApy }, ltv] = await Promise.all([

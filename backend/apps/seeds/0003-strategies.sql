@@ -70,6 +70,36 @@ INSERT INTO strategies (id, title, strategist_name, strategist_handle, apy, tags
     ARRAY['/icons/assets/usdc.svg', '/icons/assets/savax.png'],
     ARRAY['/icons/agents/aave.png'],
     ARRAY['/icons/chains/avax.png']
+  ),
+  -- Aave V4 (Hub & Spoke) strategies. V4 went live on Avalanche 2026-07-15, so
+  -- its reserves are still shallow; the apy values below are the readings taken
+  -- when this seed was written and AvalancheApyService recomputes them live.
+  -- The AVAX-correlated spoke replaces v3 e-mode: a 95% collateral factor with
+  -- WAVAX as the only borrowable. It out-earns the v3 loop whenever the sAVAX
+  -- staking APR clears the WAVAX borrow rate — at the time of writing it does
+  -- not (2.96% staking vs 3.08% borrow), so the levered number sits below the
+  -- unlevered one. That is the honest reading, not a placeholder.
+  (
+    'a7c31e00-0006-4a10-9a01-0000000000a6',
+    'sAVAX Leveraged Loop (Aave V4)',
+    'savax-loop-v4-correlated',
+    '@oceanfin',
+    2.73,
+    ARRAY['Looping', 'Liquid Staking', 'Aave V4', 'Avalanche'],
+    ARRAY['/icons/assets/savax.png', '/icons/assets/avax.png'],
+    ARRAY['/icons/agents/aave.png'],
+    ARRAY['/icons/chains/avax.png']
+  ),
+  (
+    'a7c31e00-0007-4a10-9a01-0000000000a7',
+    'USDC Supply on Aave V4',
+    'usdc-supply-aave-v4',
+    '@oceanfin',
+    2.29,
+    ARRAY['Lending', 'Stablecoin', 'Aave V4', 'No Leverage', 'Avalanche'],
+    ARRAY['/icons/assets/usdc.svg'],
+    ARRAY['/icons/agents/aave.png'],
+    ARRAY['/icons/chains/avax.png']
   )
 ON CONFLICT (id) DO UPDATE SET
   title = EXCLUDED.title,
