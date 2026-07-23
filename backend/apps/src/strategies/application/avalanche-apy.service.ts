@@ -3,6 +3,10 @@ import { Address } from 'viem';
 import { AaveV3Avalanche } from '@bgd-labs/aave-address-book';
 import { getReserveApys } from '../../defi_strategies/infrastructure/evm/aave-reader';
 import { getSAvaxStakingApr } from '../../defi_strategies/infrastructure/evm/benqi-reader';
+import {
+  AAVE_V4_AVALANCHE_SPOKES,
+  getAaveV4Reserve,
+} from '../../defi_strategies/infrastructure/evm/aave-v4-api';
 import { AVALANCHE_STRATEGY } from './strategy-list';
 
 const CHAIN_ID = 43114;
@@ -64,6 +68,11 @@ export class AvalancheApyService {
         return { apy: await this.supplyApy(TOKEN.USDt) };
       case AVALANCHE_STRATEGY.USDC_AVAX_CARRY:
         return { apy: await this.usdcAvaxCarryApy(0.6) };
+      case AVALANCHE_STRATEGY.SAVAX_LOOP_V4:
+        // The v4 AVAX-correlated spoke allows 95% CF; 80% keeps a buffer.
+        return { apy: await this.savaxLoopV4Apy(0.8, 3) };
+      case AVALANCHE_STRATEGY.USDC_SUPPLY_V4:
+        return { apy: await this.supplyApyV4('AAVE_V4_MAIN', TOKEN.USDC) };
       default:
         throw new Error(`Not an Avalanche strategy: ${strategistName}`);
     }
@@ -92,6 +101,35 @@ export class AvalancheApyService {
 
     const { supply, borrow } = loopExposure(ltv, loops);
     return (stakingApr * supply - wavax.variableBorrowApy * borrow) * 100;
+  }
+
+  /** Plain Aave v4 supply on a given spoke. */
+  private async supplyApyV4(protocol: string, asset: Address): Promise<number> {
+    const reserve = await getAaveV4Reserve(
+      CHAIN_ID,
+      AAVE_V4_AVALANCHE_SPOKES[protocol],
+      asset,
+    );
+    return reserve.supplyApy * 100;
+  }
+
+  /**
+   * The v3 sAVAX loop rebuilt on the v4 AVAX-correlated spoke. sAVAX earns no
+   * lending yield there either, so the return is the staking APR on the levered
+   * position minus the spoke's WAVAX borrow cost on the borrowed leg. The 95%
+   * collateral factor allows deeper leverage than v3 e-mode, which cuts both
+   * ways: when the borrow rate sits above the staking APR the extra loops
+   * subtract yield.
+   */
+  private async savaxLoopV4Apy(ltv: number, loops: number): Promise<number> {
+    const spoke = AAVE_V4_AVALANCHE_SPOKES.AAVE_V4_AVAX_CORRELATED;
+    const [stakingApr, wavax] = await Promise.all([
+      getSAvaxStakingApr(CHAIN_ID, TOKEN.sAVAX),
+      getAaveV4Reserve(CHAIN_ID, spoke, TOKEN.WAVAX),
+    ]);
+
+    const { supply, borrow } = loopExposure(ltv, loops);
+    return (stakingApr * supply - wavax.borrowApy * borrow) * 100;
   }
 
   /**

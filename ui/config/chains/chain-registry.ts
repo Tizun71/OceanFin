@@ -37,8 +37,23 @@ export interface BenqiAddresses {
   markets: Record<`0x${string}`, { qiToken: `0x${string}`; symbol: string }>;
 }
 
+/**
+ * Aave V4 spoke keys. V4 replaces v3's single pool-per-market with a Liquidity
+ * Hub plus isolated borrowing Spokes; each spoke has its own reserve list and
+ * risk parameters, so the builder exposes one module per spoke.
+ */
+export type AaveV4SpokeKey = "MAIN" | "AVAX_CORRELATED" | "FOREX";
+
+export interface AaveV4Addresses {
+  /** Liquidity Hub holding the pooled assets for every spoke on this chain. */
+  hub: `0x${string}`;
+  /** Borrowing spokes (proxies) users transact against. */
+  spokes: Record<AaveV4SpokeKey, { name: string; address: `0x${string}` }>;
+}
+
 export interface ChainProtocols {
   aaveV3?: AaveV3Addresses;
+  aaveV4?: AaveV4Addresses;
   traderJoe?: { lbRouter: `0x${string}`; lbQuoter: `0x${string}` };
   benqi?: BenqiAddresses;
 }
@@ -102,6 +117,21 @@ export const CHAIN_REGISTRY: Record<ChainSlug, ChainMeta> = {
     iconUrl: "/icons/chains/avax.png",
     protocols: {
       aaveV3: aaveAddresses(AaveV3Avalanche),
+      // Aave V4 (live on Avalanche since 2026-07-15). Addresses read from the
+      // official API (api.v4.aave.com) and verified on-chain: every spoke's
+      // getReserve() points at this hub. Reserve ids are NOT stored here —
+      // they are per-spoke indexes resolved on-chain in lib/evm/aave-v4.ts.
+      aaveV4: {
+        hub: "0xd07369fAE4A5BB13c9Ce446B052c7867B1AbDf6e",
+        spokes: {
+          MAIN: { name: "Main", address: "0x435272CefF93a1E657E8ABfdf0A13e95900A3a56" },
+          AVAX_CORRELATED: {
+            name: "AVAX Correlated",
+            address: "0x3b517594277c67307CF2d7CBE6FE1D4399B68c41",
+          },
+          FOREX: { name: "Forex", address: "0x6a37776B5E026dBdF043b4F933c323C84DD1B514" },
+        },
+      },
       traderJoe: TRADER_JOE_V2_2,
       // Benqi (Avalanche only). Verified from docs.benqi.fi.
       benqi: {

@@ -29,7 +29,13 @@ INSERT INTO defi_strategies (id, owner_id, name, description, status, is_public,
    'ACTIVE', true, 'avalanche', 'b7c31e00-0004-4a10-9a01-0000000000b4'),
   ('a7c31e00-0005-4a10-9a01-0000000000a5', 'system', 'USDC Collateral AVAX Carry',
    'Keep USDC as collateral, borrow WAVAX against it and hold the proceeds as sAVAX. Earns the USDC supply rate plus the staking-minus-borrow spread without selling the stablecoin base.',
-   'ACTIVE', true, 'avalanche', 'b7c31e00-0005-4a10-9a01-0000000000b5')
+   'ACTIVE', true, 'avalanche', 'b7c31e00-0005-4a10-9a01-0000000000b5'),
+  ('a7c31e00-0006-4a10-9a01-0000000000a6', 'system', 'sAVAX Leveraged Loop (Aave V4)',
+   'Supply sAVAX on the Aave v4 AVAX-correlated spoke (95% collateral factor), borrow WAVAX, swap back to sAVAX and re-supply for three loops. No e-mode toggle — the spoke itself is the correlated-asset market. Profitable only while the sAVAX staking APR clears the WAVAX borrow rate, which it currently does not; the live APY on the card is the number to trust.',
+   'ACTIVE', true, 'avalanche', 'b7c31e00-0006-4a10-9a01-0000000000b6'),
+  ('a7c31e00-0007-4a10-9a01-0000000000a7', 'system', 'USDC Supply on Aave V4',
+   'Single-step USDC deposit into the Aave v4 Main spoke on Avalanche. No borrowing, no liquidation risk, earns the hub supply rate.',
+   'ACTIVE', true, 'avalanche', 'b7c31e00-0007-4a10-9a01-0000000000b7')
 ON CONFLICT (id) DO UPDATE SET
   owner_id = EXCLUDED.owner_id, name = EXCLUDED.name, description = EXCLUDED.description,
   status = EXCLUDED.status, is_public = EXCLUDED.is_public,
@@ -147,6 +153,63 @@ INSERT INTO defi_strategy_versions (id, strategy_id, version, workflow_json) VAL
          "tokenOut": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
         {"step": 4, "type": "SUPPLY", "agent": "AAVE",
          "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}}
+      ]
+    }'::jsonb
+  ),
+  -- Aave V4 workflows. `protocol` is what routes a step: build-evm-plan resolves
+  -- AAVE_V4_* to the matching spoke in the chain registry, then reads that
+  -- spoke's reserveId on-chain (v4 addresses positions by reserve index, not by
+  -- token address). Steps without `protocol` still fall back to Aave v3.
+  --
+  -- No ENABLE_E_MODE step: v4 has no e-mode. The AVAX-correlated spoke *is* the
+  -- correlated-asset market, and its 95% collateral factor applies by default.
+  (
+    'b7c31e00-0006-4a10-9a01-0000000000b6',
+    'a7c31e00-0006-4a10-9a01-0000000000a6',
+    1,
+    '{
+      "chain": "avalanche",
+      "chainId": 43114,
+      "steps": [
+        {"step": 1, "type": "SUPPLY", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED",
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
+        {"step": 2, "type": "BORROW", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED", "collateralRatio": 0.8,
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18},
+         "tokenOut": {"assetId": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "symbol": "WAVAX", "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "decimals": 18}},
+        {"step": 3, "type": "SWAP", "agent": "TRADER_JOE",
+         "tokenIn": {"assetId": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "symbol": "WAVAX", "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "decimals": 18},
+         "tokenOut": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
+        {"step": 4, "type": "SUPPLY", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED",
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
+        {"step": 5, "type": "BORROW", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED", "collateralRatio": 0.8,
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18},
+         "tokenOut": {"assetId": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "symbol": "WAVAX", "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "decimals": 18}},
+        {"step": 6, "type": "SWAP", "agent": "TRADER_JOE",
+         "tokenIn": {"assetId": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "symbol": "WAVAX", "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "decimals": 18},
+         "tokenOut": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
+        {"step": 7, "type": "SUPPLY", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED",
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
+        {"step": 8, "type": "BORROW", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED", "collateralRatio": 0.8,
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18},
+         "tokenOut": {"assetId": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "symbol": "WAVAX", "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "decimals": 18}},
+        {"step": 9, "type": "SWAP", "agent": "TRADER_JOE",
+         "tokenIn": {"assetId": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "symbol": "WAVAX", "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "decimals": 18},
+         "tokenOut": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}},
+        {"step": 10, "type": "SUPPLY", "agent": "AAVE", "protocol": "AAVE_V4_AVAX_CORRELATED",
+         "tokenIn": {"assetId": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "symbol": "sAVAX", "address": "0x2b2c81e08f1af8835a78bb2a90ae924ace0ea4be", "decimals": 18}}
+      ]
+    }'::jsonb
+  ),
+  (
+    'b7c31e00-0007-4a10-9a01-0000000000b7',
+    'a7c31e00-0007-4a10-9a01-0000000000a7',
+    1,
+    '{
+      "chain": "avalanche",
+      "chainId": 43114,
+      "steps": [
+        {"step": 1, "type": "SUPPLY", "agent": "AAVE", "protocol": "AAVE_V4_MAIN",
+         "tokenIn": {"assetId": "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e", "symbol": "USDC", "address": "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e", "decimals": 6}}
       ]
     }'::jsonb
   )

@@ -12,6 +12,13 @@ import { quoteTraderJoe } from "./trader-joe-quote";
 import { buildTraderJoeSwap } from "./trader-joe";
 import { resolveEModeCategoryId } from "./aave-emode";
 import { buildBenqiMintErc20, buildBenqiBorrow, buildEnterMarkets } from "./benqi";
+import {
+  buildAaveV4Borrow,
+  buildAaveV4Supply,
+  isAaveV4Protocol,
+  requireAaveV4Spoke,
+  resolveAaveV4Reserve,
+} from "./aave-v4";
 
 const DEFAULT_SLIPPAGE = 0.005; // 0.5%
 
@@ -57,6 +64,12 @@ export function buildEvmStepPlan(
   opts?: { eModeCategoryId?: number },
 ): EvmStepPlan | null {
   const isBenqi = step.protocol === "BENQI";
+
+  // Aave v4 addresses positions by an on-chain reserveId, so its plans can only
+  // be built from the async resolver below.
+  if (isAaveV4Protocol(step.protocol)) {
+    throw new Error("Aave v4 steps must be built through resolveEvmStepPlan");
+  }
 
   switch (step.type) {
     case STEP_TYPE.SUPPLY: {
@@ -114,6 +127,30 @@ export async function resolveEvmStepPlan(
       step.eModeCategoryLabel ?? "",
     );
     return buildEvmStepPlan(step, chain, user, { ...opts, eModeCategoryId: categoryId });
+  }
+
+  // Aave v4: resolve the spoke's reserveId (and its collateral factor) live,
+  // then build the same approve -> (setUsingAsCollateral) -> call shape.
+  if (isAaveV4Protocol(step.protocol)) {
+    const spoke = requireAaveV4Spoke(chain, step.protocol as string);
+    const isSupply = step.type === STEP_TYPE.SUPPLY;
+
+    if (!isSupply && step.type !== STEP_TYPE.BORROW) {
+      if (step.type === STEP_TYPE.ENABLE_BORROWING) return null;
+      throw new Error(`Unsupported Aave v4 step type: ${step.type}`);
+    }
+
+    const token = requireEvmToken(isSupply ? step.tokenIn! : step.tokenOut!);
+    const reserve = await resolveAaveV4Reserve(
+      publicClient,
+      chain.chainId as number,
+      spoke,
+      token.address,
+    );
+
+    return isSupply
+      ? buildAaveV4Supply({ reserve, amount: token.amount, user })
+      : buildAaveV4Borrow({ reserve, amount: token.amount, user });
   }
 
   if (step.type === STEP_TYPE.SWAP) {

@@ -14,4 +14,6 @@ export enum AVALANCHE_STRATEGY {
   USDC_SUPPLY = 'usdc-supply-aave',
   USDT_SUPPLY = 'usdt-supply-aave',
   USDC_AVAX_CARRY = 'usdc-avax-carry',
+  SAVAX_LOOP_V4 = 'savax-loop-v4-correlated',
+  USDC_SUPPLY_V4 = 'usdc-supply-aave-v4',
 }

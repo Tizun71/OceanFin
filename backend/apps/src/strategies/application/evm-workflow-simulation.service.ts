@@ -96,6 +96,7 @@ export class EvmWorkflowSimulationService {
             step: raw.step,
             type: raw.type,
             agent: raw.agent,
+            protocol: raw.protocol,
             tokenIn: { ...raw.tokenIn, amount: round(amount) },
           });
           break;
@@ -118,6 +119,7 @@ export class EvmWorkflowSimulationService {
             step: raw.step,
             type: raw.type,
             agent: raw.agent,
+            protocol: raw.protocol,
             tokenIn: raw.tokenIn,
             tokenOut: { ...raw.tokenOut, amount: round(amount) },
           });
