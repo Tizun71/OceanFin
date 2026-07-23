@@ -117,6 +117,41 @@ Built with Next.js on the front, NestJS on the back, and viem/wagmi doing the on
 
 ## 🗓️ What's next
 
+### 🧩 More protocols on Avalanche
+
+The builder is only as good as the blocks it can snap together. Next up, in rough order:
+
+**Lending &amp; borrowing**
+
+- [ ] **Aave v4** — new hub-and-spoke architecture, unified liquidity layer. Ship as soon as it lands on Avalanche mainnet.
+- [ ] **Euler v2** — modular vaults (EVK/EVC), custom collateral pairs the big pools won't list
+- [ ] **Silo Finance** — isolated risk markets, so a long-tail token can't drag down the rest
+- [ ] **Morpho** — peer-to-peer matching layered on top of existing pools for a better rate on both sides
+- [ ] **Delta Prime** — undercollateralized leverage on AVAX-native assets
+
+**Yield &amp; auto-compounding**
+
+- [ ] **Yield Yak** — auto-compounding vaults, the Avalanche default for "set and forget"
+- [ ] **Beefy** — multi-strategy vaults, familiar to anyone coming from other chains
+- [ ] **Pendle** — split yield from principal: PT/YT blocks unlock fixed-rate and yield-trading strategies
+- [ ] **Steakhut** — concentrated-liquidity vaults managed for you
+
+**DEX &amp; liquidity**
+
+- [ ] **Pharaoh** and **Blackhole** — ve(3,3) DEXes where most new AVAX pairs bootstrap first
+- [ ] **Curve** — stable and pegged-asset swaps with minimal slippage
+- [ ] **Balancer** — weighted pools and boosted-pool routing
+- [ ] **Uniswap v4** — hooks-based pools once liquidity migrates
+
+**Liquid staking**
+
+- [ ] **GoGoPool (ggAVAX)** — a second LST next to sAVAX, so looping isn't a one-horse race
+- [ ] **Suzaku** — restaking / L1 security blocks as the Avalanche9000 L1s come online
+
+Each protocol lands as a first-class builder block: same drag-and-drop, same simulate-before-you-sign, same one-click run.
+
+### 🚀 Everything else
+
 - [ ] Full protocol coverage on Base &amp; Arbitrum
 - [ ] Withdraw strategies
 - [ ] Agent-wallet execution (x402 protocol)
